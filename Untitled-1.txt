@@ -1,0 +1,1 @@
+curl -X POST -H "Content-Type: application/json" -d '{"phone": "6282333899903", "code": "your_group_code"}' http://localhost:8080/api/groups

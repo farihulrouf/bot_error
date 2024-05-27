@@ -10,14 +10,20 @@ import (
 	"os/signal"
 	"syscall"
 
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/gorilla/mux"
+	_ "github.com/mattn/go-sqlite3"
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/store/sqlstore"
 	waLog "go.mau.fi/whatsmeow/util/log"
+	"go.mau.fi/whatsmeow/types"
 )
 
 var client *whatsmeow.Client
+
+type CreateGroupRequest struct {
+	Phone string `json:"phone"`
+	Code  string `json:"code"`
+}
 
 func eventHandler(evt interface{}) {
 	switch evt.(type) {
@@ -44,6 +50,7 @@ func main() {
 
 	// Setup the router
 	r := mux.NewRouter()
+	r.HandleFunc("/api/groups", createGroupHandler).Methods("POST")
 	r.HandleFunc("/api/groups", getGroupsHandler).Methods("GET")
 
 	// Start the server in a goroutine
@@ -60,6 +67,33 @@ func main() {
 	<-c
 
 	client.Disconnect()
+}
+
+func createGroupHandler(w http.ResponseWriter, r *http.Request) {
+	var req CreateGroupRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	participantJID, err := types.ParseJID(req.Phone + "@s.whatsapp.net")
+	if err != nil {
+		http.Error(w, "Invalid phone number", http.StatusBadRequest)
+		return
+	}
+
+	reqCreateGroup := whatsmeow.ReqCreateGroup{
+		Participants: []types.JID{participantJID},
+	}
+
+	_, err = client.CreateGroup(reqCreateGroup)
+	if err != nil {
+		http.Error(w, "Failed to create group", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Group created successfully"})
 }
 
 func getGroupsHandler(w http.ResponseWriter, r *http.Request) {
