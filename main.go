@@ -14,8 +14,8 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/store/sqlstore"
-	waLog "go.mau.fi/whatsmeow/util/log"
 	"go.mau.fi/whatsmeow/types"
+	waLog "go.mau.fi/whatsmeow/util/log"
 )
 
 var client *whatsmeow.Client
@@ -23,6 +23,25 @@ var client *whatsmeow.Client
 type CreateGroupRequest struct {
 	Phone string `json:"phone"`
 	Code  string `json:"code"`
+}
+
+type LeaveGroupRequest struct {
+	GroupID string `json:"group_id"`
+	Phone   string `json:"phone"`
+}
+
+type GroupMessage struct {
+	Sender  string `json:"sender"`
+	Message string `json:"message"`
+}
+
+type JoinGroupRequest struct {
+	InviteLink string `json:"invite_link"`
+}
+
+type Message struct {
+	Sender  string `json:"sender"`
+	Message string `json:"message"`
 }
 
 func eventHandler(evt interface{}) {
@@ -48,12 +67,15 @@ func main() {
 
 	ScanQrCode(client)
 
-	// Setup the router
+	// Setup router
 	r := mux.NewRouter()
 	r.HandleFunc("/api/groups", createGroupHandler).Methods("POST")
 	r.HandleFunc("/api/groups", getGroupsHandler).Methods("GET")
+	r.HandleFunc("/api/groups/leave", leaveGroupHandler).Methods("POST")
+	r.HandleFunc("/api/groups/join", JoinGroupHandler).Methods("POST")
+	//r.HandleFunc("/api/messages", GetAllMessagesHandler).Methods("GET")
 
-	// Start the server in a goroutine
+	// Start server
 	go func() {
 		log.Println("Server running on port 8080")
 		if err := http.ListenAndServe(":8080", r); err != nil {
@@ -62,7 +84,7 @@ func main() {
 	}()
 
 	// Handle graceful shutdown
-	c := make(chan os.Signal)
+	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	<-c
 
@@ -72,12 +94,14 @@ func main() {
 func createGroupHandler(w http.ResponseWriter, r *http.Request) {
 	var req CreateGroupRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Printf("Error decoding request: %v", err)
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
 	participantJID, err := types.ParseJID(req.Phone + "@s.whatsapp.net")
 	if err != nil {
+		log.Printf("Error parsing JID: %v", err)
 		http.Error(w, "Invalid phone number", http.StatusBadRequest)
 		return
 	}
@@ -86,12 +110,14 @@ func createGroupHandler(w http.ResponseWriter, r *http.Request) {
 		Participants: []types.JID{participantJID},
 	}
 
-	_, err = client.CreateGroup(reqCreateGroup)
+	groupResponse, err := client.CreateGroup(reqCreateGroup)
 	if err != nil {
+		log.Printf("Error creating group: %v", err)
 		http.Error(w, "Failed to create group", http.StatusInternalServerError)
 		return
 	}
 
+	log.Printf("Group created successfully: %v", groupResponse)
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{"message": "Group created successfully"})
 }
@@ -105,6 +131,7 @@ func getGroupsHandler(w http.ResponseWriter, r *http.Request) {
 
 	groupList := make([]map[string]interface{}, 0, len(groups))
 	for _, group := range groups {
+		fmt.Printf("Group ID: %s, Name: %s\n", group.JID.String(), group.Name)
 		groupInfo := map[string]interface{}{
 			"JID":  group.JID.String(),
 			"Name": group.Name,
@@ -114,6 +141,41 @@ func getGroupsHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(groupList)
+}
+
+func leaveGroupHandler(w http.ResponseWriter, r *http.Request) {
+	var req LeaveGroupRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Printf("Error decoding request: %v", err)
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	groupJID, err := types.ParseJID(req.GroupID + "@g.us")
+	if err != nil {
+		log.Printf("Error parsing Group JID: %v", err)
+		http.Error(w, "Invalid group ID", http.StatusBadRequest)
+		return
+	}
+
+	participantJID, err := types.ParseJID(req.Phone + "@s.whatsapp.net")
+	if err != nil {
+		log.Printf("Error parsing Participant JID: %v", err)
+		http.Error(w, "Invalid phone number", http.StatusBadRequest)
+		return
+	}
+
+	//  Dengan asumsi metode untuk memperbarui peserta grup adalah UpdateGroupParticipants
+	response, err := client.UpdateGroupParticipants(groupJID, []types.JID{participantJID}, "remove")
+	if err != nil {
+		log.Printf("Error leaving group: %v", err)
+		http.Error(w, "Failed to leave group", http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("Participant %s left group %s successfully, response: %v", req.Phone, req.GroupID, response)
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Left group successfully"})
 }
 
 func ScanQrCode(client *whatsmeow.Client) {
@@ -140,4 +202,35 @@ func ScanQrCode(client *whatsmeow.Client) {
 			log.Fatalf("Failed to connect: %v", err)
 		}
 	}
+}
+
+func JoinGroupHandler(w http.ResponseWriter, r *http.Request) {
+	var req JoinGroupRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Printf("Error decoding request: %v", err)
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	// Join the group using the invite link
+	groupJID, err := client.JoinGroupWithLink(req.InviteLink)
+	if err != nil {
+		log.Printf("Error joining group: %v", err)
+		http.Error(w, "Failed to join group", http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("Group joined successfully: %v", groupJID)
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Group joined successfully"})
+}
+
+func fetchAllMessages() ([]Message, error) {
+	// Implement the logic here to fetch messages from all devices
+	// Return dummy data for demonstration
+	messages := []Message{
+		{Sender: "Alice", Message: "Hello"},
+		{Sender: "Bob", Message: "Hi"},
+	}
+	return messages, nil
 }
