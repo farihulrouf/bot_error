@@ -13,10 +13,10 @@ import (
 	"github.com/gorilla/mux"
 	_ "github.com/mattn/go-sqlite3"
 	"go.mau.fi/whatsmeow"
+	waProto "go.mau.fi/whatsmeow/binary/proto"
 	"go.mau.fi/whatsmeow/store/sqlstore"
 	"go.mau.fi/whatsmeow/types"
 	"google.golang.org/protobuf/proto"
-	waProto "go.mau.fi/whatsmeow/binary/proto"
 
 	//"github.com/tulir/whatsmeow/binary/proto"
 
@@ -56,6 +56,11 @@ func eventHandler(evt interface{}) {
 	}
 }
 
+type SendMessageGroupRequest struct {
+	GroupID string `json:"group_id"`
+	Message string `json:"message"`
+}
+
 func main() {
 	dbLog := waLog.Stdout("Database", "DEBUG", true)
 	container, err := sqlstore.New("sqlite3", "file:wasopingi.db?_foreign_keys=on", dbLog)
@@ -76,10 +81,11 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/api/groups", createGroupHandler).Methods("POST")
 	r.HandleFunc("/api/groups", getGroupsHandler).Methods("GET")
+	r.HandleFunc("/api/groups/messages", sendMessageGroupHandler).Methods("POST")
 	r.HandleFunc("/api/groups/leave", leaveGroupHandler).Methods("POST")
 	r.HandleFunc("/api/groups/join", JoinGroupHandler).Methods("POST")
 	r.HandleFunc("/api/messages", sendMessageHandler).Methods("POST")
-
+	//sendMessageGroupHandler
 	//r.HandleFunc("/api/messages", GetAllMessagesHandler).Methods("GET")
 
 	// Start server
@@ -236,9 +242,12 @@ func JoinGroupHandler(w http.ResponseWriter, r *http.Request) {
 func sendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	// Parse request body to get the message data
 	var requestData struct {
-		RecipientType string `json:"recipient_type"`
-		Recipient     string `json:"recipient"`
-		Message       string `json:"message"`
+		To      string `json:"to"`
+		Type    string `json:"type"`
+		Text    string `json:"text"`
+		Caption string `json:"caption"`
+		URL     string `json:"url"`
+		From    string `json:"from"`
 	}
 	err := json.NewDecoder(r.Body).Decode(&requestData)
 	if err != nil {
@@ -246,25 +255,12 @@ func sendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if recipient type is valid
-	if requestData.RecipientType != "phone_number" && requestData.RecipientType != "group_id" {
-		http.Error(w, "Invalid recipient type", http.StatusBadRequest)
-		return
-	}
-
-	// Check if recipient and message are provided
-	if requestData.Recipient == "" || requestData.Message == "" {
-		http.Error(w, "Recipient and message are required", http.StatusBadRequest)
-		return
-	}
-
 	// Send the message based on the recipient type
-	//var err error
-	switch requestData.RecipientType {
-	case "phone_number":
-		err = sendMessageToPhoneNumber(requestData.Recipient, requestData.Message)
-	case "group_id":
-		err = sendMessageToGroupID(requestData.Recipient, requestData.Message)
+	if requestData.Type == "text" {
+		err = sendMessageToPhoneNumber(requestData.To, requestData.Text)
+	} else {
+		http.Error(w, "Invalid message type", http.StatusBadRequest)
+		return
 	}
 
 	if err != nil {
@@ -283,44 +279,70 @@ func sendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write(jsonResponse)
 }
-func PhoneNumberToJID(phoneNumber string) string {
-	return phoneNumber + "@s.whatsapp.net"
-}
 
 // sendMessageToPhoneNumber sends a message to the specified phone number
 func sendMessageToPhoneNumber(recipient, message string) error {
-	// You would typically need to map the phone number to a JID
-	// For simplicity, let's assume we have a way to do this
-	//recipientJID := "1234567890@example.com" // Replace with the recipient's JID
+	// Convert recipient to JID
+	jid, err := types.ParseJID(recipient + "@s.whatsapp.net")
+	if err != nil {
+		return fmt.Errorf("invalid recipient JID: %v", err)
+	}
 
-	// Send the message using the global WhatsApp client
-
-	// Send the message using the global WhatsApp client
-
-	Jidsender, err := types.ParseJID(recipient + "@s.whatsapp.net")
-
-	resp, err := client.SendMessage(context.Background(), Jidsender, &waProto.Message{
+	// Create the message
+	msg := &waProto.Message{
 		Conversation: proto.String(message),
-	})
+	}
 
+	// Send the message
+	_, err = client.SendMessage(context.Background(), jid, msg)
 	if err != nil {
 		return fmt.Errorf("error sending message: %v", err)
 	}
 
-	fmt.Printf("Sending message '%s' to group ID: %s\n", message, recipient, resp)
-
+	fmt.Printf("Sending message '%s' to phone number: %s\n", message, recipient)
 	return nil
+}
+
+func sendMessageGroupHandler(w http.ResponseWriter, r *http.Request) {
+	var req SendMessageGroupRequest
+
+	// Decode the JSON request
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	// Send the message
+	if err := sendMessageToGroupID(req.GroupID, req.Message); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Respond with success
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "Message sent to group ID: %s", req.GroupID)
 }
 
 // sendMessageToGroupID sends a message to the specified group ID
 func sendMessageToGroupID(groupID, message string) error {
-	// Replace this with the actual implementation using your messaging library
+	// Convert groupID to JID
+	fmt.Println("Chek groupid", groupID)
+	jid, err := types.ParseJID(groupID + "@g.us")
+	if err != nil {
+		return fmt.Errorf("invalid group JID: %v", err)
+	}
+
+	// Create the message
+	msg := &waProto.Message{
+		Conversation: proto.String(message),
+	}
+
+	// Send the message
+	_, err = client.SendMessage(context.Background(), jid, msg)
+	if err != nil {
+		return fmt.Errorf("error sending message: %v", err)
+	}
+
 	fmt.Printf("Sending message '%s' to group ID: %s\n", message, groupID)
-	// Example of sending the message:
-	// result, err := messagingLibrary.SendMessageToGroupID(groupID, message)
-	// if err != nil {
-	//     return err
-	// }
-	// Handle result if needed
 	return nil
 }
