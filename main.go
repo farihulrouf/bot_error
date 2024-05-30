@@ -85,6 +85,8 @@ func main() {
 	r.HandleFunc("/api/groups/leave", leaveGroupHandler).Methods("POST")
 	r.HandleFunc("/api/groups/join", JoinGroupHandler).Methods("POST")
 	r.HandleFunc("/api/messages", sendMessageHandler).Methods("POST")
+	r.HandleFunc("/api/messages/bulk", sendMessageBulkHandler).Methods("POST")
+
 	//sendMessageGroupHandler
 	//r.HandleFunc("/api/messages", GetAllMessagesHandler).Methods("GET")
 
@@ -345,4 +347,51 @@ func sendMessageToGroupID(groupID, message string) error {
 
 	fmt.Printf("Sending message '%s' to group ID: %s\n", message, groupID)
 	return nil
+}
+
+func sendMessageBulkHandler(w http.ResponseWriter, r *http.Request) {
+	// Parse request body to get the message data
+	var requestData []struct {
+		To      string `json:"to"`
+		Type    string `json:"type"`
+		Text    string `json:"text"`
+		Caption string `json:"caption"`
+		URL     string `json:"url"`
+		From    string `json:"from"`
+	}
+	err := json.NewDecoder(r.Body).Decode(&requestData)
+	if err != nil {
+		http.Error(w, "Failed to parse request body", http.StatusBadRequest)
+		return
+	}
+
+	// Send the messages to each recipient
+	var successCount int
+	for _, message := range requestData {
+		if message.Type == "text" {
+			err = sendMessageToPhoneNumber(message.To, message.Text)
+			if err != nil {
+				fmt.Printf("Failed to send message to %s: %v\n", message.To, err)
+			} else {
+				successCount++
+			}
+		} else {
+			fmt.Printf("Invalid message type for recipient %s\n", message.To)
+		}
+	}
+
+	// Return success response
+	response := map[string]interface{}{
+		"status":           "Bulk message sent",
+		"success_count":    successCount,
+		"total_recipients": len(requestData),
+	}
+	jsonResponse, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(jsonResponse)
 }
