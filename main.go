@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 
 	"github.com/gorilla/mux"
@@ -16,6 +17,7 @@ import (
 	waProto "go.mau.fi/whatsmeow/binary/proto"
 	"go.mau.fi/whatsmeow/store/sqlstore"
 	"go.mau.fi/whatsmeow/types"
+	"go.mau.fi/whatsmeow/types/events"
 	"google.golang.org/protobuf/proto"
 
 	//"github.com/tulir/whatsmeow/binary/proto"
@@ -49,10 +51,32 @@ type Message struct {
 	Message string `json:"message"`
 }
 
-func eventHandler(evt interface{}) {
+/*func eventHandler(evt interface{}) {
 	switch evt.(type) {
 	default:
 		fmt.Println("Unhandled event:", evt)
+	}
+}
+*/
+
+var (
+	messages []Message
+	mu       sync.Mutex
+)
+
+func sendToAPI(sender string, message string) {
+	mu.Lock()
+	messages = append(messages, Message{Sender: sender, Message: message})
+	mu.Unlock()
+}
+
+func eventHandler(evt interface{}) {
+	switch v := evt.(type) {
+	case *events.Message:
+		if !v.Info.IsFromMe && v.Message.GetConversation() != "" {
+			fmt.Println("PESAN DITERIMA!", v.Message.GetConversation())
+			sendToAPI(v.Info.Sender.String(), v.Message.GetConversation())
+		}
 	}
 }
 
@@ -85,6 +109,7 @@ func main() {
 	r.HandleFunc("/api/groups/leave", leaveGroupHandler).Methods("POST")
 	r.HandleFunc("/api/groups/join", JoinGroupHandler).Methods("POST")
 	r.HandleFunc("/api/messages", sendMessageHandler).Methods("POST")
+	r.HandleFunc("/api/messages", getMessages).Methods("GET")
 	r.HandleFunc("/api/messages/bulk", sendMessageBulkHandler).Methods("POST")
 
 	//sendMessageGroupHandler
@@ -227,7 +252,6 @@ func JoinGroupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Join the group using the invite link
 	groupJID, err := client.JoinGroupWithLink(req.InviteLink)
 	if err != nil {
 		log.Printf("Error joining group: %v", err)
@@ -395,3 +419,28 @@ func sendMessageBulkHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write(jsonResponse)
 }
+
+func getMessages(w http.ResponseWriter, r *http.Request) {
+	mu.Lock()
+	defer mu.Unlock()
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(messages)
+}
+
+/*
+func receiveMessageHandler(w http.ResponseWriter, r *http.Request) {
+	// Parse the request body to get the message
+	var message whatsmeow.Message
+	if err := json.NewDecoder(r.Body).Decode(&message); err != nil {
+		http.Error(w, "Failed to decode request body", http.StatusBadRequest)
+		return
+	}
+
+	// Process the received message here
+	// For example, you can store it in a database or perform other actions
+
+	// Respond with a success message
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Message received successfully"))
+}
+*/
