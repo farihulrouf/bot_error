@@ -85,6 +85,10 @@ type SendMessageGroupRequest struct {
 	Message string `json:"message"`
 }
 
+func addSampleMessage() {
+	sendToAPI("6282333899903", "Hello, this is a sample message!")
+}
+
 func main() {
 	dbLog := waLog.Stdout("Database", "DEBUG", true)
 	container, err := sqlstore.New("sqlite3", "file:wasopingi.db?_foreign_keys=on", dbLog)
@@ -102,6 +106,8 @@ func main() {
 	ScanQrCode(client)
 
 	// Setup router
+	// Add a sample message for testing
+	addSampleMessage()
 	r := mux.NewRouter()
 	r.HandleFunc("/api/groups", createGroupHandler).Methods("POST")
 	r.HandleFunc("/api/groups", getGroupsHandler).Methods("GET")
@@ -109,8 +115,11 @@ func main() {
 	r.HandleFunc("/api/groups/leave", leaveGroupHandler).Methods("POST")
 	r.HandleFunc("/api/groups/join", JoinGroupHandler).Methods("POST")
 	r.HandleFunc("/api/messages", sendMessageHandler).Methods("POST")
-	r.HandleFunc("/api/messages", getMessages).Methods("GET")
+	r.HandleFunc("/api/result", getMessages).Methods("GET")
+	r.HandleFunc("/api/result/{id}", getMessagesByPhoneNumber).Methods("GET")
 	r.HandleFunc("/api/messages/bulk", sendMessageBulkHandler).Methods("POST")
+	//r.HandleFunc("/api/messages/{phone}", getMessagesByPhoneNumber).Methods("GET")
+	//r.HandleFunc("/api/messages/{phone}", getMessagesByPhoneNumber).Methods("GET")
 
 	//sendMessageGroupHandler
 	//r.HandleFunc("/api/messages", GetAllMessagesHandler).Methods("GET")
@@ -427,20 +436,33 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(messages)
 }
 
-/*
-func receiveMessageHandler(w http.ResponseWriter, r *http.Request) {
-	// Parse the request body to get the message
-	var message whatsmeow.Message
-	if err := json.NewDecoder(r.Body).Decode(&message); err != nil {
-		http.Error(w, "Failed to decode request body", http.StatusBadRequest)
+// NormalizePhoneNumber normalizes the phone number format
+func normalizePhoneNumber(phone string) string {
+	// Add any necessary normalization logic here
+	return phone
+}
+
+func getMessagesByPhoneNumber(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	phone := params["phone"]
+
+	mu.Lock()
+	defer mu.Unlock()
+
+	fmt.Println("Checking messages for phone:", phone)
+	var filteredMessages []Message
+	for _, message := range messages {
+		fmt.Println("Checking message from sender:", message.Sender)
+		if message.Sender == phone {
+			filteredMessages = append(filteredMessages, message)
+		}
+	}
+
+	if len(filteredMessages) == 0 {
+		http.Error(w, "No messages found for this phone number", http.StatusNotFound)
 		return
 	}
 
-	// Process the received message here
-	// For example, you can store it in a database or perform other actions
-
-	// Respond with a success message
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Message received successfully"))
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(filteredMessages)
 }
-*/
