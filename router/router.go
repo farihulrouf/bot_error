@@ -9,6 +9,7 @@ import (
 func SetupRouter(client *whatsmeow.Client) *mux.Router {
 	r := mux.NewRouter()
 	controllers.SetClient(client)
+	r.HandleFunc("/api/scanqr", controllers.ScanQRHandler).Methods("GET")
 	r.HandleFunc("/api/groups", controllers.GetGroupsHandler).Methods("GET")
 	r.HandleFunc("/api/groups", controllers.CreateGroupHandler).Methods("POST") // New route for creating a group
 	r.HandleFunc("/api/groups/messages", controllers.SendMessageGroupHandler).Methods("POST")

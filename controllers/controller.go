@@ -279,10 +279,20 @@ func GetMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	// Serialize messages to include both text and media messages
+
+	//strings.Split(email, "@")
+
+	//email := "6282333899903@s.whatsapp.net"
+	// parts := strings.Split(email, "@")
+	//username := parts[0]
+
 	var serializedMessages []interface{}
 	for _, msg := range messages {
+		//sender := msg.Sender
+		sender := strings.Split(msg.Sender, "@")[0]
+		//sender_phone := sender[0]
 		serializedMsg := map[string]interface{}{
-			"sender":  msg.Sender,
+			"sender":  sender,
 			"type":    msg.Type,
 			"message": msg.Message,
 		}
@@ -310,11 +320,11 @@ func GetMessagesByIdHandler(w http.ResponseWriter, r *http.Request) {
 	// Extract id from the request URL path
 	parts := strings.Split(r.URL.Path, "/")
 	id := parts[len(parts)-1]
-
+	//fmt.Println("check number phone", id)
 	// Filter messages by phone number
 	var filteredMessages []model.Message
 	for _, msg := range messages {
-		if msg.Sender == id {
+		if msg.Sender == id+"@s.whatsapp.net" {
 			filteredMessages = append(filteredMessages, msg)
 		}
 	}
@@ -401,4 +411,30 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	// Respond with success
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"status": "success"})
+}
+
+func ScanQRHandler(w http.ResponseWriter, r *http.Request) {
+	// Check if the client is nil
+	if client == nil {
+		http.Error(w, "Client is nil", http.StatusInternalServerError)
+		return
+	}
+
+	// No ID stored, new login
+	qrChan, _ := client.GetQRChannel(context.Background())
+	err := client.Connect()
+	if err != nil {
+		http.Error(w, "Failed to connect: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Loop through QR channel events
+	for evt := range qrChan {
+		if evt.Event == "code" {
+			// Respond with the QR code data
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]string{"qr_code": evt.Code})
+			return
+		}
+	}
 }

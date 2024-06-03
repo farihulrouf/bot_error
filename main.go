@@ -1,8 +1,6 @@
 package main
 
 import (
-
-	//"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -11,23 +9,16 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 	"go.mau.fi/whatsmeow"
-
-	//waProto "go.mau.fi/whatsmeow/binary/proto"
 	"go.mau.fi/whatsmeow/store/sqlstore"
-	//"go.mau.fi/whatsmeow/types"
-	//"go.mau.fi/whatsmeow/types/events"
-	//	"google.golang.org/protobuf/proto"
+	waLog "go.mau.fi/whatsmeow/util/log"
 	"wagobot.com/controllers"
 	"wagobot.com/router"
-
-	//"github.com/tulir/whatsmeow/binary/proto"
-
-	waLog "go.mau.fi/whatsmeow/util/log"
 )
 
 var client *whatsmeow.Client
 
 func main() {
+
 	dbLog := waLog.Stdout("Database", "DEBUG", true)
 	container, err := sqlstore.New("sqlite3", "file:wasopingi.db?_foreign_keys=on", dbLog)
 	if err != nil {
@@ -39,6 +30,7 @@ func main() {
 	}
 	clientLog := waLog.Stdout("Client", "DEBUG", true)
 	client = whatsmeow.NewClient(deviceStore, clientLog)
+	//client.AddEventHandler(eventHandler)
 	client.AddEventHandler(controllers.EventHandler)
 	controllers.ScanQrCode(client)
 
