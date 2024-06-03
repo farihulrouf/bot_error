@@ -25,3 +25,8 @@ type Message struct {
 	Sender  string `json:"sender"`
 	Message string `json:"message"`
 }
+
+type CreateGroupRequest struct {
+	Phone string `json:"phone"`
+	Code  string `json:"code"`
+}

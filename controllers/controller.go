@@ -14,6 +14,7 @@ import (
 	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
 	"google.golang.org/protobuf/proto"
+	"wagobot.com/helpers"
 	"wagobot.com/model"
 )
 
@@ -225,14 +226,6 @@ func LeaveGroupHandler(w http.ResponseWriter, r *http.Request) {
 func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	// Parse request body to get the message data
 	var requestData model.SendMessageGroupRequest
-	/*var requestData struct {
-		To      string `json:"to"`
-		Type    string `json:"type"`
-		Text    string `json:"text"`
-		Caption string `json:"caption"`
-		URL     string `json:"url"`
-		From    string `json:"from"`
-	}*/
 	err := json.NewDecoder(r.Body).Decode(&requestData)
 	if err != nil {
 		http.Error(w, "Failed to parse request body", http.StatusBadRequest)
@@ -241,7 +234,7 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Send the message based on the recipient type
 	if requestData.Type == "text" {
-		err = sendMessageToPhoneNumber(requestData.To, requestData.Text)
+		err = helpers.SendMessageToPhoneNumber(client, requestData.To, requestData.Text)
 	} else {
 		http.Error(w, "Invalid message type", http.StatusBadRequest)
 		return
@@ -264,34 +257,9 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonResponse)
 }
 
-// sendMessageToPhoneNumber sends a message to the specified phone number
-func sendMessageToPhoneNumber(recipient, message string) error {
-	// Convert recipient to JID
-	jid, err := types.ParseJID(recipient + "@s.whatsapp.net")
-	if err != nil {
-		return fmt.Errorf("invalid recipient JID: %v", err)
-	}
-
-	// Create the message
-	msg := &waProto.Message{
-		Conversation: proto.String(message),
-	}
-
-	// Send the message
-	_, err = client.SendMessage(context.Background(), jid, msg)
-	if err != nil {
-		return fmt.Errorf("error sending message: %v", err)
-	}
-
-	fmt.Printf("Sending message '%s' to phone number: %s\n", message, recipient)
-	return nil
-}
-
 func SendMessageBulkHandler(w http.ResponseWriter, r *http.Request) {
 	// Parse request body to get the message data
-	var requestData []struct {
-		model.SendMessageGroupRequest
-	}
+	var requestData []model.SendMessageGroupRequest
 	err := json.NewDecoder(r.Body).Decode(&requestData)
 	if err != nil {
 		http.Error(w, "Failed to parse request body", http.StatusBadRequest)
@@ -302,7 +270,7 @@ func SendMessageBulkHandler(w http.ResponseWriter, r *http.Request) {
 	var successCount int
 	for _, message := range requestData {
 		if message.Type == "text" {
-			err = sendMessageToPhoneNumber(message.To, message.Text)
+			err = helpers.SendMessageToPhoneNumber(client, message.To, message.Text)
 			if err != nil {
 				fmt.Printf("Failed to send message to %s: %v\n", message.To, err)
 			} else {
