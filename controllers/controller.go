@@ -10,10 +10,8 @@ import (
 	"sync"
 
 	"go.mau.fi/whatsmeow"
-	waProto "go.mau.fi/whatsmeow/binary/proto"
 	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
-	"google.golang.org/protobuf/proto"
 	"wagobot.com/helpers"
 	"wagobot.com/model"
 )
@@ -92,8 +90,6 @@ func GetGroupsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func SendMessageGroupHandler(w http.ResponseWriter, r *http.Request) {
-	//var req SendMessageGroupRequest
-
 	var req model.SendMessageGroupRequest
 
 	// Decode the JSON request
@@ -116,7 +112,7 @@ func SendMessageGroupHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send the message
-	if err := sendMessage(jid, req); err != nil {
+	if err := helpers.SendMessage(client, jid, req); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -143,29 +139,6 @@ func convertToJID(to string) (types.JID, error) {
 	}
 
 	return jid, nil
-}
-
-func sendMessage(jid types.JID, req model.SendMessageGroupRequest) error {
-	// Create the message based on the type
-	var msg *waProto.Message
-	switch req.Type {
-	case "text":
-		msg = &waProto.Message{
-			Conversation: proto.String(req.Text),
-		}
-	// Add more cases for different message types as needed
-	default:
-		return fmt.Errorf("unsupported message type: %s", req.Type)
-	}
-
-	// Send the message
-	_, err := client.SendMessage(context.Background(), jid, msg)
-	if err != nil {
-		return fmt.Errorf("error sending message: %v", err)
-	}
-
-	fmt.Printf("Sending message '%s' to %s from %s\n", req.Text, jid.String(), req.From)
-	return nil
 }
 
 func JoinGroupHandler(w http.ResponseWriter, r *http.Request) {
