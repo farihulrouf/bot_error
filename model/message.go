@@ -22,11 +22,20 @@ type LeaveGroupRequest struct {
 }
 
 type Message struct {
-	Sender  string `json:"sender"`
-	Message string `json:"message"`
+	Sender    string `json:"sender"`
+	Message   string `json:"message"`
+	Type      string `json:"type,omitempty"`       // Type of message (e.g., "text" or "media")
+	MediaType string `json:"media_type,omitempty"` // Type of media (e.g., "image", "video", etc.)
+	MediaURL  string `json:"media_url,omitempty"`  // URL of the media (if applicable)
 }
 
-type CreateGroupRequest struct {
+/*type CreateGroupRequest struct {
 	Phone string `json:"phone"`
 	Code  string `json:"code"`
+}
+*/
+
+type CreateGroupRequest struct {
+	Subject      string   `json:"subject"` // Assuming 'subject' is the correct field for group name
+	Participants []string `json:"participants"`
 }

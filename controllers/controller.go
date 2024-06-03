@@ -278,8 +278,26 @@ func GetMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	// Set response header
 	w.Header().Set("Content-Type", "application/json")
 
+	// Serialize messages to include both text and media messages
+	var serializedMessages []interface{}
+	for _, msg := range messages {
+		serializedMsg := map[string]interface{}{
+			"sender":  msg.Sender,
+			"type":    msg.Type,
+			"message": msg.Message,
+		}
+
+		// Add additional fields for media messages if present
+		if msg.Type == "media" {
+			serializedMsg["media_type"] = msg.MediaType
+			serializedMsg["media_url"] = msg.MediaURL
+		}
+
+		serializedMessages = append(serializedMessages, serializedMsg)
+	}
+
 	// Encode messages array to JSON and send response
-	if err := json.NewEncoder(w).Encode(messages); err != nil {
+	if err := json.NewEncoder(w).Encode(serializedMessages); err != nil {
 		http.Error(w, "Failed to encode messages", http.StatusInternalServerError)
 		return
 	}
@@ -309,4 +327,60 @@ func GetMessagesByIdHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to encode messages", http.StatusInternalServerError)
 		return
 	}
+}
+
+// CreateGroupHandler handles the creation of a new WhatsApp group
+
+func CreateGroupHandler(w http.ResponseWriter, r *http.Request) {
+	var req model.CreateGroupRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Printf("Error decoding request: %v", err)
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	// Validate required fields
+	if req.Subject == "" {
+		http.Error(w, "Group name is required", http.StatusBadRequest)
+		return
+	}
+
+	if len(req.Participants) == 0 {
+		http.Error(w, "At least one participant is required", http.StatusBadRequest)
+		return
+	}
+
+	// Convert participant phone numbers to JID
+	participants := make([]types.JID, len(req.Participants))
+	for i, phone := range req.Participants {
+		participantJID, err := types.ParseJID(phone + "@s.whatsapp.net")
+		if err != nil {
+			log.Printf("Error parsing JID for phone %s: %v", phone, err)
+			http.Error(w, fmt.Sprintf("Invalid phone number: %s", phone), http.StatusBadRequest)
+			return
+		}
+		participants[i] = participantJID
+	}
+
+	// Hypothetical field for group creation; replace with actual field names from the library
+	reqCreateGroup := whatsmeow.ReqCreateGroup{
+		// Try possible field names; here we assume 'Name' and 'Participants'
+		Name:         req.Subject, // Hypothetical field
+		Participants: participants,
+	}
+
+	groupResponse, err := client.CreateGroup(reqCreateGroup)
+	if err != nil {
+		log.Printf("Error creating group: %v", err)
+		http.Error(w, fmt.Sprintf("Failed to create group: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("Group created successfully: %v", groupResponse)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message":   "Group created successfully",
+		"groupInfo": groupResponse,
+	})
 }
