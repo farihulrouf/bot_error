@@ -3,7 +3,7 @@
 package model
 
 // SendMessageGroupRequest defines the structure of the request to send a message to a group
-type SendMessageGroupRequest struct {
+type SendMessageDataRequest struct {
 	To      string `json:"to"`
 	Type    string `json:"type"`
 	Text    string `json:"text"`

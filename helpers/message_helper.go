@@ -3,6 +3,7 @@ package helpers
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"go.mau.fi/whatsmeow"
 	waProto "go.mau.fi/whatsmeow/binary/proto"
@@ -33,7 +34,7 @@ func SendMessageToPhoneNumber(client *whatsmeow.Client, recipient, message strin
 	return nil
 }
 
-func SendMessage(client *whatsmeow.Client, jid types.JID, req model.SendMessageGroupRequest) error {
+func SendMessage(client *whatsmeow.Client, jid types.JID, req model.SendMessageDataRequest) error {
 	// Create the message based on the type
 	var msg *waProto.Message
 	switch req.Type {
@@ -54,4 +55,23 @@ func SendMessage(client *whatsmeow.Client, jid types.JID, req model.SendMessageG
 
 	fmt.Printf("Sending message '%s' to %s from %s\n", req.Text, jid.String(), req.From)
 	return nil
+}
+
+func ConvertToJID(to string) (types.JID, error) {
+	var jid types.JID
+	var err error
+
+	if strings.Contains(to, "-") {
+		// Assuming it's a Group ID
+		jid, err = types.ParseJID(to + "@g.us")
+	} else {
+		// Assuming it's a phone number
+		jid, err = types.ParseJID(to + "@s.whatsapp.net")
+	}
+
+	if err != nil {
+		return types.JID{}, fmt.Errorf("invalid JID: %v", err)
+	}
+
+	return jid, nil
 }

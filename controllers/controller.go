@@ -90,7 +90,7 @@ func GetGroupsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func SendMessageGroupHandler(w http.ResponseWriter, r *http.Request) {
-	var req model.SendMessageGroupRequest
+	var req model.SendMessageDataRequest
 
 	// Decode the JSON request
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -105,7 +105,7 @@ func SendMessageGroupHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Convert to JID
-	jid, err := convertToJID(req.To)
+	jid, err := helpers.ConvertToJID(req.To)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Invalid recipient: %v", err), http.StatusBadRequest)
 		return
@@ -198,7 +198,7 @@ func LeaveGroupHandler(w http.ResponseWriter, r *http.Request) {
 
 func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	// Parse request body to get the message data
-	var requestData model.SendMessageGroupRequest
+	var requestData model.SendMessageDataRequest
 	err := json.NewDecoder(r.Body).Decode(&requestData)
 	if err != nil {
 		http.Error(w, "Failed to parse request body", http.StatusBadRequest)
@@ -232,7 +232,7 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 
 func SendMessageBulkHandler(w http.ResponseWriter, r *http.Request) {
 	// Parse request body to get the message data
-	var requestData []model.SendMessageGroupRequest
+	var requestData []model.SendMessageDataRequest
 	err := json.NewDecoder(r.Body).Decode(&requestData)
 	if err != nil {
 		http.Error(w, "Failed to parse request body", http.StatusBadRequest)
