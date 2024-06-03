@@ -18,6 +18,7 @@ func SetupRouter(client *whatsmeow.Client) *mux.Router {
 	r.HandleFunc("/api/messages/bulk", controllers.SendMessageBulkHandler).Methods("POST")
 
 	r.HandleFunc("/api/results", controllers.GetMessagesHandler).Methods("GET")
+	r.HandleFunc("/api/results/{id}", controllers.GetMessagesByIdHandler).Methods("GET")
 
 	//SendMessageGroupHandler
 	//r.HandleFunc("/api/result", controllers.GetMessages).Methods("GET")

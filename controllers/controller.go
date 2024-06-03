@@ -343,3 +343,29 @@ func GetMessagesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+func GetMessagesByIdHandler(w http.ResponseWriter, r *http.Request) {
+	mu.Lock()
+	defer mu.Unlock()
+
+	// Extract id from the request URL path
+	parts := strings.Split(r.URL.Path, "/")
+	id := parts[len(parts)-1]
+
+	// Filter messages by phone number
+	var filteredMessages []model.Message
+	for _, msg := range messages {
+		if msg.Sender == id {
+			filteredMessages = append(filteredMessages, msg)
+		}
+	}
+
+	// Set response header
+	w.Header().Set("Content-Type", "application/json")
+
+	// Encode filtered messages array to JSON and send response
+	if err := json.NewEncoder(w).Encode(filteredMessages); err != nil {
+		http.Error(w, "Failed to encode messages", http.StatusInternalServerError)
+		return
+	}
+}
