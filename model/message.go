@@ -39,3 +39,8 @@ type CreateGroupRequest struct {
 	Subject      string   `json:"subject"` // Assuming 'subject' is the correct field for group name
 	Participants []string `json:"participants"`
 }
+
+// LogoutRequest represents the payload for the /api/logout request
+type LogoutRequest struct {
+	PhoneNumber string `json:"phone_number" binding:"required"`
+}

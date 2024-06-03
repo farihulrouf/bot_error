@@ -384,3 +384,21 @@ func CreateGroupHandler(w http.ResponseWriter, r *http.Request) {
 		"groupInfo": groupResponse,
 	})
 }
+
+func LogoutHandler(w http.ResponseWriter, r *http.Request) {
+	var req model.LogoutRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	// Call the Logout method
+	if err := client.Logout(); err != nil {
+		http.Error(w, "Failed to log out user", http.StatusInternalServerError)
+		return
+	}
+
+	// Respond with success
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"status": "success"})
+}

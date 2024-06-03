@@ -21,6 +21,8 @@ func SetupRouter(client *whatsmeow.Client) *mux.Router {
 	r.HandleFunc("/api/results", controllers.GetMessagesHandler).Methods("GET")
 	r.HandleFunc("/api/results/{id}", controllers.GetMessagesByIdHandler).Methods("GET")
 
+	r.HandleFunc("/api/logout", controllers.LogoutHandler).Methods("POST") // Add the logout route
+
 	// Add more routes here if needed
 	return r
 }
