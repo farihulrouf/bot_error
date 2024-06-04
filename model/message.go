@@ -11,6 +11,13 @@ type SendMessageDataRequest struct {
 	URL     string `json:"url"`
 	From    string `json:"from"`
 }
+type SendMessageResponse struct {
+	ID     string `json:"id"`
+	From   string `json:"from"`
+	To     string `json:"to"`
+	Time   int64  `json:"time"`
+	Status string `json:"status"`
+}
 
 type JoinGroupRequest struct {
 	InviteLink string `json:"invite_link"`

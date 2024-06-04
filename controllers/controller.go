@@ -8,7 +8,9 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
+	"github.com/google/uuid"
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
@@ -219,17 +221,24 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Return success response
-	response := map[string]string{"status": "Message sent successfully"}
+	response := model.SendMessageResponse{
+		ID:     uuid.New().String(),
+		From:   requestData.From,
+		To:     requestData.To,
+		Time:   time.Now().UnixMilli(),
+		Status: "delivered",
+	}
+
 	jsonResponse, err := json.Marshal(response)
 	if err != nil {
 		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
 		return
 	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(jsonResponse)
 }
-
 func SendMessageBulkHandler(w http.ResponseWriter, r *http.Request) {
 	// Parse request body to get the message data
 	var requestData []model.SendMessageDataRequest

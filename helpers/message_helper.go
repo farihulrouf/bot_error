@@ -33,7 +33,6 @@ func SendMessageToPhoneNumber(client *whatsmeow.Client, recipient, message strin
 	fmt.Printf("Sending message '%s' to phone number: %s\n", message, recipient)
 	return nil
 }
-
 func SendMessage(client *whatsmeow.Client, jid types.JID, req model.SendMessageDataRequest) error {
 	// Create the message based on the type
 	var msg *waProto.Message
