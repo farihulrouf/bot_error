@@ -447,3 +447,41 @@ func ScanQRHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 }
+
+func PingHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "Service is available")
+}
+
+func RetrieveMessagesHandler(w http.ResponseWriter, r *http.Request) {
+	identifier := r.URL.Query().Get("identifier")
+	if identifier == "" {
+		http.Error(w, "Missing identifier", http.StatusBadRequest)
+		return
+	}
+
+	messages, err := helpers.GetAllMessagesByPhoneNumberOrGroupID(client, identifier)
+	if err != nil {
+		http.Error(w, "Failed to get messages", http.StatusInternalServerError)
+		return
+	}
+
+	response := model.GetMessagesResponse{Data: messages}
+	jsonResponse, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(jsonResponse)
+}
+
+func VersionHandler(w http.ResponseWriter, r *http.Request) {
+	version := "1.0.0" // Ganti dengan versi sistem yang sesuai
+	response := model.VersionResponse{Version: version}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}

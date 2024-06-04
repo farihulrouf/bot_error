@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"go.mau.fi/whatsmeow"
 	waProto "go.mau.fi/whatsmeow/binary/proto"
@@ -73,4 +74,32 @@ func ConvertToJID(to string) (types.JID, error) {
 	}
 
 	return jid, nil
+}
+
+// GetAllMessagesByPhoneNumberOrGroupID gets all messages by phone number or group ID
+func GetAllMessagesByPhoneNumberOrGroupID(client *whatsmeow.Client, identifier string) ([]model.MessageData, error) {
+	// Simulate fetching messages
+	// Replace this with actual logic to get messages from WhatsApp
+	messages := []model.MessageData{
+		{
+			ID:        "1609773514305",
+			Time:      time.Now().UnixMilli(),
+			FromMe:    true,
+			Type:      "text",
+			Status:    "delivered",
+			ChatType:  "user",
+			ReplyID:   "1609773514305",
+			Chat:      identifier,
+			To:        "6281234567890",
+			Name:      "string",
+			From:      identifier,
+			Text:      "Test from MaxChat",
+			Caption:   "Caption test",
+			URL:       "https://www.fnordware.com/superpng/pnggrad16rgb.png",
+			MimeType:  "string",
+			Thumbnail: "string",
+		},
+	}
+
+	return messages, nil
 }

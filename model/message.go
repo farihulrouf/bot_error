@@ -51,3 +51,30 @@ type CreateGroupRequest struct {
 type LogoutRequest struct {
 	PhoneNumber string `json:"phone_number" binding:"required"`
 }
+
+type MessageData struct {
+	ID        string `json:"id"`
+	Time      int64  `json:"time"`
+	FromMe    bool   `json:"fromMe"`
+	Type      string `json:"type"`
+	Status    string `json:"status"`
+	ChatType  string `json:"chatType"`
+	ReplyID   string `json:"replyId"`
+	Chat      string `json:"chat"`
+	To        string `json:"to"`
+	Name      string `json:"name"`
+	From      string `json:"from"`
+	Text      string `json:"text"`
+	Caption   string `json:"caption"`
+	URL       string `json:"url"`
+	MimeType  string `json:"mimetype"`
+	Thumbnail string `json:"thumbnail"`
+}
+
+type GetMessagesResponse struct {
+	Data []MessageData `json:"data"`
+}
+
+type VersionResponse struct {
+	Version string `json:"version"`
+}
