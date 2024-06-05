@@ -543,6 +543,160 @@ func GetInfoHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonResponse)
 }
 
+func GetDevicesHandler(w http.ResponseWriter, r *http.Request) {
+	// Get self JID from the device store
+	deviceStore := client.Store.ID
+	if deviceStore == nil {
+		http.Error(w, "Client not logged in", http.StatusInternalServerError)
+		return
+	}
+
+	// Convert the deviceStore ID to a proper JID
+	selfJID := types.NewJID(deviceStore.User, types.DefaultUserServer)
+
+	// Get user devices for the logged-in JID
+	deviceJIDs, err := client.GetUserDevices([]types.JID{selfJID})
+	if err != nil {
+		log.Printf("Error getting user devices: %v", err)
+		http.Error(w, "Failed to get user devices", http.StatusInternalServerError)
+		return
+	}
+
+	// Prepare the response
+	responseData := make([]map[string]interface{}, 0)
+	for _, deviceJID := range deviceJIDs {
+		// Fetch user info for each device
+		userInfoMap, err := client.GetUserInfo([]types.JID{deviceJID})
+		if err != nil {
+			log.Printf("Error getting user info: %v", err)
+			// Include the device in the response with limited information
+			deviceData := map[string]interface{}{
+				"id":      deviceJID.String(),
+				"phone":   deviceJID.User,
+				"status":  "unknown",
+				"process": "string", // Replace with actual process if available
+				"busy":    false,    // Replace with actual busy status if available
+				"qrcode":  "",       // Replace with actual QR code if available
+			}
+			responseData = append(responseData, deviceData)
+			continue // Continue to the next device
+		}
+
+		userInfo := userInfoMap[deviceJID]
+		/*if !exists {
+			http.Error(w, "User info not found for device", http.StatusNotFound)
+			return
+		}*/
+
+		// Print userInfo for debugging
+		fmt.Println("User Info:", userInfo)
+
+		deviceData := map[string]interface{}{
+			"id":      deviceJID.String(),
+			"phone":   deviceJID.User,
+			"status":  userInfo.Status,
+			"process": "string", // Replace with actual process if available
+			"busy":    false,    // Replace with actual busy status if available
+			"qrcode":  "",       // Replace with actual QR code if available
+		}
+
+		responseData = append(responseData, deviceData)
+	}
+
+	response := map[string]interface{}{
+		"data": responseData,
+	}
+
+	// Marshal the response into JSON and send it
+	jsonResponse, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(jsonResponse)
+}
+
+/*
+func GetDevicesHandler(w http.ResponseWriter, r *http.Request) {
+	// Get self JID from the device store
+	deviceStore := client.Store.ID
+	if deviceStore == nil {
+		http.Error(w, "Client not logged in", http.StatusInternalServerError)
+		return
+	}
+
+	// Convert the deviceStore ID to a proper JID
+	selfJID := types.NewJID(deviceStore.User, types.DefaultUserServer)
+
+	// Get user devices for the logged-in JID
+	deviceJIDs, err := client.GetUserDevices([]types.JID{selfJID})
+	if err != nil {
+		log.Printf("Error getting user devices: %v", err)
+		http.Error(w, "Failed to get user devices", http.StatusInternalServerError)
+		return
+	}
+
+	// Prepare the response
+	responseData := make([]map[string]interface{}, 0)
+	for _, deviceJID := range deviceJIDs {
+		// Fetch user info for each device
+		userInfoMap, err := client.GetUserInfo([]types.JID{deviceJID})
+		if err != nil {
+			log.Printf("Error getting user info: %v", err)
+			// Include the device in the response with limited information
+			deviceData := map[string]interface{}{
+				"id":      deviceJID.String(),
+				"phone":   deviceJID.User,
+				"status":  "unknown",
+				"process": "string", // Replace with actual process if available
+				"busy":    false,    // Replace with actual busy status if available
+				"qrcode":  "",       // Replace with actual QR code if available
+			}
+			responseData = append(responseData, deviceData)
+			continue // Continue to the next device
+		}
+
+		userInfo, exists := userInfoMap[deviceJID]
+		if !exists {
+			http.Error(w, "User info not found for device", http.StatusNotFound)
+			return
+		}
+
+		fmt.Println("check userInfo", userInfo)
+
+		deviceData := map[string]interface{}{
+			"id":    deviceJID.String(),
+			"phone": deviceJID.User,
+			//"name":    userInfo.Long, // Use Long name instead of Short
+			"status":  userInfo.Status,
+			"process": "string", // Replace with actual process if available
+			"busy":    false,    // Replace with actual busy status if available
+			"qrcode":  "",       // Replace with actual QR code if available
+		}
+
+		fmt.Println("cek data", deviceData)
+		responseData = append(responseData, deviceData)
+	}
+
+	response := map[string]interface{}{
+		"data": responseData,
+	}
+
+	// Marshal the response into JSON and send it
+	jsonResponse, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(jsonResponse)
+}
+*/
 /*
 func SetWebhook(w http.ResponseWriter, r *http.Request) {
 	txtid := r.Context().Value("userinfo").(auth.Values).Get("Id")

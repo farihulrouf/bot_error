@@ -42,6 +42,7 @@ func SetupRouter(client *whatsmeow.Client) *mux.Router {
 	//r.HandleFunc("/api/webhook", controllers.SetWebhook).Methods("POST")
 
 	r.HandleFunc("/api/getinfo", controllers.GetInfoHandler).Methods("GET")
+	r.HandleFunc("/api/system/devices", controllers.GetDevicesHandler).Methods("GET")
 
 	// Add more routes here if needed
 	return r
