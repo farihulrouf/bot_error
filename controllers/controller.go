@@ -76,43 +76,77 @@ func ScanQrCode(client *whatsmeow.Client) {
 }
 
 func GetGroupsHandler(w http.ResponseWriter, r *http.Request) {
-	groups, err := client.GetJoinedGroups()
-	if err != nil {
-		http.Error(w, "Failed to get groups", http.StatusInternalServerError)
+	phone := r.URL.Query().Get("phone")
+	if phone == "" {
+		http.Error(w, "Phone number is required", http.StatusBadRequest)
 		return
 	}
 
-	groupList := make([]map[string]interface{}, 0, len(groups))
+	groups, err := client.GetJoinedGroups()
+	if err != nil {
+		http.Error(w, "Failed to fetch joined groups", http.StatusInternalServerError)
+		return
+	}
+
+	var filteredGroups []model.GroupResponse
 	for _, group := range groups {
-		fmt.Printf("Group ID: %s, Name: %s\n", group.JID.String(), group.Name)
-		groupInfo := map[string]interface{}{
-			"JID":  group.JID.String(),
-			"Name": group.Name,
+		for _, member := range group.Participants {
+			fmt.Println("Participatan Group List", member)
+			if member.JID.User == phone {
+				fmt.Println("Member Jid User", member.JID.User)
+				filteredGroups = append(filteredGroups, model.GroupResponse{JID: group.JID.String(), Name: group.Name})
+				break
+			}
 		}
-		groupList = append(groupList, groupInfo)
+	}
+
+	response, err := json.Marshal(filteredGroups)
+	if err != nil {
+		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(groupList)
-}
+	w.WriteHeader(http.StatusOK)
+	w.Write(response)
+	/*groups, err := client.GetJoinedGroups()
+		if err != nil {
+			http.Error(w, "Failed to get groups", http.StatusInternalServerError)
+			return
+		}
 
-func convertToJID(to string) (types.JID, error) {
-	var jid types.JID
-	var err error
+		groupList := make([]map[string]interface{}, 0, len(groups))
+		for _, group := range groups {
+			fmt.Printf("Group ID: %s, Name: %s\n", group.JID.String(), group.Name)
+			groupInfo := map[string]interface{}{
+				"JID":  group.JID.String(),
+				"Name": group.Name,
+			}
+			groupList = append(groupList, groupInfo)
+		}
 
-	if strings.Contains(to, "-") {
-		// Assuming it's a Group ID
-		jid, err = types.ParseJID(to + "@g.us")
-	} else {
-		// Assuming it's a phone number
-		jid, err = types.ParseJID(to + "@s.whatsapp.net")
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(groupList)
 	}
 
-	if err != nil {
-		return types.JID{}, fmt.Errorf("invalid JID: %v", err)
-	}
+	func convertToJID(to string) (types.JID, error) {
+		var jid types.JID
+		var err error
 
-	return jid, nil
+		if strings.Contains(to, "-") {
+			// Assuming it's a Group ID
+			jid, err = types.ParseJID(to + "@g.us")
+		} else {
+			// Assuming it's a phone number
+			jid, err = types.ParseJID(to + "@s.whatsapp.net")
+		}
+
+		if err != nil {
+			return types.JID{}, fmt.Errorf("invalid JID: %v", err)
+		}
+
+		return jid, nil
+	*/
 }
 
 func JoinGroupHandler(w http.ResponseWriter, r *http.Request) {

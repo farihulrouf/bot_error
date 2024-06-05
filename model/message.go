@@ -89,3 +89,8 @@ type WebhookRequest struct {
 type WebhookResponse struct {
 	Message string `json:"message"`
 }
+
+type GroupResponse struct {
+	JID  string `json:"jid"`
+	Name string `json:"name"`
+}

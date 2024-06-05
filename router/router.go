@@ -15,7 +15,7 @@ func SetupRouter(client *whatsmeow.Client) *mux.Router {
 	r.HandleFunc("/api/login", controllers.LoginHandler).Methods("POST")
 
 	r.HandleFunc("/api/scanqr", controllers.ScanQRHandler).Methods("GET")
-	//r.HandleFunc("/api/groups", controllers.GetGroupsHandler).Methods("GET")
+	r.HandleFunc("/api/groups", controllers.GetGroupsHandler).Methods("GET")
 
 	//r.HandleFunc("/api/groups", controllers.CreateGroupHandler).Methods("POST") // New route for creating a group
 	r.HandleFunc("/api/groups", controllers.JoinGroupHandler).Methods("POST")
