@@ -9,6 +9,11 @@ import (
 func SetupRouter(client *whatsmeow.Client) *mux.Router {
 	r := mux.NewRouter()
 	controllers.SetClient(client)
+
+	// Menetapkan penanganan rute untuk endpoint registrasi dan login
+	r.HandleFunc("/api/register", controllers.RegisterHandler).Methods("POST")
+	r.HandleFunc("/api/login", controllers.LoginHandler).Methods("POST")
+
 	r.HandleFunc("/api/scanqr", controllers.ScanQRHandler).Methods("GET")
 	r.HandleFunc("/api/groups", controllers.GetGroupsHandler).Methods("GET")
 	r.HandleFunc("/api/groups", controllers.CreateGroupHandler).Methods("POST") // New route for creating a group
