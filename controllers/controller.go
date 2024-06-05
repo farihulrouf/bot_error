@@ -95,39 +95,6 @@ func GetGroupsHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(groupList)
 }
 
-func SendMessageGroupHandler(w http.ResponseWriter, r *http.Request) {
-	var req model.SendMessageDataRequest
-
-	// Decode the JSON request
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
-	}
-
-	// Validate the request data
-	if req.Type == "" || req.Text == "" {
-		http.Error(w, "Missing required fields: 'type' and 'text'", http.StatusBadRequest)
-		return
-	}
-
-	// Convert to JID
-	jid, err := helpers.ConvertToJID(req.To)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Invalid recipient: %v", err), http.StatusBadRequest)
-		return
-	}
-
-	// Send the message
-	if err := helpers.SendMessage(client, jid, req); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Respond with success
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Message sent to: %s", req.To)
-}
-
 func convertToJID(to string) (types.JID, error) {
 	var jid types.JID
 	var err error
@@ -210,6 +177,39 @@ func LeaveGroupHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"message": "Left group successfully"})
 }
 
+func SendMessageGroupHandler(w http.ResponseWriter, r *http.Request) {
+	var req model.SendMessageDataRequest
+
+	// Decode the JSON request
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	// Validate the request data
+	if req.Type == "" || req.Text == "" {
+		http.Error(w, "Missing required fields: 'type' and 'text'", http.StatusBadRequest)
+		return
+	}
+
+	// Convert to JID
+	jid, err := helpers.ConvertToJID(req.To)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Invalid recipient: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	// Send the message
+	if err := helpers.SendMessage(client, jid, req); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Respond with success
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "Message sent to: %s", req.To)
+}
+
 func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	// Parse request body to get the message data
 	var requestData model.SendMessageDataRequest
@@ -218,6 +218,23 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to parse request body", http.StatusBadRequest)
 		return
 	}
+
+	// Check if any required field is missing
+	if requestData.To == "" || requestData.Type == "" || requestData.Text == "" || requestData.From == "" {
+		http.Error(w, "Missing required fields: 'to', 'type', 'text', or 'from'", http.StatusBadRequest)
+		return
+	}
+	//phoneNUmberTo := "+" + requestData.to
+	if !helpers.IsValidPhoneNumber(requestData.To) {
+		http.Error(w, "Invalid phone number to", http.StatusBadRequest)
+		return
+	}
+	if !helpers.IsValidPhoneNumber(requestData.From) {
+		http.Error(w, "Invalid phone number sender", http.StatusBadRequest)
+		return
+	}
+	//fmt.Println("ceck", helpers.IsValidPhoneNumber(requestData.From))
+	// Check if either 'from' or 'to' number is invalid
 
 	// Send the message based on the recipient type
 	if requestData.Type == "text" {
@@ -251,6 +268,7 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write(jsonResponse)
 }
+
 func SendMessageBulkHandler(w http.ResponseWriter, r *http.Request) {
 	// Parse request body to get the message data
 	var requestData []model.SendMessageDataRequest
@@ -263,6 +281,25 @@ func SendMessageBulkHandler(w http.ResponseWriter, r *http.Request) {
 	// Send the messages to each recipient
 	var successCount int
 	for _, message := range requestData {
+		// Check if any required fields are missing
+		if message.Type == "" || message.Text == "" || message.From == "" || message.To == "" {
+			fmt.Printf("Missing required fields for recipient %s\n", message.To)
+			continue // Skip sending the message for this recipient
+		}
+
+		// Validate 'from' number
+		if !helpers.IsValidPhoneNumber(message.From) {
+			fmt.Printf("Invalid 'from' number for recipient %s: %s\n", message.To, message.From)
+			continue // Skip sending the message for this recipient
+		}
+
+		// Validate 'to' number
+		if !helpers.IsValidPhoneNumber(message.To) {
+			fmt.Printf("Invalid 'to' number for recipient %s: %s\n", message.To, message.To)
+			continue // Skip sending the message for this recipient
+		}
+
+		// Send the message if all checks pass
 		if message.Type == "text" {
 			err = helpers.SendMessageToPhoneNumber(client, message.To, message.Text)
 			if err != nil {
@@ -575,7 +612,7 @@ func GetDevicesHandler(w http.ResponseWriter, r *http.Request) {
 				"phone":   deviceJID.User,
 				"status":  "unknown",
 				"process": "string", // Replace with actual process if available
-				"busy":    false,    // Replace with actual busy status if available
+				"busy":    true,     // Replace with actual busy status if available
 				"qrcode":  "",       // Replace with actual QR code if available
 			}
 			responseData = append(responseData, deviceData)

@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/nyaruka/phonenumbers"
 	"github.com/rs/zerolog/log"
 	"go.mau.fi/whatsmeow"
 	waProto "go.mau.fi/whatsmeow/binary/proto"
@@ -103,6 +104,17 @@ func GetAllMessagesByPhoneNumberOrGroupID(client *whatsmeow.Client, identifier s
 	}
 
 	return messages, nil
+}
+
+func IsValidPhoneNumber(phoneNumber string) bool {
+	// Parse the phone number using "ZZ" as the default region (which allows parsing international numbers)
+	num, err := phonenumbers.Parse(phoneNumber, "ID")
+	if err != nil {
+		fmt.Println("Error parsing phone number:", err)
+		return false
+	}
+	// Check if the phone number is valid
+	return phonenumbers.IsValidNumber(num)
 }
 
 func UpdateUserInfo(values map[string]string, field string, value string) map[string]string {
