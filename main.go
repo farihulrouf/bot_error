@@ -51,8 +51,11 @@ func main() {
 	}
 	clientLog := waLog.Stdout("Client", "DEBUG", true)
 	client = whatsmeow.NewClient(deviceStore, clientLog)
+	client.AddEventHandler(controllers.EventHandler)
 	controllers.SetClient(client)
 	controllers.ScanQrCode(client)
+	//controllers.EventHandler() // Call EventHandler here
+	//controllers.EventHandler()
 
 	// Setup router with client
 	r := router.SetupRouter(client)

@@ -336,14 +336,6 @@ func GetMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	// Set response header
 	w.Header().Set("Content-Type", "application/json")
 
-	// Serialize messages to include both text and media messages
-
-	//strings.Split(email, "@")
-
-	//email := "6282333899903@s.whatsapp.net"
-	// parts := strings.Split(email, "@")
-	//username := parts[0]
-
 	var serializedMessages []interface{}
 	for _, msg := range messages {
 		//sender := msg.Sender
