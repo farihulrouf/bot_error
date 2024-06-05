@@ -25,8 +25,9 @@ func SetClient(c *whatsmeow.Client) {
 }
 
 var (
-	messages []model.Message
-	mu       sync.Mutex
+	messages   []model.Message
+	mu         sync.Mutex
+	webhookURL string
 )
 
 func sendToAPI(sender string, message string) {
@@ -646,6 +647,29 @@ func GetDevicesHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(jsonResponse)
+}
+
+// SetWebhookHandler sets the webhook URL
+func SetWebhookHandler(w http.ResponseWriter, r *http.Request) {
+	// Lock webhookURL to ensure thread safety
+	mu.Lock()
+	defer mu.Unlock()
+
+	// Parse request body
+	var reqBody model.WebhookRequest
+	err := json.NewDecoder(r.Body).Decode(&reqBody)
+	if err != nil {
+		http.Error(w, "Failed to parse request body", http.StatusBadRequest)
+		return
+	}
+
+	// Set webhook URL
+	webhookURL = reqBody.URL
+
+	// Respond with success message
+	resp := model.WebhookResponse{Message: fmt.Sprintf("Webhook set to: %s", webhookURL)}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
 }
 
 /*

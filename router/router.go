@@ -39,7 +39,9 @@ func SetupRouter(client *whatsmeow.Client) *mux.Router {
 
 	r.HandleFunc("/api/system/ver", controllers.VersionHandler).Methods("GET") // Add the logout route
 
-	//r.HandleFunc("/api/webhook", controllers.SetWebhook).Methods("POST")
+	r.HandleFunc("/api/system/webhook", controllers.SetWebhookHandler).Methods("POST")
+
+	//router.POST("/api/system/webhook", SetWebhookHandler)
 
 	r.HandleFunc("/api/getinfo", controllers.GetInfoHandler).Methods("GET")
 	r.HandleFunc("/api/system/devices", controllers.GetDevicesHandler).Methods("GET")

@@ -80,6 +80,12 @@ type VersionResponse struct {
 	Version string `json:"version"`
 }
 
-type WebhookStruct struct {
-	WebhookURL string
+// WebhookRequest adalah struktur data untuk permintaan webhook
+type WebhookRequest struct {
+	URL string `json:"url"`
+}
+
+// WebhookResponse adalah struktur data untuk respons webhook
+type WebhookResponse struct {
+	Message string `json:"message"`
 }
