@@ -15,10 +15,13 @@ func SetupRouter(client *whatsmeow.Client) *mux.Router {
 	r.HandleFunc("/api/login", controllers.LoginHandler).Methods("POST")
 
 	r.HandleFunc("/api/scanqr", controllers.ScanQRHandler).Methods("GET")
-	r.HandleFunc("/api/groups", controllers.GetGroupsHandler).Methods("GET")
-	r.HandleFunc("/api/groups", controllers.CreateGroupHandler).Methods("POST") // New route for creating a group
+	//r.HandleFunc("/api/groups", controllers.GetGroupsHandler).Methods("GET")
+
+	//r.HandleFunc("/api/groups", controllers.CreateGroupHandler).Methods("POST") // New route for creating a group
+	r.HandleFunc("/api/groups", controllers.JoinGroupHandler).Methods("POST")
+
 	r.HandleFunc("/api/groups/messages", controllers.SendMessageGroupHandler).Methods("POST")
-	r.HandleFunc("/api/groups/join", controllers.JoinGroupHandler).Methods("POST")
+
 	r.HandleFunc("/api/groups/leave", controllers.LeaveGroupHandler).Methods("POST")
 
 	r.HandleFunc("/api/messages", controllers.SendMessageHandler).Methods("POST")
@@ -35,6 +38,8 @@ func SetupRouter(client *whatsmeow.Client) *mux.Router {
 	r.HandleFunc("/api/ping", controllers.PingHandler).Methods("GET") // Add the logout route
 
 	r.HandleFunc("/api/system/ver", controllers.VersionHandler).Methods("GET") // Add the logout route
+
+	//r.HandleFunc("/api/webhook", controllers.SetWebhook).Methods("POST")
 
 	// Add more routes here if needed
 	return r

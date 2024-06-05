@@ -44,6 +44,10 @@ func EventHandler(evt interface{}) {
 	}
 }
 
+type GroupCollection struct {
+	Groups []types.GroupInfo
+}
+
 func ScanQrCode(client *whatsmeow.Client) {
 	if client.Store.ID == nil {
 		qrChannel, _ := client.GetQRChannel(context.Background())
@@ -151,13 +155,21 @@ func JoinGroupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	groupJID, err := client.JoinGroupWithLink(req.InviteLink)
+	// Ensure all required fields are present
+	if req.Code == "" || req.Phone == "" {
+		http.Error(w, "code and phone are required fields", http.StatusBadRequest)
+		return
+	}
+
+	// Attempt to join the group with the provided invite link (code)
+	groupJID, err := client.JoinGroupWithLink(req.Code)
 	if err != nil {
 		log.Printf("Error joining group: %v", err)
 		http.Error(w, "Failed to join group", http.StatusInternalServerError)
 		return
 	}
 
+	// Log success and respond with a success message
 	log.Printf("Group joined successfully: %v", groupJID)
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{"message": "Group joined successfully"})
@@ -485,3 +497,45 @@ func VersionHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
+
+/*
+func SetWebhook(w http.ResponseWriter, r *http.Request) {
+	txtid := r.Context().Value("userinfo").(auth.Values).Get("Id")
+	token := r.Context().Value("userinfo").(auth.Values).Get("Token")
+	userid, _ := strconv.Atoi(txtid)
+
+	decoder := json.NewDecoder(r.Body)
+	var t model.WebhookStruct
+	err := decoder.Decode(&t)
+	if err != nil {
+		Respond(w, r, http.StatusInternalServerError, errors.New(fmt.Sprintf("Could not set webhook: %v", err)))
+		return
+	}
+	var webhook = t.WebhookURL
+
+	_, err = s.db.Exec("UPDATE users SET webhook=? WHERE id=?", webhook, userid)
+	if err != nil {
+		Respond(w, r, http.StatusInternalServerError, errors.New(fmt.Sprintf("%s", err)))
+		return
+	}
+
+	v := helpers.UpdateUserInfo(r.Context().Value("userinfo"), "Webhook", webhook)
+	userinfocache.Set(token, v, cache.NoExpiration)
+
+	response := map[string]interface{}{"webhook": webhook}
+	responseJson, err := json.Marshal(response)
+	if err != nil {
+		Respond(w, r, http.StatusInternalServerError, err)
+	} else {
+		Respond(w, r, http.StatusOK, string(responseJson))
+	}
+	return
+}
+
+func Respond(w http.ResponseWriter, r *http.Request, status int, data interface{}) {
+	w.WriteHeader(status)
+	if data != nil {
+		json.NewEncoder(w).Encode(data)
+	}
+}
+*/

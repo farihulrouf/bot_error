@@ -20,7 +20,8 @@ type SendMessageResponse struct {
 }
 
 type JoinGroupRequest struct {
-	InviteLink string `json:"invite_link"`
+	Phone string `json:"phone"`
+	Code  string `json:"code"`
 }
 
 type LeaveGroupRequest struct {
@@ -77,4 +78,8 @@ type GetMessagesResponse struct {
 
 type VersionResponse struct {
 	Version string `json:"version"`
+}
+
+type WebhookStruct struct {
+	WebhookURL string
 }

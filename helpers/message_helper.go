@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rs/zerolog/log"
 	"go.mau.fi/whatsmeow"
 	waProto "go.mau.fi/whatsmeow/binary/proto"
 	"go.mau.fi/whatsmeow/types"
@@ -102,4 +103,10 @@ func GetAllMessagesByPhoneNumberOrGroupID(client *whatsmeow.Client, identifier s
 	}
 
 	return messages, nil
+}
+
+func UpdateUserInfo(values map[string]string, field string, value string) map[string]string {
+	log.Debug().Str("field", field).Str("value", value).Msg("User info updated")
+	values[field] = value
+	return values
 }
