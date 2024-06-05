@@ -498,6 +498,51 @@ func VersionHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+func GetInfoHandler(w http.ResponseWriter, r *http.Request) {
+	// Get self JID from the device store
+	deviceStore := client.Store.ID
+	if deviceStore == nil {
+		http.Error(w, "Client not logged in", http.StatusInternalServerError)
+		return
+	}
+
+	// Convert the deviceStore ID to a proper JID
+	selfJID := types.NewJID(deviceStore.User, types.DefaultUserServer)
+
+	// Get user info for the logged-in JID
+	userInfoMap, err := client.GetUserInfo([]types.JID{selfJID})
+	if err != nil {
+		log.Printf("Error getting user info: %v", err)
+		http.Error(w, "Failed to get user info", http.StatusInternalServerError)
+		return
+	}
+
+	// Ensure the user info is found
+	userInfo, exists := userInfoMap[selfJID]
+	if !exists {
+		http.Error(w, "User info not found", http.StatusNotFound)
+		return
+	}
+
+	// Prepare the response
+	response := map[string]interface{}{
+		"device_logged_in": true,
+		"self_jid":         selfJID.String(),
+		"user_info":        userInfo,
+	}
+
+	// Marshal the response into JSON and send it
+	jsonResponse, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(jsonResponse)
+}
+
 /*
 func SetWebhook(w http.ResponseWriter, r *http.Request) {
 	txtid := r.Context().Value("userinfo").(auth.Values).Get("Id")
