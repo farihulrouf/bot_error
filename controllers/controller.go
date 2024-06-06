@@ -245,8 +245,13 @@ func SendMessageGroupHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Message sent to: %s", req.To)
 }
 
+// SendMessageHandler handles sending messages.
+
 func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	// Parse request body to get the message data
+	//var isAdmin bool
+	adminGroupJIDs := make([]string, 0)
+
 	var requestData model.SendMessageDataRequest
 	err := json.NewDecoder(r.Body).Decode(&requestData)
 	if err != nil {
@@ -259,7 +264,8 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Missing required fields: 'to', 'type', 'text', or 'from'", http.StatusBadRequest)
 		return
 	}
-	//phoneNUmberTo := "+" + requestData.to
+
+	// Validate phone numbers
 	if !helpers.IsValidPhoneNumber(requestData.To) {
 		http.Error(w, "Invalid phone number to", http.StatusBadRequest)
 		return
@@ -268,19 +274,59 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid phone number sender", http.StatusBadRequest)
 		return
 	}
-	//fmt.Println("ceck", helpers.IsValidPhoneNumber(requestData.From))
-	// Check if either 'from' or 'to' number is invalid
+	// Simpan daftar JID grup yang merupakan admin
 
-	// Send the message based on the recipient type
-	if requestData.Type == "text" {
-		err = helpers.SendMessageToPhoneNumber(client, requestData.To, requestData.Text)
-	} else {
-		http.Error(w, "Invalid message type", http.StatusBadRequest)
+	// Periksa setiap grup untuk memeriksa apakah pengguna adalah admin
+	groups, err := client.GetJoinedGroups()
+	if err != nil {
+		http.Error(w, "Failed to fetch joined groups", http.StatusInternalServerError)
 		return
 	}
 
-	if err != nil {
-		http.Error(w, "Failed to send message", http.StatusInternalServerError)
+	///looping for message to group
+	for _, group := range groups {
+		for _, participant := range group.Participants {
+			if participant.JID.User == requestData.To && participant.IsAdmin {
+				// Jika nomor tersebut adalah admin, tambahkan JID grup ke dalam slice
+				adminGroupJIDs = append(adminGroupJIDs, group.JID.String())
+
+				//fmt.Println("check admin", adminGroupJIDs)
+				// Keluar dari loop inner karena sudah ditentukan bahwa nomor tersebut adalah admin dalam grup ini
+				break
+			}
+		}
+	}
+
+	fmt.Println("nomer jid", adminGroupJIDs)
+	for _, groupJID := range adminGroupJIDs {
+		// Convert the string JID to types.JID
+		//jid := types.JID(groupJID)
+		parts := strings.Split(groupJID, "@")
+
+		// Extract user and server parts
+		user := parts[0]
+		server := parts[1]
+
+		// Convert the user and server parts to types.JID
+		jid := types.NewJID(user, server)
+
+		// Call the SendMessageToGroup function
+		err := helpers.SendMessageToGroup(client, jid, requestData.Text)
+		if err != nil {
+			fmt.Printf("Error sending message to group %s: %v\n", groupJID, err)
+		} else {
+			fmt.Printf("Message sent to group %s successfully\n", groupJID)
+		}
+	}
+
+	if requestData.Type == "text" {
+		err = helpers.SendMessageToPhoneNumber(client, requestData.To, requestData.Text)
+		if err != nil {
+			// Tangani kesalahan jika gagal mengirim pesan
+			fmt.Printf("Error sending message to number", err)
+		}
+	} else {
+		http.Error(w, "Invalid message type", http.StatusBadRequest)
 		return
 	}
 

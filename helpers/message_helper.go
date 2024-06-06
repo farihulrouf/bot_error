@@ -78,6 +78,22 @@ func ConvertToJID(to string) (types.JID, error) {
 	return jid, nil
 }
 
+func SendMessageToGroup(client *whatsmeow.Client, groupJID types.JID, message string) error {
+	// Create the message
+	msg := &waProto.Message{
+		Conversation: proto.String(message),
+	}
+
+	// Send the message to the group
+	_, err := client.SendMessage(context.Background(), groupJID, msg)
+	if err != nil {
+		return fmt.Errorf("error sending message to group %s: %v", groupJID, err)
+	}
+
+	fmt.Printf("Sending message '%s' to group %s\n", message, groupJID.String())
+	return nil
+}
+
 // GetAllMessagesByPhoneNumberOrGroupID gets all messages by phone number or group ID
 func GetAllMessagesByPhoneNumberOrGroupID(client *whatsmeow.Client, identifier string) ([]model.MessageData, error) {
 	// Simulate fetching messages
