@@ -329,8 +329,8 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid message type", http.StatusBadRequest)
 		return
 	}
+	//fmt.Println("check admin xsilver", adminGroupJIDs)
 
-	// Return success response
 	response := model.SendMessageResponse{
 		ID:     uuid.New().String(),
 		From:   requestData.From,
