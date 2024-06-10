@@ -30,11 +30,17 @@ type LeaveGroupRequest struct {
 }
 
 type Message struct {
-	Sender    string `json:"sender"`
-	Message   string `json:"message"`
-	Type      string `json:"type,omitempty"`       // Type of message (e.g., "text" or "media")
-	MediaType string `json:"media_type,omitempty"` // Type of media (e.g., "image", "video", etc.)
-	MediaURL  string `json:"media_url,omitempty"`  // URL of the media (if applicable)
+	ID   string `json:"id"`
+	Chat string `json:"chat"`
+	Time int64  `json:"time"`
+	Text string `json:"text"`
+	/*
+		Sender    string `json:"sender"`
+		Message   string `json:"message"`
+		Type      string `json:"type,omitempty"`       // Type of message (e.g., "text" or "media")
+		MediaType string `json:"media_type,omitempty"` // Type of media (e.g., "image", "video", etc.)
+		MediaURL  string `json:"media_url,omitempty"`  // URL of the media (if applicable)
+	*/
 }
 
 /*type CreateGroupRequest struct {

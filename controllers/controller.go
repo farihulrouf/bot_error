@@ -16,6 +16,7 @@ import (
 	"go.mau.fi/whatsmeow/types/events"
 	"wagobot.com/helpers"
 	"wagobot.com/model"
+	"wagobot.com/response"
 )
 
 var client *whatsmeow.Client
@@ -25,22 +26,45 @@ func SetClient(c *whatsmeow.Client) {
 }
 
 var (
-	messages   []model.Message
+	messages   []response.Message
 	mu         sync.Mutex
 	webhookURL string
 )
 
-func sendToAPI(sender string, message string) {
-	mu.Lock()
-	messages = append(messages, model.Message{Sender: sender, Message: message})
-	mu.Unlock()
-}
+/*
+	func sendToAPI(sender string, message string) {
+		mu.Lock()
+		messages = append(messages, model.Message{Sender: sender, Message: message})
+		mu.Unlock()
+	}
+*/
 func EventHandler(evt interface{}) {
 	switch v := evt.(type) {
 	case *events.Message:
 		if !v.Info.IsFromMe && v.Message.GetConversation() != "" {
-			fmt.Println("PESAN DITERIMA!", v.Message.GetConversation())
-			sendToAPI(v.Info.Sender.String(), v.Message.GetConversation())
+			id := v.Info.ID
+			chat := v.Info.Sender.String()
+			timestamp := time.Now().UnixNano() / int64(time.Millisecond)
+			text := v.Message.GetConversation()
+			//reply := v.Message.ReactionMessage
+			//coba := v.Message.DeviceSentMessage
+			fmt.Printf("ID: %s, Chat: %s, Time: %d, Text: %s\n", id, chat, timestamp, text)
+			//fmt.Println("info repley", reply, coba)
+
+			// Assuming replies are stored within a field named Replies
+
+			mu.Lock()
+			defer mu.Unlock() // Ensure mutex is always unlocked when the function returns
+			messages = append(messages, response.Message{
+				ID:   id,
+				Chat: chat,
+				Time: timestamp,
+				Text: text,
+
+				//Replies: reply,
+				// Add replies to the message if available
+				// Replies: v.Message.Replies,
+			})
 		}
 	}
 }
@@ -276,7 +300,7 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	//Check numerphone is login or not
 	if !helpers.IsLoggedInByNumber(client, requestData.From) {
-		http.Error(w, "Recipient number is not connected to WhatsApp", http.StatusBadRequest)
+		http.Error(w, "Sender number is not connected to WhatsApp", http.StatusBadRequest)
 		return
 	}
 	// Simpan daftar JID grup yang merupakan admin
@@ -416,68 +440,74 @@ func SendMessageBulkHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetMessagesHandler(w http.ResponseWriter, r *http.Request) {
-	// Lock messages to ensure thread safety
+
 	mu.Lock()
 	defer mu.Unlock()
 
-	// Set response header
 	w.Header().Set("Content-Type", "application/json")
-
-	var serializedMessages []interface{}
+	data := make(map[string]map[string]interface{})
 	for _, msg := range messages {
-		//sender := msg.Sender
-		sender := strings.Split(msg.Sender, "@")[0]
-		//sender_phone := sender[0]
-		serializedMsg := map[string]interface{}{
-			"sender":  sender,
-			"type":    msg.Type,
-			"message": msg.Message,
+		timeStr := fmt.Sprintf("%d", msg.Time)
+		// Remove @s.whatsapp.net suffix from msg.Chat
+		chat := strings.TrimSuffix(msg.Chat, "@s.whatsapp.net")
+		messageData := map[string]interface{}{
+			"id":   msg.ID,
+			"chat": chat,
+			"time": msg.Time,
+			"text": msg.Text,
 		}
-
-		// Add additional fields for media messages if present
-		if msg.Type == "media" {
-			serializedMsg["media_type"] = msg.MediaType
-			serializedMsg["media_url"] = msg.MediaURL
-		}
-
-		serializedMessages = append(serializedMessages, serializedMsg)
+		data[timeStr] = messageData
 	}
 
-	// Encode messages array to JSON and send response
-	if err := json.NewEncoder(w).Encode(serializedMessages); err != nil {
+	response := map[string]interface{}{
+		"data": data,
+	}
+
+	// Encode response to JSON and send it
+	if err := json.NewEncoder(w).Encode(response); err != nil {
 		http.Error(w, "Failed to encode messages", http.StatusInternalServerError)
 		return
 	}
+
 }
 
 func GetMessagesByIdHandler(w http.ResponseWriter, r *http.Request) {
-	mu.Lock()
-	defer mu.Unlock()
-
-	// Extract id from the request URL path
 	parts := strings.Split(r.URL.Path, "/")
 	id := parts[len(parts)-1]
-	//fmt.Println("check number phone", id)
-	// Filter messages by phone number
-	var filteredMessages []model.Message
+
+	// Hapus akhiran @s.whatsapp.net dari id jika ada
+	id = strings.TrimSuffix(id, "@s.whatsapp.net")
+
+	data := make(map[string]map[string]interface{})
 	for _, msg := range messages {
-		if msg.Sender == id+"@s.whatsapp.net" {
-			filteredMessages = append(filteredMessages, msg)
+		// Periksa apakah nomor telepon terdapat dalam ID obrolan
+		if strings.Contains(msg.Chat, id) {
+			timeStr := fmt.Sprintf("%d", msg.Time)
+			// Hapus akhiran @s.whatsapp.net dari msg.Chat
+			chat := strings.TrimSuffix(msg.Chat, "@s.whatsapp.net")
+			messageData := map[string]interface{}{
+				"id":   msg.ID,
+				"chat": chat,
+				"time": msg.Time,
+				"text": msg.Text,
+			}
+			data[timeStr] = messageData
 		}
 	}
 
-	// Set response header
-	w.Header().Set("Content-Type", "application/json")
+	response := map[string]interface{}{
+		"data": data,
+	}
 
-	// Encode filtered messages array to JSON and send response
-	if err := json.NewEncoder(w).Encode(filteredMessages); err != nil {
+	// Encode response to JSON and send it
+	if err := json.NewEncoder(w).Encode(response); err != nil {
 		http.Error(w, "Failed to encode messages", http.StatusInternalServerError)
 		return
 	}
+
 }
 
 // CreateGroupHandler handles the creation of a new WhatsApp group
-
 func CreateGroupHandler(w http.ResponseWriter, r *http.Request) {
 	var req model.CreateGroupRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
