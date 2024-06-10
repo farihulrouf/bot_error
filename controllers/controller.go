@@ -250,7 +250,7 @@ func SendMessageGroupHandler(w http.ResponseWriter, r *http.Request) {
 func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	// Parse request body to get the message data
 	//var isAdmin bool
-	adminGroupJIDs := make([]string, 0)
+	//adminGroupJIDs := make([]string, 0)
 
 	var requestData model.SendMessageDataRequest
 	err := json.NewDecoder(r.Body).Decode(&requestData)
@@ -274,9 +274,15 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid phone number sender", http.StatusBadRequest)
 		return
 	}
+	//Check numerphone is login or not
+	if !helpers.IsLoggedInByNumber(client, requestData.From) {
+		http.Error(w, "Recipient number is not connected to WhatsApp", http.StatusBadRequest)
+		return
+	}
 	// Simpan daftar JID grup yang merupakan admin
 
 	// Periksa setiap grup untuk memeriksa apakah pengguna adalah admin
+	/* tidak perlu mengirim pesan ke group hanya private / only private
 	groups, err := client.GetJoinedGroups()
 	if err != nil {
 		http.Error(w, "Failed to fetch joined groups", http.StatusInternalServerError)
@@ -318,7 +324,7 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 			fmt.Printf("Message sent to group %s successfully\n", groupJID)
 		}
 	}
-
+	*/
 	if requestData.Type == "text" {
 		err = helpers.SendMessageToPhoneNumber(client, requestData.To, requestData.Text)
 		if err != nil {
@@ -671,7 +677,7 @@ func GetDevicesHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to get user devices", http.StatusInternalServerError)
 		return
 	}
-
+	fmt.Printf("check device", deviceJIDs)
 	// Prepare the response
 	responseData := make([]map[string]interface{}, 0)
 	for _, deviceJID := range deviceJIDs {

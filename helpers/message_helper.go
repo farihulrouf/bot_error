@@ -138,3 +138,49 @@ func UpdateUserInfo(values map[string]string, field string, value string) map[st
 	values[field] = value
 	return values
 }
+
+func IsLoggedInByNumber(client *whatsmeow.Client, phoneNumber string) bool {
+	// Memeriksa status login berdasarkan nomor telepon menggunakan IsLoggedIn
+	//fmt.Println("check numberphone", phoneNumber)
+	if !client.IsLoggedIn() {
+		return false
+	}
+
+	deviceStore := client.Store.ID
+	if deviceStore == nil {
+		fmt.Println("Device store is nil")
+		return false
+	}
+
+	// Convert the deviceStore ID to a proper JID
+	selfJID := types.NewJID(deviceStore.User, types.DefaultUserServer)
+	userInfoMap, err := client.GetUserInfo([]types.JID{selfJID})
+	if err != nil {
+		log.Printf("Error getting user info: %v", err)
+		return false
+	}
+	userInfo := userInfoMap[selfJID]
+	fmt.Printf("check device : %v\n", userInfo)
+
+	// Dapatkan nomor telepon dari userInfoMap
+	nomorTeleponDitemukan := false
+	for _, userInfo := range userInfoMap {
+
+		for _, device := range userInfo.Devices {
+			if device.User == phoneNumber {
+				fmt.Printf("Nomor Telepon: %s\n", phoneNumber)
+				nomorTeleponDitemukan = true
+				break
+			}
+		}
+
+	}
+
+	if !nomorTeleponDitemukan {
+		fmt.Println("Nomor Telepon tidak ditemukan dalam userInfoMap")
+		return false
+	}
+
+	// Nomor Telepon ditemukan
+	return true
+}
