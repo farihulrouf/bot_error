@@ -13,3 +13,14 @@ type ErrorResponseNumberPhone struct {
 	Error      string `json:"error"`
 	Message    string `json:"message"`
 }
+
+type GroupResponse struct {
+	ID          string   `json:"id"`
+	Type        string   `json:"type"`
+	Description string   `json:"description"`
+	Members     []string `json:"members"`
+	Admins      []string `json:"admins"`
+	Time        int64    `json:"time"`
+	Pinned      bool     `json:"pinned"`
+	UnreadCount int      `json:"unreadCount"`
+}

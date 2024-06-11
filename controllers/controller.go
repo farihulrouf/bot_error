@@ -111,20 +111,45 @@ func GetGroupsHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to fetch joined groups", http.StatusInternalServerError)
 		return
 	}
-
-	var filteredGroups []model.GroupResponse
+	var filteredGroups []response.GroupResponse
 	for _, group := range groups {
+		var isMember bool
+		var members []string
+		var admins []string
+
 		for _, member := range group.Participants {
-			fmt.Println("Participatan Group List", member)
 			if member.JID.User == phone {
-				fmt.Println("Member Jid User", member.JID.User)
-				filteredGroups = append(filteredGroups, model.GroupResponse{JID: group.JID.String(), Name: group.Name})
-				break
+				isMember = true
 			}
+			members = append(members, member.JID.User)
+
+			// Check if the member is an admin
+			if member.IsAdmin {
+				admins = append(admins, member.JID.User)
+			}
+		}
+
+		if isMember {
+			groupID := strings.TrimSuffix(group.JID.String(), "@g.us")
+			groupResponse := response.GroupResponse{
+				ID:          groupID,
+				Type:        "group",
+				Description: "description",
+				Members:     members,
+				Admins:      admins,
+				Time:        time.Now().UnixMilli(),
+				Pinned:      false,
+				UnreadCount: 30,
+			}
+			filteredGroups = append(filteredGroups, groupResponse)
 		}
 	}
 
-	response, err := json.Marshal(filteredGroups)
+	response := map[string]interface{}{
+		"data": filteredGroups,
+	}
+
+	jsonResponse, err := json.MarshalIndent(response, "", "  ")
 	if err != nil {
 		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
 		return
@@ -132,45 +157,8 @@ func GetGroupsHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write(response)
-	/*groups, err := client.GetJoinedGroups()
-		if err != nil {
-			http.Error(w, "Failed to get groups", http.StatusInternalServerError)
-			return
-		}
+	w.Write(jsonResponse)
 
-		groupList := make([]map[string]interface{}, 0, len(groups))
-		for _, group := range groups {
-			fmt.Printf("Group ID: %s, Name: %s\n", group.JID.String(), group.Name)
-			groupInfo := map[string]interface{}{
-				"JID":  group.JID.String(),
-				"Name": group.Name,
-			}
-			groupList = append(groupList, groupInfo)
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(groupList)
-	}
-
-	func convertToJID(to string) (types.JID, error) {
-		var jid types.JID
-		var err error
-
-		if strings.Contains(to, "-") {
-			// Assuming it's a Group ID
-			jid, err = types.ParseJID(to + "@g.us")
-		} else {
-			// Assuming it's a phone number
-			jid, err = types.ParseJID(to + "@s.whatsapp.net")
-		}
-
-		if err != nil {
-			return types.JID{}, fmt.Errorf("invalid JID: %v", err)
-		}
-
-		return jid, nil
-	*/
 }
 
 func JoinGroupHandler(w http.ResponseWriter, r *http.Request) {
@@ -392,7 +380,6 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func SendMessageBulkHandler(w http.ResponseWriter, r *http.Request) {
-	// Parse request body to get the message data
 
 	var requestData []model.SendMessageDataRequest
 	err := json.NewDecoder(r.Body).Decode(&requestData)
