@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -60,10 +61,14 @@ func main() {
 	// Setup router with client
 	r := router.SetupRouter(client)
 
-	// Start server
+	port := os.Getenv("PORT")
+	if port == "" {
+		log.Fatal("PORT environment variable is not set")
+	}
 	go func() {
-		log.Println("Server running on port 8080")
-		if err := http.ListenAndServe(":8080", r); err != nil {
+		address := fmt.Sprintf(":%s", port)
+		log.Printf("Server running on port %s", port)
+		if err := http.ListenAndServe(address, r); err != nil {
 			log.Fatalf("Server failed to start: %v", err)
 		}
 	}()
