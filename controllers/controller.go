@@ -382,6 +382,7 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 
 func SendMessageBulkHandler(w http.ResponseWriter, r *http.Request) {
 	// Parse request body to get the message data
+
 	var requestData []model.SendMessageDataRequest
 	err := json.NewDecoder(r.Body).Decode(&requestData)
 	if err != nil {
@@ -389,54 +390,72 @@ func SendMessageBulkHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var results []map[string]interface{}
+
 	// Send the messages to each recipient
-	var successCount int
 	for _, message := range requestData {
+		result := map[string]interface{}{
+			"to":      message.To,
+			"type":    message.Type,
+			"text":    message.Text,
+			"caption": message.Caption,
+			"url":     message.URL,
+			"from":    message.From,
+		}
+
 		// Check if any required fields are missing
 		if message.Type == "" || message.Text == "" || message.From == "" || message.To == "" {
-			fmt.Printf("Missing required fields for recipient %s\n", message.To)
-			continue // Skip sending the message for this recipient
+			result["status"] = "failed"
+			results = append(results, result)
+			continue
 		}
 
 		// Validate 'from' number
 		if !helpers.IsValidPhoneNumber(message.From) {
-			fmt.Printf("Invalid 'from' number for recipient %s: %s\n", message.To, message.From)
-			continue // Skip sending the message for this recipient
+			result["status"] = "failed"
+			results = append(results, result)
+			continue
 		}
 
 		// Validate 'to' number
 		if !helpers.IsValidPhoneNumber(message.To) {
-			fmt.Printf("Invalid 'to' number for recipient %s: %s\n", message.To, message.To)
-			continue // Skip sending the message for this recipient
+			result["status"] = "failed"
+			results = append(results, result)
+			continue
+		}
+
+		// Validate if WhatsApp number is connected and give status failed if number not valid
+		if !helpers.IsLoggedInByNumber(client, message.From) {
+			result["status"] = "failed"
+			results = append(results, result)
+			continue
 		}
 
 		// Send the message if all checks pass
 		if message.Type == "text" {
 			err = helpers.SendMessageToPhoneNumber(client, message.To, message.Text)
 			if err != nil {
-				fmt.Printf("Failed to send message to %s: %v\n", message.To, err)
-			} else {
-				successCount++
+				result["status"] = "failed"
 			}
 		} else {
-			fmt.Printf("Invalid message type for recipient %s\n", message.To)
+			result["status"] = "failed"
 		}
+
+		// Add result to results slice
+		results = append(results, result)
 	}
 
-	// Return success response
-	response := map[string]interface{}{
-		"status":           "Bulk message sent",
-		"success_count":    successCount,
-		"total_recipients": len(requestData),
-	}
-	jsonResponse, err := json.Marshal(response)
+	// Return the results as the response
+	jsonResponse, err := json.Marshal(results)
 	if err != nil {
 		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
 		return
 	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(jsonResponse)
+
 }
 
 func GetMessagesHandler(w http.ResponseWriter, r *http.Request) {
