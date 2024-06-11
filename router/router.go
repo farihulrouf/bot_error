@@ -16,8 +16,18 @@ func SetupRouter(client *whatsmeow.Client) *mux.Router {
 	// Menetapkan penanganan rute untuk endpoint registrasi dan login
 	r.HandleFunc("/api/register", controllers.RegisterHandler).Methods("POST")
 	r.HandleFunc("/api/login", controllers.LoginHandler).Methods("POST")
-
 	r.HandleFunc("/api/scanqr", controllers.ScanQRHandler).Methods("GET")
+
+	// Middleware JWT digunakan untuk semua rute kecuali /api/login dan /api/register /scanqr
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/api/login" || r.URL.Path == "/api/register" || r.URL.Path == "/api/scanqr" {
+				next.ServeHTTP(w, r)
+				return
+			}
+			auth.JWTMiddleware(next).ServeHTTP(w, r)
+		})
+	})
 
 	//r.HandleFunc("/api/groups", controllers.CreateGroupHandler).Methods("POST") // New route for creating a group
 	r.HandleFunc("/api/groups", controllers.GetGroupsHandler).Methods("GET")
@@ -26,12 +36,15 @@ func SetupRouter(client *whatsmeow.Client) *mux.Router {
 
 	r.HandleFunc("/api/groups/leave", controllers.LeaveGroupHandler).Methods("POST")
 
-	r.Handle("/api/messages", auth.JWTMiddleware(http.HandlerFunc(controllers.SendMessageHandler))).Methods("POST")
+	r.HandleFunc("/api/messages", controllers.SendMessageHandler).Methods("POST")
+	//r.Handle("/api/messages", auth.JWTMiddleware(http.HandlerFunc(controllers.SendMessageHandler))).Methods("POST")
 	//r.HandleFunc("/api/messages", auth.JWTMiddleware(controllers.SendMessageHandler)).Methods("POST")
 	r.HandleFunc("/api/messages", controllers.RetrieveMessagesHandler).Methods("GET")
 
-	//RetrieveMessagesHandler
+	//sendMessage handler
 	r.HandleFunc("/api/messages/bulk", controllers.SendMessageBulkHandler).Methods("POST")
+
+	//r.Handle("/api/messages/bulk", auth.JWTMiddleware(http.HandlerFunc(controllers.SendMessageBulkHandler))).Methods("POST")
 
 	r.HandleFunc("/api/result", controllers.GetMessagesHandler).Methods("GET")
 	r.HandleFunc("/api/result/{id}", controllers.GetMessagesByIdHandler).Methods("GET")
