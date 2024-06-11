@@ -1,8 +1,11 @@
 package router
 
 import (
+	"net/http"
+
 	"github.com/gorilla/mux"
 	"go.mau.fi/whatsmeow"
+	"wagobot.com/auth"
 	"wagobot.com/controllers"
 )
 
@@ -23,7 +26,8 @@ func SetupRouter(client *whatsmeow.Client) *mux.Router {
 
 	r.HandleFunc("/api/groups/leave", controllers.LeaveGroupHandler).Methods("POST")
 
-	r.HandleFunc("/api/messages", controllers.SendMessageHandler).Methods("POST")
+	r.Handle("/api/messages", auth.JWTMiddleware(http.HandlerFunc(controllers.SendMessageHandler))).Methods("POST")
+	//r.HandleFunc("/api/messages", auth.JWTMiddleware(controllers.SendMessageHandler)).Methods("POST")
 	r.HandleFunc("/api/messages", controllers.RetrieveMessagesHandler).Methods("GET")
 
 	//RetrieveMessagesHandler

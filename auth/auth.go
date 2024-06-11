@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -78,16 +79,25 @@ func ParseToken(tokenString string) (jwt.MapClaims, error) {
 func JWTMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Extract token from the request header
-		tokenString := r.Header.Get("Authorization")
-		if tokenString == "" {
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 
+		// Check if the token starts with "Bearer "
+		if !strings.HasPrefix(authHeader, "Bearer ") {
+			http.Error(w, "Unauthorized: Invalid token format", http.StatusUnauthorized)
+			return
+		}
+
+		// Remove "Bearer " prefix from the token string
+		tokenString := authHeader[len("Bearer "):]
+
 		// Parse and validate the token
 		claims, err := ParseToken(tokenString)
 		if err != nil {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			http.Error(w, "Unauthorized: Invalid token", http.StatusUnauthorized)
 			return
 		}
 

@@ -84,10 +84,8 @@ func CreateToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set response headers
 	w.Header().Set("Content-Type", "application/json")
 
-	// Return the token as JSON response
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"token": "` + token + `"}`))
 }
