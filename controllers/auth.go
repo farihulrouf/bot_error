@@ -6,11 +6,9 @@ import (
 
 	//"github.com/golang-jwt/jwt"
 	"golang.org/x/crypto/bcrypt"
+	"wagobot.com/auth"
 	"wagobot.com/db"
 	"wagobot.com/model"
-	"wagobot.com/auth"
-
-
 )
 
 // Register handles user registration.
@@ -76,4 +74,20 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	response := map[string]string{"token": token}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+func CreateToken(w http.ResponseWriter, r *http.Request) {
+	// Generate a new JWT token
+	token, err := auth.CreateNewToken()
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	// Set response headers
+	w.Header().Set("Content-Type", "application/json")
+
+	// Return the token as JSON response
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"token": "` + token + `"}`))
 }
