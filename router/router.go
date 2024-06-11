@@ -29,16 +29,12 @@ func SetupRouter(client *whatsmeow.Client) *mux.Router {
 		})
 	})
 
-	//r.HandleFunc("/api/groups", controllers.CreateGroupHandler).Methods("POST") // New route for creating a group
 	r.HandleFunc("/api/groups", controllers.GetGroupsHandler).Methods("GET")
 	r.HandleFunc("/api/groups", controllers.JoinGroupHandler).Methods("POST")
 	r.HandleFunc("/api/groups/messages", controllers.SendMessageGroupHandler).Methods("POST")
-
 	r.HandleFunc("/api/groups/leave", controllers.LeaveGroupHandler).Methods("POST")
-
 	r.HandleFunc("/api/messages", controllers.SendMessageHandler).Methods("POST")
-	//r.Handle("/api/messages", auth.JWTMiddleware(http.HandlerFunc(controllers.SendMessageHandler))).Methods("POST")
-	//r.HandleFunc("/api/messages", auth.JWTMiddleware(controllers.SendMessageHandler)).Methods("POST")
+
 	r.HandleFunc("/api/messages", controllers.RetrieveMessagesHandler).Methods("GET")
 
 	//sendMessage handler

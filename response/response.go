@@ -7,3 +7,9 @@ type Message struct {
 	Text string `json:"text"`
 	//Replies string `json:"text"`
 }
+
+type ErrorResponseNumberPhone struct {
+	StatusCode int    `json:"statusCode"`
+	Error      string `json:"error"`
+	Message    string `json:"message"`
+}

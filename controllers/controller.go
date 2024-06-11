@@ -187,6 +187,11 @@ func JoinGroupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !helpers.IsLoggedInByNumber(client, req.Phone) {
+		sendErrorResponse(w, http.StatusBadRequest, "not ready or not available. Please pairing the device", req.Phone)
+		return
+	}
+
 	// Attempt to join the group with the provided invite link (code)
 	groupJID, err := client.JoinGroupWithLink(req.Code)
 	if err != nil {
@@ -208,6 +213,12 @@ func LeaveGroupHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
+	/*
+		if !helpers.IsLoggedInByNumber(client, requestData.From) {
+			http.Error(w, "Sender number is not connected to WhatsApp", http.StatusBadRequest)
+			return
+		}
+	*/
 
 	groupJID, err := types.ParseJID(req.GroupID + "@g.us")
 	if err != nil {
@@ -300,7 +311,7 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	//Check numerphone is login or not
 	if !helpers.IsLoggedInByNumber(client, requestData.From) {
-		http.Error(w, "Sender number is not connected to WhatsApp", http.StatusBadRequest)
+		sendErrorResponse(w, http.StatusBadRequest, "not ready or not available. Please pairing the device", requestData.From)
 		return
 	}
 	// Simpan daftar JID grup yang merupakan admin
@@ -805,6 +816,24 @@ func SetWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	resp := model.WebhookResponse{Message: fmt.Sprintf("Webhook set to: %s", webhookURL)}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
+}
+
+func sendErrorResponse(w http.ResponseWriter, statusCode int, message, phoneNumber string) {
+	errorResponse := response.ErrorResponseNumberPhone{
+		StatusCode: statusCode,
+		Error:      "Bad Request",
+		Message:    "Device with phone: [" + phoneNumber + "] " + message,
+	}
+
+	// Convert ErrorResponse to JSON and send it as response
+	w.WriteHeader(statusCode)
+	jsonBytes, err := json.MarshalIndent(errorResponse, "", "  ")
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jsonBytes)
 }
 
 /*
