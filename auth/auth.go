@@ -149,8 +149,12 @@ func parseTokenWithoutValidation(tokenString string) (jwt.MapClaims, error) {
 }
 
 func CreateNewToken() (string, error) {
+	secretKey := os.Getenv("SECRET_KEY")
+	if secretKey == "" {
+		return "", fmt.Errorf("SECRET_KEY is not set in .env file")
+	}
 
-	token, err := GenerateToken("optimasi_bot")
+	token, err := GenerateToken(secretKey)
 	if err != nil {
 		return "", fmt.Errorf("could not create token: %w", err)
 	}

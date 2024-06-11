@@ -134,10 +134,10 @@ func GetGroupsHandler(w http.ResponseWriter, r *http.Request) {
 			groupResponse := response.GroupResponse{
 				ID:          groupID,
 				Type:        "group",
-				Description: "description",
+				Description: group.Name,
 				Members:     members,
-				Admins:      admins,
-				Time:        time.Now().UnixMilli(),
+				Admins:      admins, //time.Now().UnixMilli()
+				Time:        group.GroupCreated.UnixMilli(),
 				Pinned:      false,
 				UnreadCount: 30,
 			}
@@ -821,6 +821,37 @@ func sendErrorResponse(w http.ResponseWriter, statusCode int, message, phoneNumb
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(jsonBytes)
+}
+
+// Handler untuk endpoint /api/grouplink
+func GetGroupInviteLinkHandler(w http.ResponseWriter, r *http.Request) {
+	groupID := r.URL.Query().Get("group_id")
+
+	// Mendapatkan nilai reset dari parameter URL (atau dari body, sesuai kebutuhan)
+	reset := r.URL.Query().Get("reset")
+
+	// Lakukan validasi parameter jika diperlukan
+	if groupID == "" {
+		http.Error(w, "Group ID is required", http.StatusBadRequest)
+		return
+	}
+
+	// Konversi reset menjadi boolean
+	resetBool := false
+	if reset == "true" {
+		resetBool = true
+	}
+	groupJID, err := types.ParseJID(groupID + "@g.us")
+
+	inviteLink, err := client.GetGroupInviteLink(groupJID, resetBool)
+	if err != nil {
+		http.Error(w, "Failed to get group invite link", http.StatusInternalServerError)
+		return
+	}
+
+	// Mengirimkan tautan undangan sebagai respons
+	response := map[string]string{"group_invite_link": inviteLink}
+	json.NewEncoder(w).Encode(response)
 }
 
 /*

@@ -17,11 +17,12 @@ func SetupRouter(client *whatsmeow.Client) *mux.Router {
 	r.HandleFunc("/api/register", controllers.RegisterHandler).Methods("POST")
 	r.HandleFunc("/api/login", controllers.LoginHandler).Methods("POST")
 	r.HandleFunc("/api/scanqr", controllers.ScanQRHandler).Methods("GET")
+	r.HandleFunc("/api/token", controllers.CreateToken).Methods("POST")
 
 	// Middleware JWT digunakan untuk semua rute kecuali /api/login dan /api/register /scanqr
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/api/login" || r.URL.Path == "/api/register" || r.URL.Path == "/api/scanqr" {
+			if r.URL.Path == "/api/login" || r.URL.Path == "/api/register" || r.URL.Path == "/api/scanqr" || r.URL.Path == "/api/token" {
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -36,11 +37,7 @@ func SetupRouter(client *whatsmeow.Client) *mux.Router {
 	r.HandleFunc("/api/messages", controllers.SendMessageHandler).Methods("POST")
 
 	r.HandleFunc("/api/messages", controllers.RetrieveMessagesHandler).Methods("GET")
-
-	//sendMessage handler
 	r.HandleFunc("/api/messages/bulk", controllers.SendMessageBulkHandler).Methods("POST")
-
-	//r.Handle("/api/messages/bulk", auth.JWTMiddleware(http.HandlerFunc(controllers.SendMessageBulkHandler))).Methods("POST")
 
 	r.HandleFunc("/api/result", controllers.GetMessagesHandler).Methods("GET")
 	r.HandleFunc("/api/result/{id}", controllers.GetMessagesByIdHandler).Methods("GET")
@@ -53,12 +50,14 @@ func SetupRouter(client *whatsmeow.Client) *mux.Router {
 
 	r.HandleFunc("/api/system/webhook", controllers.SetWebhookHandler).Methods("POST")
 
+	r.HandleFunc("/api/group/invite", controllers.GetGroupInviteLinkHandler).Methods("GET")
+
 	//router.POST("/api/system/webhook", SetWebhookHandler)
 
 	r.HandleFunc("/api/getinfo", controllers.GetInfoHandler).Methods("GET")
 	r.HandleFunc("/api/system/devices", controllers.GetDevicesHandler).Methods("GET")
 
-	r.HandleFunc("/api/token", controllers.CreateToken).Methods("POST")
+	///r.HandleFunc("/api/token", controllers.CreateToken).Methods("POST")
 
 	// Add more routes here if needed
 	return r
