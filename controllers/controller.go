@@ -268,6 +268,82 @@ func SendMessageGroupHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Message sent to: %s", req.To)
 }
 
+func GetSearchMessagesHandler(w http.ResponseWriter, r *http.Request) {
+	// Parse request parameters
+	r.ParseForm()
+	textFilter := r.Form.Get("chat")
+
+	mu.Lock()
+	defer mu.Unlock()
+	//			fmt.Println("check data message five", v.Info.IsGroup, v.Info.IsFromMe, v.Info.Category, v.Info.MessageSource, v.Info.Type, v.Info.Chat.Device, v.Info.Timestamp)
+
+	w.Header().Set("Content-Type", "application/json")
+	data := make(map[string]map[string]interface{})
+	for _, msg := range messages {
+		if textFilter != "" && !strings.Contains(msg.Text, textFilter) {
+			continue // Skip messages that don't contain the text filter
+		}
+
+		timeStr := fmt.Sprintf("%d", msg.Time)
+		// Remove @s.whatsapp.net suffix from msg.Chat
+		chat := strings.TrimSuffix(msg.Chat, "@s.whatsapp.net")
+		messageData := map[string]interface{}{
+			"id":        msg.ID,
+			"time":      msg.Time,
+			"fromMe":    true, //!v.Info.IsFromMe && v.Message.GetConversation() !=
+			"type":      "text",
+			"status":    "delivered",
+			"chatType":  "user",
+			"replyId":   "1609773514305",
+			"chat":      chat,
+			"to":        chat,
+			"name":      "string",
+			"from":      chat,
+			"text":      msg.Text,
+			"caption":   "Caption test",
+			"url":       "https://www.fnordware.com/superpng/pnggrad16rgb.png",
+			"mimetype":  "string",
+			"thumbnail": "string",
+		}
+		fmt.Println("chek data", msg)
+		/* example respond in maxchat.id
+		{
+			"data": [
+				{
+				"id": "1609773514305",
+				"time": 1686380234054,
+				"fromMe": true,
+				"type": "text",
+				"status": "delivered",
+				"chatType": "user",
+				"replyId": "1609773514305",
+				"chat": "6281234567890",
+				"to": "6281234567890",
+				"name": "string",
+				"from": "6281234567890",
+				"text": "Test from MaxChat",
+				"caption": "Caption test",
+				"url": "https://www.fnordware.com/superpng/pnggrad16rgb.png",
+				"mimetype": "string",
+				"thumbnail": "string"
+				}
+			]
+			}
+		*/
+		data[timeStr] = messageData
+	}
+
+	response := map[string]interface{}{
+		"data": data,
+	}
+
+	// Encode response to JSON and send it
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Failed to encode messages", http.StatusInternalServerError)
+		return
+	}
+}
+
 // SendMessageHandler handles sending messages.
 
 func SendMessageHandler(w http.ResponseWriter, r *http.Request) {

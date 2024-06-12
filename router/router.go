@@ -36,8 +36,9 @@ func SetupRouter(client *whatsmeow.Client) *mux.Router {
 	r.HandleFunc("/api/groups/leave", controllers.LeaveGroupHandler).Methods("POST")
 	r.HandleFunc("/api/messages", controllers.SendMessageHandler).Methods("POST")
 
-	r.HandleFunc("/api/messages", controllers.RetrieveMessagesHandler).Methods("GET")
+	//r.HandleFunc("/api/messages", controllers.RetrieveMessagesHandler).Methods("GET")
 	r.HandleFunc("/api/messages/bulk", controllers.SendMessageBulkHandler).Methods("POST")
+	r.HandleFunc("/api/messages", controllers.GetSearchMessagesHandler).Methods("GET")
 
 	r.HandleFunc("/api/result", controllers.GetMessagesHandler).Methods("GET")
 	r.HandleFunc("/api/result/{id}", controllers.GetMessagesByIdHandler).Methods("GET")

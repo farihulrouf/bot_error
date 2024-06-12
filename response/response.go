@@ -24,3 +24,31 @@ type GroupResponse struct {
 	Pinned      bool     `json:"pinned"`
 	UnreadCount int      `json:"unreadCount"`
 }
+
+
+
+//
+
+type MessageFilter struct {
+	ID        string `json:"id"`
+	Time      int64  `json:"time"`
+	FromMe    bool   `json:"fromMe"`
+	Type      string `json:"type"`
+	Status    string `json:"status"`
+	ChatType  string `json:"chatType"`
+	ReplyID   string `json:"replyId"`
+	Chat      string `json:"chat"`
+	To        string `json:"to"`
+	Name      string `json:"name"`
+	From      string `json:"from"`
+	Text      string `json:"text"`
+	Caption   string `json:"caption"`
+	URL       string `json:"url"`
+	MimeType  string `json:"mimetype"`
+	Thumbnail string `json:"thumbnail"`
+}
+
+type Response struct {
+	Data []MessageFilter `json:"data"`
+}
+
