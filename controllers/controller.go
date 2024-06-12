@@ -783,62 +783,75 @@ func GetInfoHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetDevicesHandler(w http.ResponseWriter, r *http.Request) {
-	// Get self JID from the device store
 	deviceStore := client.Store.ID
 	if deviceStore == nil {
 		http.Error(w, "Client not logged in", http.StatusInternalServerError)
 		return
 	}
 
-	// Convert the deviceStore ID to a proper JID
+	// Mengonversi ID pengguna menjadi JID
 	selfJID := types.NewJID(deviceStore.User, types.DefaultUserServer)
 
-	// Get user devices for the logged-in JID
+	// Mendapatkan perangkat pengguna yang terhubung dengan JID saat ini
 	deviceJIDs, err := client.GetUserDevices([]types.JID{selfJID})
 	if err != nil {
 		log.Printf("Error getting user devices: %v", err)
 		http.Error(w, "Failed to get user devices", http.StatusInternalServerError)
 		return
 	}
-	fmt.Printf("check device", deviceJIDs)
-	// Prepare the response
+
+	fmt.Printf("Check device: %v\n", deviceJIDs)
+	// Mempersiapkan data respons
+	phoneMap := make(map[string]bool)
 	responseData := make([]map[string]interface{}, 0)
 	for _, deviceJID := range deviceJIDs {
-		// Fetch user info for each device
+		// Cek jika phone sudah ada di map
+		if phoneMap[deviceJID.User] {
+			continue // Skip this device if the phone number is already in the map
+		}
+		/*
+			if !helpers.IsLoggedInByNumber(client, deviceJID.User) {
+				sendErrorResponse(w, http.StatusBadRequest, "not ready or not available. Please pairing the device", deviceJID.User)
+				return
+			}
+		*/
+
+		// Mendapatkan informasi pengguna untuk setiap perangkat
 		userInfoMap, err := client.GetUserInfo([]types.JID{deviceJID})
+		fmt.Println("usermap", deviceJID.User)
 		if err != nil {
 			log.Printf("Error getting user info: %v", err)
-			// Include the device in the response with limited information
+			// Menyertakan perangkat dalam respons dengan informasi terbatas
 			deviceData := map[string]interface{}{
 				"id":      deviceJID.String(),
 				"phone":   deviceJID.User,
-				"status":  "unknown",
-				"process": "string", // Replace with actual process if available
-				"busy":    true,     // Replace with actual busy status if available
-				"qrcode":  "",       // Replace with actual QR code if available
+				"status":  "ready",
+				"process": "getMessage",
+				"busy":    true,
+				"qrcode":  "",
 			}
+			// Tambahkan phone ke map
+			phoneMap[deviceJID.User] = true
 			responseData = append(responseData, deviceData)
-			continue // Continue to the next device
+			continue // Melanjutkan ke perangkat berikutnya
 		}
 
 		userInfo := userInfoMap[deviceJID]
-		/*if !exists {
-			http.Error(w, "User info not found for device", http.StatusNotFound)
-			return
-		}*/
-
-		// Print userInfo for debugging
-		fmt.Println("User Info:", userInfo)
+		// Print userInfo untuk debugging
+		//fmt.Println("User Info:", userInfo)
 
 		deviceData := map[string]interface{}{
 			"id":      deviceJID.String(),
 			"phone":   deviceJID.User,
-			"status":  userInfo.Status,
-			"process": "string", // Replace with actual process if available
-			"busy":    false,    // Replace with actual busy status if available
-			"qrcode":  "",       // Replace with actual QR code if available
+			"status":  "ready",
+			"name":    "silver",
+			"process": "getMessages",
+			"busy":    false,
+			"qrcode":  "",
 		}
-
+		fmt.Println(userInfo)
+		// Tambahkan phone ke map
+		phoneMap[deviceJID.User] = true
 		responseData = append(responseData, deviceData)
 	}
 
@@ -846,7 +859,7 @@ func GetDevicesHandler(w http.ResponseWriter, r *http.Request) {
 		"data": responseData,
 	}
 
-	// Marshal the response into JSON and send it
+	// Mengubah respons menjadi JSON dan mengirimkannya
 	jsonResponse, err := json.Marshal(response)
 	if err != nil {
 		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
