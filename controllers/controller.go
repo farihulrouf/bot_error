@@ -61,7 +61,10 @@ func EventHandler(evt interface{}) {
 			videoMessage := v.Message.GetVideoMessage().GetCaption()
 			docMessage := v.Message.GetDocumentMessage().GetCaption()
 			docCaption := v.Message.GetDocumentMessage().GetTitle()
-			name := v.Message.GetChat().GetDisplayName()
+			name := v.Info.PushName
+			to := v.Info.PushName
+
+			//to : = v.Info.na
 			//thumbnail := v.Message.ImageMessage.ThumbnailSha256
 			//url := v.Message.ImageMessage.UR
 			//mimeTipe := v.Message.ImageMessage.Mimetype
@@ -93,6 +96,8 @@ func EventHandler(evt interface{}) {
 				VideoMessage: videoMessage,
 				DocMessage:   docMessage,
 				Name:         name,
+				From:         chat,
+				To:           to,
 				//Thumbnail:    string(thumbnail),
 				//MimeTipe:     *mimeTipe,
 				//MimeType:     *mimesType,
@@ -603,7 +608,7 @@ func GetMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	var data []map[string]interface{}
 
 	for _, msg := range messages {
-		if msg.Mediatipe == "image" {
+		/*if msg.Mediatipe == "image" {
 			msg.Text = msg.Caption
 		}
 		if msg.Mediatipe == "video" {
@@ -615,21 +620,33 @@ func GetMessagesHandler(w http.ResponseWriter, r *http.Request) {
 		if msg.Mediatipe == "" {
 			msg.Mediatipe = "text"
 		}
+		*/
 		/*
 			if msg.DocMessage != "" {
 				msg.Text = msg.DocMessage
 			}
 		*/
 
-		chat := strings.TrimSuffix(msg.Chat, "@s.whatsapp.net")
+		//chat := strings.TrimSuffix(msg.Chat, "@s.whatsapp.net"Ev)
+
+		if msg.Tipe == "text" {
+			msg.Mediatipe = "text"
+		}
 		messageData := map[string]interface{}{
 			"id":   msg.ID,
-			"chat": chat,
+			"from": strings.TrimSuffix(msg.From, "@s.whatsapp.net"),
+			"to":   msg.To,
+			//"chat": chat,
 			"time": msg.Time,
-			"text": msg.Text,
+			"type": msg.Mediatipe,
+			//"text": msg.Text,
 		}
-		if msg.Mediatipe != "text" {
+		/*if msg.Tipe != "text" {
 			messageData["type"] = msg.Mediatipe
+		}
+		*/
+		if msg.Tipe == "text" {
+			messageData["text"] = msg.Text
 		}
 
 		// Tambahkan elemen ke slice
@@ -669,7 +686,7 @@ func GetMessagesByIdHandler(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		if msg.Mediatipe == "image" {
+		/*if msg.Mediatipe == "image" {
 			msg.Text = msg.Caption
 		}
 		if msg.Mediatipe == "video" {
@@ -681,16 +698,21 @@ func GetMessagesByIdHandler(w http.ResponseWriter, r *http.Request) {
 		if msg.Mediatipe == "document" {
 			msg.Text = msg.DocMessage
 		}
+		*/
 
 		messageData := map[string]interface{}{
 			"id":   msg.ID,
 			"chat": chat,
 			"time": msg.Time,
-			"text": msg.Text,
+			//"text": msg.Text,
 			//"type": msg.Mediatipe,
 		}
 		if msg.Mediatipe != "text" {
 			messageData["type"] = msg.Mediatipe
+		}
+
+		if msg.Tipe == "text" {
+			messageData["text"] = msg.Text
 		}
 
 		// Tambahkan elemen ke slice

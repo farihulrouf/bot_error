@@ -17,6 +17,8 @@ type Message struct {
 	MimeTipe       string `json:"mimetipe"`
 	Name           string `json:"name"`
 	Url            string `json:"url"`
+	From           string `json:"from"`
+	To             string `json:"to"`
 	Thumbnail      string `json:"thumbnail"`
 
 	//Replies string `json:"text"`
