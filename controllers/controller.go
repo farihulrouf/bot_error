@@ -66,7 +66,7 @@ func EventHandler(evt interface{}) {
 			to := v.Info.PushName
 
 			//to : = v.Info.na
-			//thumbnail := v.Message.ImageMessage.GetJpegThumbnail()
+			thumbnail := v.Message.ImageMessage.GetJpegThumbnail()
 			url := v.Message.ImageMessage.GetUrl()
 			mimeTipe := v.Message.ImageMessage.GetMimetype()
 			//comment := v.Message.CommentMessage.GetMessage()
@@ -100,8 +100,8 @@ func EventHandler(evt interface{}) {
 				From:         chat,
 				To:           to,
 				Url:          url,
-				//Thumbnail:    thumbnail,
-				MimeTipe: mimeTipe,
+				Thumbnail:    string(thumbnail),
+				MimeTipe:     mimeTipe,
 				//MimeType:     *mimesType,
 				//CommentMessage: comment,
 				//Replies: reply,
