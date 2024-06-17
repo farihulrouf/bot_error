@@ -9,6 +9,8 @@ import (
 	//"go.mau.fi/whatsmeow"
 
 	"go.mau.fi/whatsmeow/types"
+	"wagobot.com/errors"
+	"wagobot.com/helpers"
 	"wagobot.com/model"
 )
 
@@ -48,7 +50,7 @@ func GetInfoHandler(w http.ResponseWriter, r *http.Request) {
 	// Marshal the response into JSON and send it
 	jsonResponse, err := json.Marshal(response)
 	if err != nil {
-		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+		helpers.SendErrorResponse(w, http.StatusInternalServerError, errors.ErrFailedToMarshalResponse)
 		return
 	}
 
@@ -150,7 +152,7 @@ func GetDevicesHandler(w http.ResponseWriter, r *http.Request) {
 	// Mengubah respons menjadi JSON dan mengirimkannya
 	jsonResponse, err := json.Marshal(response)
 	if err != nil {
-		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+		helpers.SendErrorResponse(w, http.StatusInternalServerError, errors.ErrFailedToMarshalResponse)
 		return
 	}
 

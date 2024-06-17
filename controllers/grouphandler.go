@@ -10,6 +10,7 @@ import (
 	//"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/types"
+	"wagobot.com/errors"
 	"wagobot.com/helpers"
 	"wagobot.com/model"
 	"wagobot.com/response"
@@ -67,8 +68,7 @@ func GetGroupsHandler(w http.ResponseWriter, r *http.Request) {
 
 	jsonResponse, err := json.MarshalIndent(response, "", "  ")
 	if err != nil {
-		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
-		return
+		helpers.SendErrorResponse(w, http.StatusInternalServerError, errors.ErrFailedToMarshalResponse)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -206,7 +206,6 @@ func CreateGroupHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-
 // Handler untuk endpoint /api/grouplink
 func GetGroupInviteLinkHandler(w http.ResponseWriter, r *http.Request) {
 	groupID := r.URL.Query().Get("group_id")
@@ -237,4 +236,3 @@ func GetGroupInviteLinkHandler(w http.ResponseWriter, r *http.Request) {
 	response := map[string]string{"group_invite_link": inviteLink}
 	json.NewEncoder(w).Encode(response)
 }
-

@@ -14,6 +14,7 @@ import (
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
+	"wagobot.com/errors"
 	"wagobot.com/helpers"
 	"wagobot.com/model"
 	"wagobot.com/response"
@@ -425,7 +426,7 @@ func RetrieveMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	response := model.GetMessagesResponse{Data: messages}
 	jsonResponse, err := json.Marshal(response)
 	if err != nil {
-		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+		helpers.SendErrorResponse(w, http.StatusInternalServerError, errors.ErrFailedToMarshalResponse)
 		return
 	}
 
@@ -503,7 +504,7 @@ func GetDevicesHandler(w http.ResponseWriter, r *http.Request) {
 	// Marshal the response into JSON and send it
 	jsonResponse, err := json.Marshal(response)
 	if err != nil {
-		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+		helpers.SendErrorResponse(w, http.StatusInternalServerError, errors.ErrFailedToMarshalResponse)
 		return
 	}
 
