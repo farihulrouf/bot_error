@@ -14,6 +14,10 @@ type Message struct {
 	Caption        string `json:"caption"`
 	VideoMessage   string `json:"videomessage"`
 	DocMessage     string `json:"docmessage"`
+	MimeTipe       string `json:"mimetipe"`
+	Name           string `json:"name"`
+	Url            string `json:"url"`
+	Thumbnail      string `json:"thumbnail"`
 
 	//Replies string `json:"text"`
 }
