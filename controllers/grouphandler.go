@@ -19,13 +19,13 @@ import (
 func GetGroupsHandler(w http.ResponseWriter, r *http.Request) {
 	phone := r.URL.Query().Get("phone")
 	if phone == "" {
-		http.Error(w, "Phone number is required", http.StatusBadRequest)
+		helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrPhoneNumberRequired)
 		return
 	}
 
 	groups, err := client.GetJoinedGroups()
 	if err != nil {
-		http.Error(w, "Failed to fetch joined groups", http.StatusInternalServerError)
+		helpers.SendErrorResponse(w, http.StatusInternalServerError, errors.ErrFailedToFetchGroups)
 		return
 	}
 	var filteredGroups []response.GroupResponse
@@ -80,27 +80,28 @@ func GetGroupsHandler(w http.ResponseWriter, r *http.Request) {
 func JoinGroupHandler(w http.ResponseWriter, r *http.Request) {
 	var req model.JoinGroupRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		log.Printf("Error decoding request: %v", err)
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		//log.Printf("Error decoding request: %v", err)
+		helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidRequestPayload)
 		return
 	}
 
 	// Ensure all required fields are present
 	if req.Code == "" || req.Phone == "" {
-		http.Error(w, "code and phone are required fields", http.StatusBadRequest)
+		helpers.SendErrorResponse(w, http.StatusBadRequest, "code and phone are required fields")
 		return
 	}
 
 	if !helpers.IsLoggedInByNumber(client, req.Phone) {
-		sendErrorResponse(w, http.StatusBadRequest, "not ready or not available. Please pairing the device", req.Phone)
+		helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrNotReadyOrNotAvailable)
+		//sendErrorResponse(w, http.StatusBadRequest, "not ready or not available. Please pairing the device", req.Phone)
 		return
 	}
 
 	// Attempt to join the group with the provided invite link (code)
 	groupJID, err := client.JoinGroupWithLink(req.Code)
 	if err != nil {
-		log.Printf("Error joining group: %v", err)
-		http.Error(w, "Failed to join group", http.StatusInternalServerError)
+		//log.Printf("Error joining group: %v", err)
+		helpers.SendErrorResponse(w, http.StatusInternalServerError, errors.ErrFailedToJoinGroup)
 		return
 	}
 
@@ -113,8 +114,8 @@ func JoinGroupHandler(w http.ResponseWriter, r *http.Request) {
 func LeaveGroupHandler(w http.ResponseWriter, r *http.Request) {
 	var req model.LeaveGroupRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		log.Printf("Error decoding request: %v", err)
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		//log.Printf("Error decoding request: %v", err)
+		helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidRequestPayload)
 		return
 	}
 	/*
@@ -126,8 +127,7 @@ func LeaveGroupHandler(w http.ResponseWriter, r *http.Request) {
 
 	groupJID, err := types.ParseJID(req.GroupID + "@g.us")
 	if err != nil {
-		log.Printf("Error parsing Group JID: %v", err)
-		http.Error(w, "Invalid group ID", http.StatusBadRequest)
+		helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidGroupID)
 		return
 	}
 
@@ -141,8 +141,7 @@ func LeaveGroupHandler(w http.ResponseWriter, r *http.Request) {
 	//  Dengan asumsi metode untuk memperbarui peserta grup adalah UpdateGroupParticipants
 	response, err := client.UpdateGroupParticipants(groupJID, []types.JID{participantJID}, "remove")
 	if err != nil {
-		log.Printf("Error leaving group: %v", err)
-		http.Error(w, "Failed to leave group", http.StatusInternalServerError)
+		helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidPhoneNumber)
 		return
 	}
 
@@ -155,19 +154,20 @@ func LeaveGroupHandler(w http.ResponseWriter, r *http.Request) {
 func CreateGroupHandler(w http.ResponseWriter, r *http.Request) {
 	var req model.CreateGroupRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		log.Printf("Error decoding request: %v", err)
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		//log.Printf("Error decoding request: %v", err)
+		helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidRequestPayload)
+		//http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
 	// Validate required fields
 	if req.Subject == "" {
-		http.Error(w, "Group name is required", http.StatusBadRequest)
+		helpers.SendErrorResponse(w, http.StatusBadRequest, "Group name is required")
 		return
 	}
 
 	if len(req.Participants) == 0 {
-		http.Error(w, "At least one participant is required", http.StatusBadRequest)
+		helpers.SendErrorResponse(w, http.StatusBadRequest, "At least one participant is required")
 		return
 	}
 
@@ -176,8 +176,7 @@ func CreateGroupHandler(w http.ResponseWriter, r *http.Request) {
 	for i, phone := range req.Participants {
 		participantJID, err := types.ParseJID(phone + "@s.whatsapp.net")
 		if err != nil {
-			log.Printf("Error parsing JID for phone %s: %v", phone, err)
-			http.Error(w, fmt.Sprintf("Invalid phone number: %s", phone), http.StatusBadRequest)
+			helpers.SendErrorResponse(w, http.StatusBadRequest, fmt.Sprintf("Invalid phone number: %s", phone))
 			return
 		}
 		participants[i] = participantJID
@@ -192,8 +191,7 @@ func CreateGroupHandler(w http.ResponseWriter, r *http.Request) {
 
 	groupResponse, err := client.CreateGroup(reqCreateGroup)
 	if err != nil {
-		log.Printf("Error creating group: %v", err)
-		http.Error(w, fmt.Sprintf("Failed to create group: %v", err), http.StatusInternalServerError)
+		helpers.SendErrorResponse(w, http.StatusInternalServerError, errors.ErrFailedToCreateGroup)
 		return
 	}
 
