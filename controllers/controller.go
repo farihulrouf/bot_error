@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -9,7 +10,7 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"encoding/base64"
+
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"go.mau.fi/whatsmeow"
@@ -67,6 +68,8 @@ func EventHandler(evt interface{}) {
 
 			//to : = v.Info.na
 			thumbnail := v.Message.ImageMessage.GetJpegThumbnail()
+			thumbnailvideo := v.Message.VideoMessage.GetJpegThumbnail()
+			thumbnaildoc := v.Message.DocumentMessage.GetJpegThumbnail()
 			url := v.Message.ImageMessage.GetUrl()
 			mimeTipe := v.Message.ImageMessage.GetMimetype()
 			//comment := v.Message.CommentMessage.GetMessage()
@@ -84,24 +87,26 @@ func EventHandler(evt interface{}) {
 			mu.Lock()
 			defer mu.Unlock() // Ensure mutex is always unlocked when the function returns
 			messages = append(messages, response.Message{
-				ID:           id,
-				Chat:         chat,
-				Time:         timestamp.Unix(),
-				Text:         text,
-				Group:        group,
-				Mediatipe:    mediatype,
-				IsDocument:   isdocument,
-				Tipe:         tipe,
-				IsFromMe:     isfrome,
-				Caption:      captionMessage,
-				VideoMessage: videoMessage,
-				DocMessage:   docMessage,
-				Name:         name,
-				From:         chat,
-				To:           to,
-				Url:          url,
-				Thumbnail:    base64.StdEncoding.EncodeToString(thumbnail),
-				MimeTipe:     mimeTipe,
+				ID:             id,
+				Chat:           chat,
+				Time:           timestamp.Unix(),
+				Text:           text,
+				Group:          group,
+				Mediatipe:      mediatype,
+				IsDocument:     isdocument,
+				Tipe:           tipe,
+				IsFromMe:       isfrome,
+				Caption:        captionMessage,
+				VideoMessage:   videoMessage,
+				DocMessage:     docMessage,
+				Name:           name,
+				From:           chat,
+				To:             to,
+				Url:            url,
+				Thumbnail:      base64.StdEncoding.EncodeToString(thumbnail),
+				MimeTipe:       mimeTipe,
+				Thumbnaildoc:   base64.StdEncoding.EncodeToString(thumbnaildoc),
+				Thumbnailvideo: base64.StdEncoding.EncodeToString(thumbnailvideo),
 				//MimeType:     *mimesType,
 				//CommentMessage: comment,
 				//Replies: reply,
@@ -333,6 +338,7 @@ func GetSearchMessagesHandler(w http.ResponseWriter, r *http.Request) {
 		chat := strings.TrimSuffix(msg.Chat, "@s.whatsapp.net")
 		//tiipe chat group or user
 		chatType := "user"
+		thumb := msg.Thumbnail
 		if msg.Group {
 			chatType = "Group"
 		}
@@ -342,12 +348,16 @@ func GetSearchMessagesHandler(w http.ResponseWriter, r *http.Request) {
 
 		if msg.Mediatipe == "image" {
 			msg.Text = msg.Caption
+			thumb = msg.Thumbnail
+
 		}
 		if msg.Mediatipe == "video" {
 			msg.Text = msg.VideoMessage
+			thumb = msg.Thumbnailvideo
 		}
 		if msg.Mediatipe == "document" {
 			msg.Text = msg.DocMessage
+			thumb = msg.Thumbnaildoc
 		}
 		if msg.Mediatipe == "" {
 			msg.Mediatipe = "text"
@@ -369,7 +379,7 @@ func GetSearchMessagesHandler(w http.ResponseWriter, r *http.Request) {
 			"caption":   msg.Caption,
 			"url":       msg.Url,
 			"mimetype":  msg.MimeTipe,
-			"thumbnail": msg.Thumbnail,
+			"thumbnail": thumb,
 		}
 		data = append(data, messageData)
 		//fmt.Println("chek data", msg)

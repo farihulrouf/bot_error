@@ -20,6 +20,8 @@ type Message struct {
 	From           string `json:"from"`
 	To             string `json:"to"`
 	Thumbnail      string `json:"thumbnail"`
+	Thumbnailvideo string `json:"thumbnailvideo"`
+	Thumbnaildoc   string `json:"thumbnaildoc"`
 
 	//Replies string `json:"text"`
 }
