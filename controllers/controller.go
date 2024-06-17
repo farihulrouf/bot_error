@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 	"time"
-
+	"encoding/base64"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"go.mau.fi/whatsmeow"
@@ -100,7 +100,7 @@ func EventHandler(evt interface{}) {
 				From:         chat,
 				To:           to,
 				Url:          url,
-				Thumbnail:    string(thumbnail),
+				Thumbnail:    base64.StdEncoding.EncodeToString(thumbnail),
 				MimeTipe:     mimeTipe,
 				//MimeType:     *mimesType,
 				//CommentMessage: comment,
