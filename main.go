@@ -56,7 +56,7 @@ func main() {
 	controllers.SetClient(client)
 	controllers.ScanQrCode(client)
 	//controllers.EventHandler() // Call EventHandler here
-	//controllers.EventHandler()
+	controllers.EventHandler(client)
 
 	// Setup router with client
 	r := router.SetupRouter(client)

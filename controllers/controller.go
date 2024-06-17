@@ -37,30 +37,51 @@ var (
 		messages = append(messages, model.Message{Sender: sender, Message: message})
 		mu.Unlock()
 	}
+
+*
+//var silver = ""
 */
 func EventHandler(evt interface{}) {
 	switch v := evt.(type) {
 	case *events.Message:
-		if !v.Info.IsFromMe && v.Message.GetConversation() != "" {
+		if !v.Info.IsFromMe && v.Message.GetConversation() != "" || v.Message.GetImageMessage().GetCaption() != "" || v.Message.GetVideoMessage().GetCaption() != "" || v.Message.GetDocumentMessage().GetTitle() != "" {
 			id := v.Info.ID
 			chat := v.Info.Sender.String()
 			timestamp := time.Now().UnixNano() / int64(time.Millisecond)
 			text := v.Message.GetConversation()
-			//reply := v.Message.ReactionMessage
-			//coba := v.Message.DeviceSentMessage
-			fmt.Printf("ID: %s, Chat: %s, Time: %d, Text: %s\n", id, chat, timestamp, text)
+			group := v.Info.IsGroup
+			isfrome := v.Info.IsFromMe
+			doc := v.Message.GetDocumentMessage()
+			captionMessage := v.Message.GetImageMessage().GetCaption()
+			videoMessage := v.Message.GetVideoMessage().GetCaption()
+			docMessage := v.Message.GetDocumentMessage().GetTitle()
+			//comment := v.Message.CommentMessage
+			tipe := v.Info.Type
+			isdocument := v.IsDocumentWithCaption
+			//chatText := v.Info.Chat
+			mediatype := v.Info.MediaType
+			//smtext := v.Message.Conversation()
+			//fmt.Printf("ID: %s, Chat: %s, Time: %d, Text: %s\n", id, mediatype, chatText, isdocument, chat, timestamp, text, group, isfrome, comment, tipe)
 			//fmt.Println("info repley", reply, coba)
 
 			// Assuming replies are stored within a field named Replies
-
+			fmt.Println("tipe messages", tipe, isdocument, doc, mediatype, captionMessage, videoMessage, docMessage)
 			mu.Lock()
 			defer mu.Unlock() // Ensure mutex is always unlocked when the function returns
 			messages = append(messages, response.Message{
-				ID:   id,
-				Chat: chat,
-				Time: timestamp,
-				Text: text,
-
+				ID:           id,
+				Chat:         chat,
+				Time:         timestamp,
+				Text:         text,
+				Group:        group,
+				Mediatipe:    mediatype,
+				IsDocument:   isdocument,
+				Tipe:         tipe,
+				IsFromMe:     isfrome,
+				Caption:      captionMessage,
+				VideoMessage: videoMessage,
+				DocMessage:   docMessage,
+				//CommentMessage: comment,
 				//Replies: reply,
 				// Add replies to the message if available
 				// Replies: v.Message.Replies,
@@ -275,7 +296,7 @@ func GetSearchMessagesHandler(w http.ResponseWriter, r *http.Request) {
 
 	mu.Lock()
 	defer mu.Unlock()
-	//			fmt.Println("check data message five", v.Info.IsGroup, v.Info.IsFromMe, v.Info.Category, v.Info.MessageSource, v.Info.Type, v.Info.Chat.Device, v.Info.Timestamp)
+	//fmt.Println("check data message five", v.Info.IsGroup, v.Info.IsFromMe, v.Info.Category, v.Info.MessageSource, v.Info.Type, v.Info.Chat.Device, v.Info.Timestamp)
 
 	w.Header().Set("Content-Type", "application/json")
 	data := make(map[string]map[string]interface{})
@@ -287,23 +308,28 @@ func GetSearchMessagesHandler(w http.ResponseWriter, r *http.Request) {
 		timeStr := fmt.Sprintf("%d", msg.Time)
 		// Remove @s.whatsapp.net suffix from msg.Chat
 		chat := strings.TrimSuffix(msg.Chat, "@s.whatsapp.net")
+		//tiipe chat group or user
+		chatType := "user"
+		if msg.Group {
+			chatType = "Group"
+		}
 		messageData := map[string]interface{}{
 			"id":        msg.ID,
 			"time":      msg.Time,
 			"fromMe":    true, //!v.Info.IsFromMe && v.Message.GetConversation() !=
-			"type":      "text",
+			"type":      msg.Tipe,
 			"status":    "delivered",
-			"chatType":  "user",
+			"chatType":  chatType,
 			"replyId":   "1609773514305",
 			"chat":      chat,
 			"to":        chat,
 			"name":      "string",
 			"from":      chat,
 			"text":      msg.Text,
-			"caption":   "Caption test",
+			"caption":   msg.Caption,
 			"url":       "https://www.fnordware.com/superpng/pnggrad16rgb.png",
 			"mimetype":  "string",
-			"thumbnail": "string",
+			"thumbnail": msg.Tipe,
 		}
 		fmt.Println("chek data", msg)
 		/* example respond in maxchat.id
@@ -548,6 +574,15 @@ func GetMessagesHandler(w http.ResponseWriter, r *http.Request) {
 			"chat": chat,
 			"time": msg.Time,
 			"text": msg.Text,
+			"tipe": msg.Tipe,
+			//"commnet":      msg.CommentMessage,
+			//"group":        msg.Group,
+			//"isfromme":     msg.IsFromMe,
+			//"isdocument":   msg.IsDocument,
+			//"mediatipe":    msg.Mediatipe,
+			//"videomessage": msg.VideoMessage,
+			//"caption":      msg.Caption,
+			//"docmessage":   msg.DocMessage,
 		}
 		data[timeStr] = messageData
 	}

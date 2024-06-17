@@ -1,10 +1,20 @@
 package response
 
 type Message struct {
-	ID   string `json:"id"`
-	Chat string `json:"chat"`
-	Time int64  `json:"time"`
-	Text string `json:"text"`
+	ID             string `json:"id"`
+	Chat           string `json:"chat"`
+	Time           int64  `json:"time"`
+	Text           string `json:"text"`
+	Group          bool   `json:"group,omitempty"`
+	IsFromMe       bool   `json:"isfromme,omitempty"`
+	CommentMessage string `json:"comment"`
+	Tipe           string `json:"tipe"`
+	IsDocument     bool   `json:"isdocument,omitempty"`
+	Mediatipe      string `json:"mediatipe"`
+	Caption        string `json:"caption"`
+	VideoMessage   string `json:"videomessage"`
+	DocMessage     string `json:"docmessage"`
+
 	//Replies string `json:"text"`
 }
 
@@ -24,8 +34,6 @@ type GroupResponse struct {
 	Pinned      bool     `json:"pinned"`
 	UnreadCount int      `json:"unreadCount"`
 }
-
-
 
 //
 
@@ -51,4 +59,3 @@ type MessageFilter struct {
 type Response struct {
 	Data []MessageFilter `json:"data"`
 }
-
