@@ -43,6 +43,7 @@ var (
 //var silver = ""
 */
 func EventHandler(evt interface{}) {
+
 	switch v := evt.(type) {
 	case *events.Message:
 
@@ -65,9 +66,9 @@ func EventHandler(evt interface{}) {
 			to := v.Info.PushName
 
 			//to : = v.Info.na
-			//thumbnail := v.Message.ImageMessage.ThumbnailSha256
-			//url := v.Message.ImageMessage.UR
-			//mimeTipe := v.Message.ImageMessage.Mimetype
+			//thumbnail := v.Message.ImageMessage.GetJpegThumbnail()
+			url := v.Message.ImageMessage.GetUrl()
+			mimeTipe := v.Message.ImageMessage.GetMimetype()
 			//comment := v.Message.CommentMessage.GetMessage()
 			//relyId := v.Message.GetCommentMessage().Message
 			tipe := v.Info.Type
@@ -75,7 +76,7 @@ func EventHandler(evt interface{}) {
 			//chatText := v.Info.Chat
 			mediatype := v.Info.MediaType
 			//smtext := v.Message.Conversation()
-			fmt.Println("ID: %s, Chat: %s, Time: %d, Text: %s\n", id, mediatype, isdocument, chat, timestamp, text, group, isfrome, tipe)
+			fmt.Println("ID: %s, Chat: %s, Time: %d, Text: %s\n", to, mediatype, isdocument, chat, timestamp, text, group, isfrome, tipe)
 			//fmt.Println("info repley", reply, coba)
 
 			// Assuming replies are stored within a field named Replies
@@ -98,8 +99,9 @@ func EventHandler(evt interface{}) {
 				Name:         name,
 				From:         chat,
 				To:           to,
-				//Thumbnail:    string(thumbnail),
-				//MimeTipe:     *mimeTipe,
+				Url:          url,
+				//Thumbnail:    thumbnail,
+				MimeTipe: mimeTipe,
 				//MimeType:     *mimesType,
 				//CommentMessage: comment,
 				//Replies: reply,
