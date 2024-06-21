@@ -1,26 +1,28 @@
 package router
 
 import (
-	"net/http"
+	//"net/http"
 
 	"github.com/gorilla/mux"
-	"go.mau.fi/whatsmeow"
-	"wagobot.com/auth"
+	//"go.mau.fi/whatsmeow"
+
+	//"wagobot.com/auth"
 	"wagobot.com/controllers"
 )
 
-func SetupRouter(client *whatsmeow.Client) *mux.Router {
+func SetupRouter() *mux.Router {
 	r := mux.NewRouter()
-	controllers.SetClient(client)
+	//controllers.SetClient(client)
 
 	// Menetapkan penanganan rute untuk endpoint registrasi dan login
 	r.HandleFunc("/api/register", controllers.RegisterHandler).Methods("POST")
 	r.HandleFunc("/api/login", controllers.LoginHandler).Methods("POST")
-	r.HandleFunc("/api/scanqr", controllers.ScanQRHandler).Methods("GET")
+	r.HandleFunc("/api/scanqr/{device}", controllers.ScanQRHandler).Methods("GET")
 	r.HandleFunc("/api/token", controllers.CreateToken).Methods("POST")
+	r.HandleFunc("/api/triggerEvent", controllers.TriggerEventHandler).Methods("POST")
 
 	// Middleware JWT digunakan untuk semua rute kecuali /api/login dan /api/register /scanqr
-	r.Use(func(next http.Handler) http.Handler {
+	/*r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/api/login" || r.URL.Path == "/api/register" || r.URL.Path == "/api/scanqr" || r.URL.Path == "/api/token" {
 				next.ServeHTTP(w, r)
@@ -29,6 +31,7 @@ func SetupRouter(client *whatsmeow.Client) *mux.Router {
 			auth.JWTMiddleware(next).ServeHTTP(w, r)
 		})
 	})
+	*/
 
 	r.HandleFunc("/api/groups", controllers.GetGroupsHandler).Methods("GET")
 	r.HandleFunc("/api/groups", controllers.JoinGroupHandler).Methods("POST")
@@ -57,6 +60,7 @@ func SetupRouter(client *whatsmeow.Client) *mux.Router {
 
 	r.HandleFunc("/api/getinfo", controllers.GetInfoHandler).Methods("GET")
 	r.HandleFunc("/api/system/devices", controllers.GetDevicesHandler).Methods("GET")
+	//r.HandleFunc("/status/qr/list", controllers.GetConnectedClientsList).Methods("GET")
 
 	///r.HandleFunc("/api/token", controllers.CreateToken).Methods("POST")
 

@@ -4,11 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
-
-	//"go.mau.fi/whatsmeow"
 	"wagobot.com/errors"
 	"wagobot.com/helpers"
 	"wagobot.com/model"
@@ -19,120 +18,77 @@ import (
 //var client *whatsmeow.Client
 
 func SendMessageGroupHandler(w http.ResponseWriter, r *http.Request) {
-	var req model.SendMessageDataRequest
+	/*
+		var req model.SendMessageDataRequest
 
-	// Decode the JSON request
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidRequestPayload)
-		return
-	}
+		// Decode the JSON request
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidRequestPayload)
+			return
+		}
 
-	// Validate the request data
-	if req.Type == "" || req.Text == "" {
-		helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrMissingRequiredFields)
-		return
-	}
+		// Validate the request data
+		if req.Type == "" || req.Text == "" {
+			helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrMissingRequiredFields)
+			return
+		}
 
-	// Convert to JID
-	jid, err := helpers.ConvertToJID(req.To)
-	if err != nil {
-		http.Error(w, fmt.Sprintf(errors.ErrInvalidRecipient, ":%v", err), http.StatusBadRequest)
-		return
-	}
+		// Convert to JID
+		jid, err := helpers.ConvertToJID(req.To)
+		if err != nil {
+			http.Error(w, fmt.Sprintf(errors.ErrInvalidRecipient, ":%v", err), http.StatusBadRequest)
+			return
+		}
 
-	// Send the message
-	if err := helpers.SendMessage(client, jid, req); err != nil {
-		helpers.SendErrorResponse(w, http.StatusBadRequest, fmt.Sprintf(errors.ErrInvalidMessageType, ":%v", err))
-		return
-	}
+		// Send the message
+		if err := helpers.SendMessage(client, jid, req); err != nil {
+			helpers.SendErrorResponse(w, http.StatusBadRequest, fmt.Sprintf(errors.ErrInvalidMessageType, ":%v", err))
+			return
+		}
 
-	// Respond with success
-	w.WriteHeader(http.StatusOK)
-	//fmt.Fprintf(w, "Message sent to: %s", req.To)
+		// Respond with success
+		w.WriteHeader(http.StatusOK)
+		//fmt.Fprintf(w, "Message sent to: %s", req.To)
+	*/
 }
 
 // SendMessageHandler handles sending messages.
 
 func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
-	// Parse request body to get the message data
-	//var isAdmin bool
-	//adminGroupJIDs := make([]string, 0)
-
 	var requestData model.SendMessageDataRequest
+	//fmt.Println("data clinet", clients)
+	var value_client = clients["device1"]
+	matchFound := false
 	err := json.NewDecoder(r.Body).Decode(&requestData)
 	if err != nil {
 		helpers.SendErrorResponse(w, http.StatusBadRequest, "Failed to parse request body")
 		return
 	}
-
-	// Check if any required field is missing
 	if requestData.To == "" || requestData.Type == "" || requestData.Text == "" || requestData.From == "" {
 		helpers.SendErrorResponse(w, http.StatusBadRequest, "Missing required fields: 'to', 'type', 'text', or 'from'")
 		return
 	}
 
-	// Validate phone numbers
-	if !helpers.IsValidPhoneNumber(requestData.To) {
-		helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidPhoneNumberTo)
-		return
-	}
-	if !helpers.IsValidPhoneNumber(requestData.From) {
-		helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidPhoneNumberSender)
-		return
-	}
-	//Check numerphone is login or not
-	if !helpers.IsLoggedInByNumber(client, requestData.From) {
-		helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrNotReadyOrNotAvailable)
-		return
-	}
-	// Simpan daftar JID grup yang merupakan admin
+	for key := range clients {
+		fmt.Println("Checking key:", key)
+		whoami := clients[key].Store.ID.String()
+		parts := strings.Split(whoami, ":")
+		fmt.Println("whoami:", whoami)
 
-	// Periksa setiap grup untuk memeriksa apakah pengguna adalah admin
-	/* tidak perlu mengirim pesan ke group hanya private / only private
-	groups, err := client.GetJoinedGroups()
-	if err != nil {
-		http.Error(w, "Failed to fetch joined groups", http.StatusInternalServerError)
-		return
-	}
-
-	///looping for message to group
-	for _, group := range groups {
-		for _, participant := range group.Participants {
-			if participant.JID.User == requestData.To && participant.IsAdmin {
-				// Jika nomor tersebut adalah admin, tambahkan JID grup ke dalam slice
-				adminGroupJIDs = append(adminGroupJIDs, group.JID.String())
-
-				//fmt.Println("check admin", adminGroupJIDs)
-				// Keluar dari loop inner karena sudah ditentukan bahwa nomor tersebut adalah admin dalam grup ini
-				break
-			}
+		if requestData.From == parts[0] {
+			fmt.Println("Match found, requestData.From:", requestData.From)
+			value_client = clients[key]
+			fmt.Println("whoami:", value_client)
+			matchFound = true
+			break
 		}
 	}
-
-	fmt.Println("nomer jid", adminGroupJIDs)
-	for _, groupJID := range adminGroupJIDs {
-		// Convert the string JID to types.JID
-		//jid := types.JID(groupJID)
-		parts := strings.Split(groupJID, "@")
-
-		// Extract user and server parts
-		user := parts[0]
-		server := parts[1]
-
-		// Convert the user and server parts to types.JID
-		jid := types.NewJID(user, server)
-
-		// Call the SendMessageToGroup function
-		err := helpers.SendMessageToGroup(client, jid, requestData.Text)
-		if err != nil {
-			fmt.Printf("Error sending message to group %s: %v\n", groupJID, err)
-		} else {
-			fmt.Printf("Message sent to group %s successfully\n", groupJID)
-		}
+	if !matchFound {
+		helpers.SendErrorResponse(w, http.StatusBadRequest, "No matching number found for requestData.From")
 	}
-	*/
+
 	if requestData.Type == "text" {
-		err = helpers.SendMessageToPhoneNumber(client, requestData.To, requestData.Text)
+		err = helpers.SendMessageToPhoneNumber(value_client, requestData.To, requestData.Text)
 		if err != nil {
 			// Tangani kesalahan jika gagal mengirim pesan
 			helpers.SendErrorResponse(w, http.StatusInternalServerError, errors.ErrFailedToSendMessage)
@@ -160,10 +116,12 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(jsonResponse)
+
 }
 
 func SendMessageBulkHandler(w http.ResponseWriter, r *http.Request) {
-
+	var value_client = clients["device1"]
+	matchFound := false
 	var requestData []model.SendMessageDataRequest
 	err := json.NewDecoder(r.Body).Decode(&requestData)
 	if err != nil {
@@ -185,7 +143,7 @@ func SendMessageBulkHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Check if any required fields are missing
-		if message.Type == "" || message.Text == "" || message.From == "" || message.To == "" {
+		/*if message.Type == "" || message.Text == "" || message.From == "" || message.To == "" {
 			result["status"] = "failed"
 			results = append(results, result)
 			continue
@@ -211,10 +169,28 @@ func SendMessageBulkHandler(w http.ResponseWriter, r *http.Request) {
 			results = append(results, result)
 			continue
 		}
-
+		*/
 		// Send the message if all checks pass
+
+		for key := range clients {
+			fmt.Println("Checking key:", key)
+			whoami := clients[key].Store.ID.String()
+			parts := strings.Split(whoami, ":")
+			fmt.Println("whoami:", whoami)
+
+			if message.From == parts[0] {
+				fmt.Println("Match found, requestData.From:", message.From)
+				value_client = clients[key]
+				fmt.Println("whoami:", value_client)
+				matchFound = true
+				break
+			}
+		}
+		if !matchFound {
+			helpers.SendErrorResponse(w, http.StatusBadRequest, "No matching number found for requestData.From")
+		}
 		if message.Type == "text" {
-			err = helpers.SendMessageToPhoneNumber(client, message.To, message.Text)
+			err = helpers.SendMessageToPhoneNumber(value_client, message.To, message.Text)
 			if err != nil {
 				result["status"] = "failed"
 			}

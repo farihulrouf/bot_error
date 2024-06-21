@@ -5,78 +5,77 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
+	"strings"
 
-	"github.com/joho/godotenv" // Import godotenv package
+	"github.com/joho/godotenv"
 	_ "github.com/mattn/go-sqlite3"
-	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/store/sqlstore"
 	waLog "go.mau.fi/whatsmeow/util/log"
 	"wagobot.com/controllers"
-	"wagobot.com/db"
 	"wagobot.com/router"
 )
 
-var client *whatsmeow.Client
-
 func main() {
-	// Load environment variables from .env file
-	if err := godotenv.Load(); err != nil {
+	// Load values from .env file
+	err := godotenv.Load()
+	if err != nil {
 		log.Fatalf("Error loading .env file: %v", err)
 	}
 
-	// Initialize logger
+	// Retrieve values from environment variables
+	//secretKey := os.Getenv("SECRET_KEY")
+	port := os.Getenv("PORT")
+	dbPath := os.Getenv("DB_PATH") // Get DB_PATH from .env
+
+	// Configure database logging
 	dbLog := waLog.Stdout("Database", "DEBUG", true)
 
-	// Initialize database connection
-	dbPath := os.Getenv("DB_PATH")
-	if dbPath == "" {
-		log.Fatal("DB_PATH environment variable is not set")
+	index := strings.Index(dbPath, ":")
+	if index == -1 {
+		fmt.Println("Format dbPath tidak valid")
+		return
 	}
-	if err := db.InitDB(dbPath); err != nil {
-		panic(err)
-	}
-	defer db.CloseDB()
 
-	// Initialize WhatsApp connection
-	container, err := sqlstore.New("sqlite3", dbPath, dbLog)
+	// Ambil substring setelah titik dua dan sebelum tanda tanya (?)
+	substring := dbPath[index+1:]
+	endIndex := strings.Index(substring, "?")
+	if endIndex == -1 {
+		fmt.Println("Format dbPath tidak valid")
+		return
+	}
+
+	fileName := substring[:endIndex]
+	err = removeFile(fileName)
 	if err != nil {
-		panic(err)
+		log.Printf("Failed to remove SQLite database file: %v", err)
 	}
-	defer container.Close()
 
-	deviceStore, err := container.GetFirstDevice()
+	// Initialize SQL store
+	storeContainer, err := sqlstore.New("sqlite3", dbPath, dbLog)
 	if err != nil {
-		panic(err)
+		log.Fatalf("Failed to connect to database: %v", err)
 	}
-	clientLog := waLog.Stdout("Client", "DEBUG", true)
-	client = whatsmeow.NewClient(deviceStore, clientLog)
-	client.AddEventHandler(controllers.EventHandler)
-	controllers.SetClient(client)
-	controllers.ScanQrCode(client)
-	//controllers.EventHandler() // Call EventHandler here
-	controllers.EventHandler(client)
 
-	// Setup router with client
-	r := router.SetupRouter(client)
+	// Set storeContainer to the controller package variable
+	controllers.SetStoreContainer(storeContainer)
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		log.Fatal("PORT environment variable is not set")
+	// Setup router
+	r := router.SetupRouter()
+
+	// Start server
+	log.Printf("Server is running on port %s\n", port)
+	log.Fatal(http.ListenAndServe(":"+port, r))
+}
+
+// Helper function to remove file
+func removeFile(filePath string) error {
+	//fmt.Println("di eksekusi")
+	if filePath == "" {
+		return nil
 	}
-	go func() {
-		address := fmt.Sprintf(":%s", port)
-		log.Printf("Server running on port %s", port)
-		if err := http.ListenAndServe(address, r); err != nil {
-			log.Fatalf("Server failed to start: %v", err)
-		}
-	}()
-
-	// Handle graceful shutdown
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	<-c
-
-	client.Disconnect()
+	err := os.Remove(filePath)
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	return nil
 }

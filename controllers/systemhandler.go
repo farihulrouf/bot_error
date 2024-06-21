@@ -3,20 +3,14 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 
-	//"go.mau.fi/whatsmeow"
-
-	"go.mau.fi/whatsmeow/types"
-	"wagobot.com/errors"
-	"wagobot.com/helpers"
 	"wagobot.com/model"
 )
 
 func GetInfoHandler(w http.ResponseWriter, r *http.Request) {
 	// Get self JID from the device store
-	deviceStore := client.Store.ID
+	/*deviceStore := client.Store.ID
 	if deviceStore == nil {
 		http.Error(w, "Client not logged in", http.StatusInternalServerError)
 		return
@@ -57,6 +51,7 @@ func GetInfoHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(jsonResponse)
+	*/
 }
 
 func PingHandler(w http.ResponseWriter, r *http.Request) {
@@ -73,86 +68,44 @@ func VersionHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetDevicesHandler(w http.ResponseWriter, r *http.Request) {
-	deviceStore := client.Store.ID
-	if deviceStore == nil {
-		http.Error(w, "Client not logged in", http.StatusInternalServerError)
-		return
+	type ClientInfo struct {
+		ID      string `json:"id"`
+		Phone   string `json:"phone"`
+		Name    string `json:"name"`
+		Status  string `json:"status"`
+		Process string `json:"process"`
+		Busy    bool   `json:"busy"`
+		Qrcode  string `json:"qrcode"`
 	}
 
-	// Mengonversi ID pengguna menjadi JID
-	selfJID := types.NewJID(deviceStore.User, types.DefaultUserServer)
+	mutex.Lock()
+	defer mutex.Unlock()
 
-	// Mendapatkan perangkat pengguna yang terhubung dengan JID saat ini
-	deviceJIDs, err := client.GetUserDevices([]types.JID{selfJID})
-	if err != nil {
-		log.Printf("Error getting user devices: %v", err)
-		http.Error(w, "Failed to get user devices", http.StatusInternalServerError)
-		return
-	}
-
-	fmt.Printf("Check device: %v\n", deviceJIDs)
-	// Mempersiapkan data respons
-	phoneMap := make(map[string]bool)
-	responseData := make([]map[string]interface{}, 0)
-	for _, deviceJID := range deviceJIDs {
-		// Cek jika phone sudah ada di map
-		if phoneMap[deviceJID.User] {
-			continue // Skip this device if the phone number is already in the map
-		}
-		/*
-			if !helpers.IsLoggedInByNumber(client, deviceJID.User) {
-				sendErrorResponse(w, http.StatusBadRequest, "not ready or not available. Please pairing the device", deviceJID.User)
-				return
+	var connectedClients []ClientInfo
+	//for key := range clients
+	for key, client := range clients {
+		if client.IsConnected() {
+			whoami := client.Store.ID.String()
+			clientInfo := ClientInfo{
+				ID:      client.Store.ID.String(),
+				Phone:   whoami,
+				Name:    key,
+				Status:  "Connected",
+				Process: "getMessage",
+				Busy:    true,
+				Qrcode:  " ",
 			}
-		*/
-
-		// Mendapatkan informasi pengguna untuk setiap perangkat
-		userInfoMap, err := client.GetUserInfo([]types.JID{deviceJID})
-		fmt.Println("usermap", deviceJID.User)
-		if err != nil {
-			log.Printf("Error getting user info: %v", err)
-			// Menyertakan perangkat dalam respons dengan informasi terbatas
-			deviceData := map[string]interface{}{
-				"id":      deviceJID.String(),
-				"phone":   deviceJID.User,
-				"status":  "ready",
-				"process": "getMessage",
-				"busy":    true,
-				"qrcode":  "",
-			}
-			// Tambahkan phone ke map
-			phoneMap[deviceJID.User] = true
-			responseData = append(responseData, deviceData)
-			continue // Melanjutkan ke perangkat berikutnya
+			connectedClients = append(connectedClients, clientInfo)
 		}
-
-		userInfo := userInfoMap[deviceJID]
-		// Print userInfo untuk debugging
-		//fmt.Println("User Info:", userInfo)
-
-		deviceData := map[string]interface{}{
-			"id":      deviceJID.String(),
-			"phone":   deviceJID.User,
-			"status":  "ready",
-			"name":    "silver",
-			"process": "getMessages",
-			"busy":    false,
-			"qrcode":  "",
-		}
-		fmt.Println(userInfo)
-		// Tambahkan phone ke map
-		phoneMap[deviceJID.User] = true
-		responseData = append(responseData, deviceData)
 	}
 
 	response := map[string]interface{}{
-		"data": responseData,
+		"data": connectedClients,
 	}
 
-	// Mengubah respons menjadi JSON dan mengirimkannya
-	jsonResponse, err := json.Marshal(response)
+	jsonResponse, err := json.MarshalIndent(response, "", "  ")
 	if err != nil {
-		helpers.SendErrorResponse(w, http.StatusInternalServerError, errors.ErrFailedToMarshalResponse)
+		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
 		return
 	}
 
@@ -183,3 +136,27 @@ func SetWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
 }
+
+/*
+func GetStatus(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	deviceID := vars["device"]
+
+	mutex.Lock()
+	client := clients[deviceID]
+	mutex.Unlock()
+
+	if client == nil {
+		http.Error(w, "Client not found", http.StatusNotFound)
+		return
+	}
+
+	if client.IsConnected() {
+		// Mendapatkan nomor WhatsApp
+		whoami := client.Store.ID.String()
+		fmt.Fprintf(w, `{"status": "Connected", "whatsapp_number": "%s"}`, whoami)
+	} else {
+		fmt.Fprintf(w, `{"status": "Not connected"}`)
+	}
+}
+*/

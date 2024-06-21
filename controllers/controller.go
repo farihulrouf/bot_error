@@ -12,18 +12,39 @@ import (
 
 	"github.com/gorilla/mux"
 	"go.mau.fi/whatsmeow"
+	"go.mau.fi/whatsmeow/store/sqlstore"
 	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
-	"wagobot.com/errors"
-	"wagobot.com/helpers"
-	"wagobot.com/model"
 	"wagobot.com/response"
 )
 
-var client *whatsmeow.Client
+/*var client *whatsmeow.Client
 
 func SetClient(c *whatsmeow.Client) {
 	client = c
+}
+
+var (
+	clients        = make(map[string]*whatsmeow.Client)
+	mutex          = &sync.Mutex{}
+	StoreContainer *sqlstore.Container
+)
+
+func SetStoreContainer(container *sqlstore.Container) {
+	StoreContainer = container
+}
+*/
+
+// maping client to map
+var (
+	clients        = make(map[string]*whatsmeow.Client)
+	mutex          = &sync.Mutex{}
+	StoreContainer *sqlstore.Container
+)
+
+// set store
+func SetStoreContainer(container *sqlstore.Container) {
+	StoreContainer = container
 }
 
 var (
@@ -31,6 +52,12 @@ var (
 	mu         sync.Mutex
 	webhookURL string
 )
+
+func GetClients() map[string]*whatsmeow.Client {
+	mutex.Lock()
+	defer mutex.Unlock()
+	return clients
+}
 
 /*
 	func sendToAPI(sender string, message string) {
@@ -43,7 +70,7 @@ var (
 //var silver = ""
 */
 func EventHandler(evt interface{}) {
-
+	fmt.Println("try to excution")
 	switch v := evt.(type) {
 	case *events.Message:
 
@@ -385,33 +412,65 @@ func GetMessagesByIdHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func ScanQRHandler(w http.ResponseWriter, r *http.Request) {
-	// Check if the client is nil
+	vars := mux.Vars(r)
+	deviceID := vars["device"]
+
+	mutex.Lock()
+	client, exists := clients[deviceID]
+	mutex.Unlock()
+
+	if !exists {
+		// Create a new client instance
+		deviceStore, err := StoreContainer.GetFirstDevice()
+		if err != nil {
+			http.Error(w, "Failed to get device store", http.StatusInternalServerError)
+			return
+		}
+
+		client = whatsmeow.NewClient(deviceStore, nil)
+
+		mutex.Lock()
+		clients[deviceID] = client
+		mutex.Unlock()
+	}
+
+	// Check
 	if client == nil {
 		http.Error(w, "Client is nil", http.StatusInternalServerError)
 		return
 	}
 
-	// No ID stored, new login
-	qrChan, _ := client.GetQRChannel(context.Background())
-	err := client.Connect()
+	qrChan, err := client.GetQRChannel(context.Background())
+	if err != nil {
+		http.Error(w, "Failed to get QR channel: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err = client.Connect()
 	if err != nil {
 		http.Error(w, "Failed to connect: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Loop through QR channel events
+	var qrCodes []string
 	for evt := range qrChan {
 		if evt.Event == "code" {
-			// Respond with the QR code data
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]string{"qr_code": evt.Code})
-			return
+			qrCodes = append(qrCodes, evt.Code)
+			// If you want to limit to one QR code, you can break here
+			break
 		}
+		// Optionally collect more QR codes
+		// if len(qrCodes) >= 5 {
+		// 	break
+		// }
 	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{"qr_codes": qrCodes})
 }
 
 func RetrieveMessagesHandler(w http.ResponseWriter, r *http.Request) {
-	identifier := r.URL.Query().Get("identifier")
+	/*identifier := r.URL.Query().Get("identifier")
 	if identifier == "" {
 		http.Error(w, "Missing identifier", http.StatusBadRequest)
 		return
@@ -433,6 +492,18 @@ func RetrieveMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(jsonResponse)
+	*/
+}
+
+func TriggerEventHandler(w http.ResponseWriter, r *http.Request) {
+
+	for _, client := range clients {
+		client.AddEventHandler(EventHandler)
+	}
+	for key := range clients {
+		fmt.Println("Checking key:", key)
+		EventHandler(clients[key])
+	}
 }
 
 /*
