@@ -73,7 +73,6 @@ func EventHandler(evt interface{}) {
 	fmt.Println("try to excution")
 	switch v := evt.(type) {
 	case *events.Message:
-
 		if !v.Info.IsFromMe && v.Message.GetConversation() != "" ||
 			v.Message.GetImageMessage().GetCaption() != "" ||
 			v.Message.GetVideoMessage().GetCaption() != "" ||
@@ -140,6 +139,16 @@ func EventHandler(evt interface{}) {
 				// Replies: v.Message.Replies,
 			})
 		}
+	case *events.PairSuccess:
+		fmt.Println("pari succeess", v.ID.User)
+		/*case *events.Receipt:
+		if v.Type == types.ReceiptTypeRead || v.Type == types.ReceiptTypeReadSelf {
+			fmt.Println("%v was read by %s at %s", v.MessageIDs, v.SourceString(), v.Timestamp)
+		} else if v.Type == types.ReceiptTypeDelivered {
+			fmt.Println("%s was delivered to %s at %s", v.MessageIDs[0], v.SourceString(), v.Timestamp)
+		}
+		*/
+
 	}
 }
 
@@ -419,11 +428,27 @@ func ScanQRHandler(w http.ResponseWriter, r *http.Request) {
 	client, exists := clients[deviceID]
 	mutex.Unlock()
 
-	if !exists {
-		// Create a new client instance
+	// Jika klien sudah terautentikasi, putuskan koneksi dan hapus dari map
+	if exists && client.Store.ID != nil {
+		fmt.Println("Menghapus klien yang sudah terautentikasi dengan ID: " + client.Store.ID.String())
+
+		// Putuskan koneksi klien
+		client.Disconnect()
+
+		// Hapus klien dari map
+		mutex.Lock()
+		delete(clients, deviceID)
+		mutex.Unlock()
+
+		// Set klien ke nil
+		client = nil
+	}
+
+	// Buat instance klien baru jika tidak ada klien atau klien adalah nil
+	if client == nil {
 		deviceStore, err := StoreContainer.GetFirstDevice()
 		if err != nil {
-			http.Error(w, "Failed to get device store", http.StatusInternalServerError)
+			http.Error(w, "Gagal mendapatkan penyimpanan perangkat", http.StatusInternalServerError)
 			return
 		}
 
@@ -434,21 +459,29 @@ func ScanQRHandler(w http.ResponseWriter, r *http.Request) {
 		mutex.Unlock()
 	}
 
-	// Check
+	// Periksa apakah klien adalah nil
 	if client == nil {
-		http.Error(w, "Client is nil", http.StatusInternalServerError)
+		http.Error(w, "Klien adalah nil", http.StatusInternalServerError)
 		return
 	}
 
+	// Mulai proses mendapatkan QR sebelum menghubungkan klien
+	go func() {
+
+		clients[deviceID].AddEventHandler(EventHandler)
+
+		EventHandler(clients[deviceID])
+	}()
+
 	qrChan, err := client.GetQRChannel(context.Background())
 	if err != nil {
-		http.Error(w, "Failed to get QR channel: "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Gagal mendapatkan saluran QR: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	err = client.Connect()
 	if err != nil {
-		http.Error(w, "Failed to connect: "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Gagal terhubung: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -456,13 +489,8 @@ func ScanQRHandler(w http.ResponseWriter, r *http.Request) {
 	for evt := range qrChan {
 		if evt.Event == "code" {
 			qrCodes = append(qrCodes, evt.Code)
-			// If you want to limit to one QR code, you can break here
 			break
 		}
-		// Optionally collect more QR codes
-		// if len(qrCodes) >= 5 {
-		// 	break
-		// }
 	}
 
 	w.Header().Set("Content-Type", "application/json")

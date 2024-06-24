@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/gorilla/handlers"
 	"github.com/joho/godotenv"
 	_ "github.com/mattn/go-sqlite3"
 	"go.mau.fi/whatsmeow/store/sqlstore"
@@ -61,10 +62,21 @@ func main() {
 
 	// Setup router
 	r := router.SetupRouter()
+	apiRouter := router.SetupRouter()
+	r.PathPrefix("/api").Handler(http.StripPrefix("/api", apiRouter))
 
-	// Start server
+	// Serve static files
+	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))
+
+	// Enable CORS for development
+	corsHandler := handlers.CORS(
+		handlers.AllowedOrigins([]string{"http://localhost:8080"}),
+		handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE"}),
+		handlers.AllowedHeaders([]string{"Content-Type"}),
+	)(r)
+
 	log.Printf("Server is running on port %s\n", port)
-	log.Fatal(http.ListenAndServe(":"+port, r))
+	log.Fatal(http.ListenAndServe(":"+port, corsHandler))
 }
 
 // Helper function to remove file

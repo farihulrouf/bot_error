@@ -80,7 +80,7 @@ func GetDevicesHandler(w http.ResponseWriter, r *http.Request) {
 
 	mutex.Lock()
 	defer mutex.Unlock()
-
+	//clients
 	var connectedClients []ClientInfo
 	//for key := range clients
 	for key, client := range clients {
