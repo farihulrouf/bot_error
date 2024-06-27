@@ -66,6 +66,7 @@ type ClientInfo struct {
 	QR     string `json:"qr,omitempty"`
 	Status string `json:"status"`
 	Name   string `json:"name"`
+	Busy   bool   `json:"busy,omitempty"`
 }
 
 func GetClients() map[string]*whatsmeow.Client {
@@ -369,6 +370,7 @@ func CreateDevice(w http.ResponseWriter, r *http.Request) {
 			response = append(response, ClientInfo{
 				ID:     d.RegistrationID,
 				Number: d.JID,
+				Busy:   true,
 				Status: "connected",
 				Name:   d.PushName,
 			})
@@ -380,6 +382,7 @@ func CreateDevice(w http.ResponseWriter, r *http.Request) {
 		response = append(response, ClientInfo{
 			ID:     "",
 			Number: "",
+			Busy:   false,
 			QR:     qrCode,
 			Status: "pairing",
 			Name:   "",
