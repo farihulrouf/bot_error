@@ -68,7 +68,7 @@ func main() {
 
 	// Enable CORS for development
 	corsHandler := handlers.CORS(
-		handlers.AllowedOrigins([]string{"http://localhost:8080"}),
+		handlers.AllowedOrigins([]string{"http://localhost:8081"}),
 		handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE"}),
 		handlers.AllowedHeaders([]string{"Content-Type"}),
 	)(r)

@@ -20,6 +20,7 @@ import (
 	"go.mau.fi/whatsmeow/types/events"
 	waLog "go.mau.fi/whatsmeow/util/log"
 	"wagobot.com/db"
+	"wagobot.com/helpers"
 	"wagobot.com/model"
 	"wagobot.com/response"
 )
@@ -104,12 +105,11 @@ func connectClient(client *whatsmeow.Client) (string, *types.JID) {
 	return qrCode, client.Store.ID
 }
 
-func getClient(deviceStore *store.Device) *whatsmeow.Client {
+func GetClient(deviceStore *store.Device) *whatsmeow.Client {
 	client := whatsmeow.NewClient(deviceStore, clientLog)
 	//clients := client[generateRandomString(5)]
 	//fmt.Println("data", clients)
 	client.AddEventHandler(EventHandler)
-	fmt.Println("data client", client)
 	return client
 }
 
@@ -340,17 +340,25 @@ func GetSearchMessagesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
-
+func AddClient(id string, client *whatsmeow.Client) {
+	mutex.Lock()
+	defer mutex.Unlock()
+	clients[id] = client
+}
 func CreateDevice(w http.ResponseWriter, r *http.Request) {
 	deviceStore := StoreContainer.NewDevice()
-	client := getClient(deviceStore)
-
+	client := GetClient(deviceStore)
+	//fmt.Println("cek data", deviceStore)
 	qrCode, jid := connectClient(client)
-	fmt.Println("cek nilai client ", clients)
 
 	var response []ClientInfo
-
+	//clients["device"] = deviceStore
 	// Check if there are devices in the database
+	//AddClient("silver", client)
+	// Add the client to the slice
+
+	fmt.Println("Data client setelah ditambahkan:", clients, jid)
+
 	dbx, err := db.OpenDatabase()
 	if err != nil {
 		http.Error(w, "Failed to connect to the database", http.StatusInternalServerError)
@@ -363,14 +371,15 @@ func CreateDevice(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to get devices from the database", http.StatusInternalServerError)
 		return
 	}
-
-	// If there are devices, add them to the response
+	//fmt.Println("cek data silver", clients)
+	// Add existing devices from the database to the response
 	if len(devices) > 0 {
 		for _, d := range devices {
 			response = append(response, ClientInfo{
 				ID:     d.RegistrationID,
 				Number: d.JID,
 				Busy:   true,
+				QR:     "",
 				Status: "connected",
 				Name:   d.PushName,
 			})
@@ -388,11 +397,18 @@ func CreateDevice(w http.ResponseWriter, r *http.Request) {
 			Name:   "",
 		})
 	}
-	if jid != nil {
+	//mutex.Lock()
+	//clients["silver"] = client
+	//mutex.Unlock()
+	/*if jid != nil {
+		mutex.Lock()
 		clients[jid.User] = client
+		mutex.Unlock()
 	}
+	*/
 
 	// Add existing connected clients to the response
+	mutex.Lock()
 	for _, c := range clients {
 		if c.IsConnected() {
 			response = append(response, ClientInfo{
@@ -403,6 +419,7 @@ func CreateDevice(w http.ResponseWriter, r *http.Request) {
 			})
 		}
 	}
+	mutex.Unlock()
 
 	w.Header().Set("Content-Type", "application/json")
 	if len(response) > 0 {
@@ -598,4 +615,28 @@ func ListDevices(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(devices)
+}
+
+func GetAllClients(w http.ResponseWriter, r *http.Request) {
+	var allClients []map[string]string
+
+	for deviceName, client := range clients {
+		clientInfo := map[string]string{
+			"device_name":  deviceName,
+			"phone_number": client.Store.ID.User,
+			"status":       "active",
+			"qr":           "", // QR kosong karena klien sudah aktif
+		}
+		allClients = append(allClients, clientInfo)
+	}
+
+	jsonResponse, err := json.Marshal(allClients)
+	if err != nil {
+		helpers.SendErrorResponse(w, http.StatusInternalServerError, "Failed to marshal response")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(jsonResponse)
 }

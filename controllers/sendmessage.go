@@ -5,9 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
-	"github.com/google/uuid"
 	"wagobot.com/errors"
 	"wagobot.com/helpers"
 	"wagobot.com/model"
@@ -56,10 +54,17 @@ func SendMessageGroupHandler(w http.ResponseWriter, r *http.Request) {
 
 func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	var requestData model.SendMessageDataRequest
-	//fmt.Println("data clinet", clients)
-	var value_client = clients["device1"]
-	matchFound := false
-	err := json.NewDecoder(r.Body).Decode(&requestData)
+	client, found := clients[requestData.From]
+
+	fmt.Println("data clinet", client)
+	if !found {
+		http.Error(w, "Client not found", http.StatusNotFound)
+		return
+	}
+	fmt.Println("data clinet", clients)
+	//var value_client = clients["device1"]
+	//matchFound := false
+	/*err := json.NewDecoder(r.Body).Decode(&requestData)
 	if err != nil {
 		helpers.SendErrorResponse(w, http.StatusBadRequest, "Failed to parse request body")
 		return
@@ -67,24 +72,6 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	if requestData.To == "" || requestData.Type == "" || requestData.Text == "" || requestData.From == "" {
 		helpers.SendErrorResponse(w, http.StatusBadRequest, "Missing required fields: 'to', 'type', 'text', or 'from'")
 		return
-	}
-
-	for key := range clients {
-		fmt.Println("Checking key:", key)
-		whoami := clients[key].Store.ID.String()
-		parts := strings.Split(whoami, ":")
-		fmt.Println("whoami:", whoami)
-
-		if requestData.From == parts[0] {
-			fmt.Println("Match found, requestData.From:", requestData.From)
-			value_client = clients[key]
-			fmt.Println("whoami:", value_client)
-			matchFound = true
-			break
-		}
-	}
-	if !matchFound {
-		helpers.SendErrorResponse(w, http.StatusBadRequest, "No matching number found for requestData.From")
 	}
 
 	if requestData.Type == "text" {
@@ -116,7 +103,7 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(jsonResponse)
-
+	*/
 }
 
 func SendMessageBulkHandler(w http.ResponseWriter, r *http.Request) {

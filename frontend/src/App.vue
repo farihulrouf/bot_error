@@ -2,37 +2,48 @@
   <div id="app">
     <Navbar />
     <div class="container mx-auto my-4">
-      <ListAccount :headers="tableHeaders" :rows="tableData" />
     </div>
-    <div class="container mx-auto my-4 w-full flex relative">
-      <QrcodeCard />
-      <QrcodeCard />
+    <div class="container mx-auto my-4 w-full flex flex-wrap gap-4">
+      <!-- Show LoadingSpinner component if deviceData is empty -->
+      <LoadingSpin class="absolute" v-if="deviceData.length === 0" />
+      <!-- Show QrcodeCard components once deviceData is fetched -->
+      <QrcodeCard v-else v-for="device in deviceData" :key="device.id || device.qr" :device="device" />
     </div>
   </div>
 </template>
 
 <script>
 import Navbar from './components/Navbar.vue';
-import ListAccount from './components/ListAccount.vue';
-import './assets/css/index.css'; // Mengimpor file tailwind.css di sini
 import QrcodeCard from './components/QrcodeCard.vue';
+import LoadingSpin from './components/LoadingSpin.vue'; // Updated import for renamed component
+import './assets/css/index.css'; // Import Tailwind CSS here
+import axios from 'axios';
 
 export default {
   name: 'App',
   components: {
     Navbar,
-    ListAccount,  // Menambahkan ListTable ke dalam objek components
-    QrcodeCard
+    QrcodeCard,
+    LoadingSpin // Updated registration for renamed component
   },
   data() {
     return {
-      tableHeaders: ['Account', 'Devices', 'Expired', 'Balance', 'Settings', 'API'],
-      tableData: [
-        { account: 'Account 1', devices: 3, expired: '2024-12-31', balance: '$100.00', settings: 'Edit', api: 'Access' },
-       
-        // Data lainnya
-      ]
+      deviceData: []  // State to store fetched data from API
     };
+  },
+  created() {
+    this.fetchDeviceData();
+  },
+  methods: {
+    async fetchDeviceData() {
+      try {
+        const response = await axios.get('http://localhost:8080/api/system/devices');
+        this.deviceData = response.data;
+        console.log('Fetched Device Data:', this.deviceData);  // Log data to console
+      } catch (error) {
+        console.error('Error fetching device data:', error);
+      }
+    }
   }
 };
 </script>
