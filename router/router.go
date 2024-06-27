@@ -17,7 +17,7 @@ func SetupRouter() *mux.Router {
 	// Menetapkan penanganan rute untuk endpoint registrasi dan login
 	r.HandleFunc("/api/register", controllers.RegisterHandler).Methods("POST")
 	r.HandleFunc("/api/login", controllers.LoginHandler).Methods("POST")
-	r.HandleFunc("/api/scanqr/{device}", controllers.ScanQRHandler).Methods("GET")
+	//r.HandleFunc("/api/scanqr/{device}", controllers.ScanQRHandler).Methods("GET")
 	r.HandleFunc("/api/token", controllers.CreateToken).Methods("POST")
 	r.HandleFunc("/api/triggerEvent", controllers.TriggerEventHandler).Methods("POST")
 
@@ -59,7 +59,8 @@ func SetupRouter() *mux.Router {
 	//router.POST("/api/system/webhook", SetWebhookHandler)
 
 	r.HandleFunc("/api/getinfo", controllers.GetInfoHandler).Methods("GET")
-	r.HandleFunc("/api/system/devices", controllers.GetDevicesHandler).Methods("GET")
+	r.HandleFunc("/api/system/devices", controllers.CreateDevice).Methods("GET")
+	r.HandleFunc("/api/system", controllers.ListDevices).Methods("GET")
 	//r.HandleFunc("/status/qr/list", controllers.GetConnectedClientsList).Methods("GET")
 
 	///r.HandleFunc("/api/token", controllers.CreateToken).Methods("POST")

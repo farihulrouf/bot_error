@@ -2,19 +2,25 @@ package controllers
 
 import (
 	"context"
+
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
+
 	"net/http"
 	"strings"
 	"sync"
 
 	"github.com/gorilla/mux"
 	"go.mau.fi/whatsmeow"
+	"go.mau.fi/whatsmeow/store"
 	"go.mau.fi/whatsmeow/store/sqlstore"
 	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
+	waLog "go.mau.fi/whatsmeow/util/log"
+	"wagobot.com/db"
+	"wagobot.com/model"
 	"wagobot.com/response"
 )
 
@@ -40,6 +46,7 @@ var (
 	clients        = make(map[string]*whatsmeow.Client)
 	mutex          = &sync.Mutex{}
 	StoreContainer *sqlstore.Container
+	clientLog      waLog.Logger
 )
 
 // set store
@@ -53,10 +60,56 @@ var (
 	webhookURL string
 )
 
+type ClientInfo struct {
+	ID     string `json:"id"`
+	Number string `json:"number,omitempty"`
+	QR     string `json:"qr,omitempty"`
+	Status string `json:"status"`
+	Name   string `json:"name"`
+}
+
 func GetClients() map[string]*whatsmeow.Client {
 	mutex.Lock()
 	defer mutex.Unlock()
 	return clients
+}
+
+func connectClient(client *whatsmeow.Client) (string, *types.JID) {
+	var err error
+	qrChan := make(chan string)
+
+	// Disconnect client if it's already connected
+	if client.IsConnected() {
+		client.Disconnect()
+	}
+
+	// Generate new QR code for new login session
+	qrChannel, _ := client.GetQRChannel(context.Background())
+	go func() {
+		for evt := range qrChannel {
+			switch evt.Event {
+			case "code":
+				qrChan <- evt.Code
+			case "login":
+				close(qrChan)
+			}
+		}
+	}()
+	err = client.Connect()
+	if err != nil {
+		log.Fatalf("Failed to connect: %v", err)
+	}
+	qrCode := <-qrChan
+	return qrCode, client.Store.ID
+}
+
+func getClient(deviceStore *store.Device) *whatsmeow.Client {
+	client := whatsmeow.NewClient(deviceStore, clientLog)
+	//clients := client[generateRandomString(5)]
+	//fmt.Println("data", clients)
+	client.AddEventHandler(EventHandler)
+	fmt.Println("data client", client)
+	return client
 }
 
 /*
@@ -139,8 +192,8 @@ func EventHandler(evt interface{}) {
 				// Replies: v.Message.Replies,
 			})
 		}
-	case *events.PairSuccess:
-		fmt.Println("pari succeess", v.ID.User)
+		//case *events.PairSuccess:
+		//	fmt.Println("pari succeess", v.ID.User)
 		/*case *events.Receipt:
 		if v.Type == types.ReceiptTypeRead || v.Type == types.ReceiptTypeReadSelf {
 			fmt.Println("%v was read by %s at %s", v.MessageIDs, v.SourceString(), v.Timestamp)
@@ -287,6 +340,75 @@ func GetSearchMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func CreateDevice(w http.ResponseWriter, r *http.Request) {
+	deviceStore := StoreContainer.NewDevice()
+	client := getClient(deviceStore)
+
+	qrCode, jid := connectClient(client)
+	fmt.Println("cek nilai client ", clients)
+
+	var response []ClientInfo
+
+	// Check if there are devices in the database
+	dbx, err := db.OpenDatabase()
+	if err != nil {
+		http.Error(w, "Failed to connect to the database", http.StatusInternalServerError)
+		return
+	}
+	defer dbx.Close()
+
+	devices, err := model.GetDevicesFromDB(dbx)
+	if err != nil {
+		http.Error(w, "Failed to get devices from the database", http.StatusInternalServerError)
+		return
+	}
+
+	// If there are devices, add them to the response
+	if len(devices) > 0 {
+		for _, d := range devices {
+			response = append(response, ClientInfo{
+				ID:     d.RegistrationID,
+				Number: d.JID,
+				Status: "connected",
+				Name:   d.PushName,
+			})
+		}
+	}
+
+	// Add the new client to the response and clients map
+	if qrCode != "" {
+		response = append(response, ClientInfo{
+			ID:     "",
+			Number: "",
+			QR:     qrCode,
+			Status: "pairing",
+			Name:   "",
+		})
+	}
+	if jid != nil {
+		clients[jid.User] = client
+	}
+
+	// Add existing connected clients to the response
+	for _, c := range clients {
+		if c.IsConnected() {
+			response = append(response, ClientInfo{
+				ID:     "93847384", // Example ID
+				Number: c.Store.ID.User,
+				Status: "connected",
+				Name:   "dfarihul", // Example name
+			})
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if len(response) > 0 {
+		json.NewEncoder(w).Encode(response)
+	} else {
+		http.Error(w, "Failed to connect the client", http.StatusInternalServerError)
+	}
+}
+
 func GetMessagesHandler(w http.ResponseWriter, r *http.Request) {
 
 	mu.Lock()
@@ -420,83 +542,6 @@ func GetMessagesByIdHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func ScanQRHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	deviceID := vars["device"]
-
-	mutex.Lock()
-	client, exists := clients[deviceID]
-	mutex.Unlock()
-
-	// Jika klien sudah terautentikasi, putuskan koneksi dan hapus dari map
-	if exists && client.Store.ID != nil {
-		fmt.Println("Menghapus klien yang sudah terautentikasi dengan ID: " + client.Store.ID.String())
-
-		// Putuskan koneksi klien
-		client.Disconnect()
-
-		// Hapus klien dari map
-		mutex.Lock()
-		delete(clients, deviceID)
-		mutex.Unlock()
-
-		// Set klien ke nil
-		client = nil
-	}
-
-	// Buat instance klien baru jika tidak ada klien atau klien adalah nil
-	if client == nil {
-		deviceStore, err := StoreContainer.GetFirstDevice()
-		if err != nil {
-			http.Error(w, "Gagal mendapatkan penyimpanan perangkat", http.StatusInternalServerError)
-			return
-		}
-
-		client = whatsmeow.NewClient(deviceStore, nil)
-
-		mutex.Lock()
-		clients[deviceID] = client
-		mutex.Unlock()
-	}
-
-	// Periksa apakah klien adalah nil
-	if client == nil {
-		http.Error(w, "Klien adalah nil", http.StatusInternalServerError)
-		return
-	}
-
-	// Mulai proses mendapatkan QR sebelum menghubungkan klien
-	go func() {
-
-		clients[deviceID].AddEventHandler(EventHandler)
-
-		EventHandler(clients[deviceID])
-	}()
-
-	qrChan, err := client.GetQRChannel(context.Background())
-	if err != nil {
-		http.Error(w, "Gagal mendapatkan saluran QR: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	err = client.Connect()
-	if err != nil {
-		http.Error(w, "Gagal terhubung: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	var qrCodes []string
-	for evt := range qrChan {
-		if evt.Event == "code" {
-			qrCodes = append(qrCodes, evt.Code)
-			break
-		}
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{"qr_codes": qrCodes})
-}
-
 func RetrieveMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	/*identifier := r.URL.Query().Get("identifier")
 	if identifier == "" {
@@ -534,122 +579,20 @@ func TriggerEventHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-/*
-func GetDevicesHandler(w http.ResponseWriter, r *http.Request) {
-	// Get self JID from the device store
-	deviceStore := client.Store.ID
-	if deviceStore == nil {
-		http.Error(w, "Client not logged in", http.StatusInternalServerError)
+func ListDevices(w http.ResponseWriter, r *http.Request) {
+	db, err := db.OpenDatabase()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	defer db.Close()
 
-	// Convert the deviceStore ID to a proper JID
-	selfJID := types.NewJID(deviceStore.User, types.DefaultUserServer)
-
-	// Get user devices for the logged-in JID
-	deviceJIDs, err := client.GetUserDevices([]types.JID{selfJID})
+	devices, err := model.GetDevicesFromDB(db)
 	if err != nil {
-		log.Printf("Error getting user devices: %v", err)
-		http.Error(w, "Failed to get user devices", http.StatusInternalServerError)
-		return
-	}
-
-	// Prepare the response
-	responseData := make([]map[string]interface{}, 0)
-	for _, deviceJID := range deviceJIDs {
-		// Fetch user info for each device
-		userInfoMap, err := client.GetUserInfo([]types.JID{deviceJID})
-		if err != nil {
-			log.Printf("Error getting user info: %v", err)
-			// Include the device in the response with limited information
-			deviceData := map[string]interface{}{
-				"id":      deviceJID.String(),
-				"phone":   deviceJID.User,
-				"status":  "unknown",
-				"process": "string", // Replace with actual process if available
-				"busy":    false,    // Replace with actual busy status if available
-				"qrcode":  "",       // Replace with actual QR code if available
-			}
-			responseData = append(responseData, deviceData)
-			continue // Continue to the next device
-		}
-
-		userInfo, exists := userInfoMap[deviceJID]
-		if !exists {
-			http.Error(w, "User info not found for device", http.StatusNotFound)
-			return
-		}
-
-		fmt.Println("check userInfo", userInfo)
-
-		deviceData := map[string]interface{}{
-			"id":    deviceJID.String(),
-			"phone": deviceJID.User,
-			//"name":    userInfo.Long, // Use Long name instead of Short
-			"status":  userInfo.Status,
-			"process": "string", // Replace with actual process if available
-			"busy":    false,    // Replace with actual busy status if available
-			"qrcode":  "",       // Replace with actual QR code if available
-		}
-
-		fmt.Println("cek data", deviceData)
-		responseData = append(responseData, deviceData)
-	}
-
-	response := map[string]interface{}{
-		"data": responseData,
-	}
-
-	// Marshal the response into JSON and send it
-	jsonResponse, err := json.Marshal(response)
-	if err != nil {
-		helpers.SendErrorResponse(w, http.StatusInternalServerError, errors.ErrFailedToMarshalResponse)
+		http.Error(w, fmt.Sprintf("Failed to retrieve devices: %v", err), http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(jsonResponse)
+	json.NewEncoder(w).Encode(devices)
 }
-*/
-/*
-func SetWebhook(w http.ResponseWriter, r *http.Request) {
-	txtid := r.Context().Value("userinfo").(auth.Values).Get("Id")
-	token := r.Context().Value("userinfo").(auth.Values).Get("Token")
-	userid, _ := strconv.Atoi(txtid)
-
-	decoder := json.NewDecoder(r.Body)
-	var t model.WebhookStruct
-	err := decoder.Decode(&t)
-	if err != nil {
-		Respond(w, r, http.StatusInternalServerError, errors.New(fmt.Sprintf("Could not set webhook: %v", err)))
-		return
-	}
-	var webhook = t.WebhookURL
-
-	_, err = s.db.Exec("UPDATE users SET webhook=? WHERE id=?", webhook, userid)
-	if err != nil {
-		Respond(w, r, http.StatusInternalServerError, errors.New(fmt.Sprintf("%s", err)))
-		return
-	}
-
-	v := helpers.UpdateUserInfo(r.Context().Value("userinfo"), "Webhook", webhook)
-	userinfocache.Set(token, v, cache.NoExpiration)
-
-	response := map[string]interface{}{"webhook": webhook}
-	responseJson, err := json.Marshal(response)
-	if err != nil {
-		Respond(w, r, http.StatusInternalServerError, err)
-	} else {
-		Respond(w, r, http.StatusOK, string(responseJson))
-	}
-	return
-}
-
-func Respond(w http.ResponseWriter, r *http.Request, status int, data interface{}) {
-	w.WriteHeader(status)
-	if data != nil {
-		json.NewEncoder(w).Encode(data)
-	}
-}
-*/

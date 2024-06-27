@@ -1,11 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"strings"
 
 	"github.com/gorilla/handlers"
 	"github.com/joho/godotenv"
@@ -30,27 +28,27 @@ func main() {
 
 	// Configure database logging
 	dbLog := waLog.Stdout("Database", "DEBUG", true)
+	/*
+		index := strings.Index(dbPath, ":")
+		if index == -1 {
+			fmt.Println("Format dbPath tidak valid")
+			return
+		}
 
-	index := strings.Index(dbPath, ":")
-	if index == -1 {
-		fmt.Println("Format dbPath tidak valid")
-		return
-	}
+		// Ambil substring setelah titik dua dan sebelum tanda tanya (?)
+		substring := dbPath[index+1:]
+		endIndex := strings.Index(substring, "?")
+		if endIndex == -1 {
+			fmt.Println("Format dbPath tidak valid")
+			return
+		}
 
-	// Ambil substring setelah titik dua dan sebelum tanda tanya (?)
-	substring := dbPath[index+1:]
-	endIndex := strings.Index(substring, "?")
-	if endIndex == -1 {
-		fmt.Println("Format dbPath tidak valid")
-		return
-	}
-
-	fileName := substring[:endIndex]
-	err = removeFile(fileName)
-	if err != nil {
-		log.Printf("Failed to remove SQLite database file: %v", err)
-	}
-
+		fileName := substring[:endIndex]
+		err = removeFile(fileName)
+		if err != nil {
+			log.Printf("Failed to remove SQLite database file: %v", err)
+		}
+	*/
 	// Initialize SQL store
 	storeContainer, err := sqlstore.New("sqlite3", dbPath, dbLog)
 	if err != nil {

@@ -67,4 +67,3 @@ type MessageFilter struct {
 type Response struct {
 	Data []MessageFilter `json:"data"`
 }
-
