@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"context"
+	"math/rand"
+	"time"
 
 	"encoding/base64"
 	"encoding/json"
@@ -43,6 +45,10 @@ func SetStoreContainer(container *sqlstore.Container) {
 */
 
 // maping client to map
+const (
+	charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+)
+
 var (
 	clients        = make(map[string]*whatsmeow.Client)
 	mutex          = &sync.Mutex{}
@@ -340,17 +346,31 @@ func GetSearchMessagesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
 func AddClient(id string, client *whatsmeow.Client) {
 	mutex.Lock()
 	defer mutex.Unlock()
+
+	if client == nil {
+		log.Printf("Failed to add client: client is nil for id %s\n", id)
+		return
+	}
+
 	clients[id] = client
+	log.Printf("Client added successfully: %s\n", id)
 }
+
 func CreateDevice(w http.ResponseWriter, r *http.Request) {
 	deviceStore := StoreContainer.NewDevice()
 	client := GetClient(deviceStore)
 	//fmt.Println("cek data", deviceStore)
 	qrCode, jid := connectClient(client)
 
+	deviceID := generateRandomString("Device", 3)
+
+	// Add the new client to the clients map with generated device ID
+	AddClient(deviceID, client)
+	fmt.Println("cek data ", clients)
 	var response []ClientInfo
 	//clients["device"] = deviceStore
 	// Check if there are devices in the database
@@ -408,7 +428,7 @@ func CreateDevice(w http.ResponseWriter, r *http.Request) {
 	*/
 
 	// Add existing connected clients to the response
-	mutex.Lock()
+	/*mutex.Lock()
 	for _, c := range clients {
 		if c.IsConnected() {
 			response = append(response, ClientInfo{
@@ -420,7 +440,7 @@ func CreateDevice(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	mutex.Unlock()
-
+	*/
 	w.Header().Set("Content-Type", "application/json")
 	if len(response) > 0 {
 		json.NewEncoder(w).Encode(response)
@@ -639,4 +659,13 @@ func GetAllClients(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(jsonResponse)
+}
+
+func generateRandomString(prefix string, length int) string {
+	rand.Seed(time.Now().UnixNano())
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[rand.Intn(len(charset))]
+	}
+	return fmt.Sprintf("%s-%s", prefix, string(b))
 }
