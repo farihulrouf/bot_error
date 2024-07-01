@@ -56,7 +56,6 @@ func SendMessageGroupHandler(w http.ResponseWriter, r *http.Request) {
 
 func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	var requestData model.SendMessageDataRequest
-	//fmt.Println("data clinet", clients)
 	var value_client = clients["device1"]
 	matchFound := false
 	err := json.NewDecoder(r.Body).Decode(&requestData)
@@ -74,6 +73,7 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		whoami := clients[key].Store.ID.String()
 		parts := strings.Split(whoami, ":")
 		fmt.Println("whoami:", whoami)
+		fmt.Println("whoami:", parts[0])
 
 		if requestData.From == parts[0] {
 			fmt.Println("Match found, requestData.From:", requestData.From)
@@ -141,36 +141,6 @@ func SendMessageBulkHandler(w http.ResponseWriter, r *http.Request) {
 			"url":     message.URL,
 			"from":    message.From,
 		}
-
-		// Check if any required fields are missing
-		/*if message.Type == "" || message.Text == "" || message.From == "" || message.To == "" {
-			result["status"] = "failed"
-			results = append(results, result)
-			continue
-		}
-
-		// Validate 'from' number
-		if !helpers.IsValidPhoneNumber(message.From) {
-			result["status"] = "failed"
-			results = append(results, result)
-			continue
-		}
-
-		// Validate 'to' number
-		if !helpers.IsValidPhoneNumber(message.To) {
-			result["status"] = "failed"
-			results = append(results, result)
-			continue
-		}
-
-		// Validate if WhatsApp number is connected and give status failed if number not valid
-		if !helpers.IsLoggedInByNumber(client, message.From) {
-			result["status"] = "failed"
-			results = append(results, result)
-			continue
-		}
-		*/
-		// Send the message if all checks pass
 
 		for key := range clients {
 			fmt.Println("Checking key:", key)

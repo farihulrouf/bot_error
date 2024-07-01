@@ -1,12 +1,12 @@
 package router
 
 import (
-	//"net/http"
+	"net/http"
 
 	"github.com/gorilla/mux"
 	//"go.mau.fi/whatsmeow"
 
-	//"wagobot.com/auth"
+	"wagobot.com/auth"
 	"wagobot.com/controllers"
 )
 
@@ -18,20 +18,17 @@ func SetupRouter() *mux.Router {
 	r.HandleFunc("/api/register", controllers.RegisterHandler).Methods("POST")
 	r.HandleFunc("/api/login", controllers.LoginHandler).Methods("POST")
 	//r.HandleFunc("/api/scanqr/{device}", controllers.ScanQRHandler).Methods("GET")
-	r.HandleFunc("/api/token", controllers.CreateToken).Methods("POST")
-	r.HandleFunc("/api/triggerEvent", controllers.TriggerEventHandler).Methods("POST")
 
 	// Middleware JWT digunakan untuk semua rute kecuali /api/login dan /api/register /scanqr
-	/*r.Use(func(next http.Handler) http.Handler {
+	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/api/login" || r.URL.Path == "/api/register" || r.URL.Path == "/api/scanqr" || r.URL.Path == "/api/token" {
+			if r.URL.Path == "/api/login" || r.URL.Path == "/api/register" {
 				next.ServeHTTP(w, r)
 				return
 			}
 			auth.JWTMiddleware(next).ServeHTTP(w, r)
 		})
 	})
-	*/
 
 	r.HandleFunc("/api/groups", controllers.GetGroupsHandler).Methods("GET")
 	r.HandleFunc("/api/groups", controllers.JoinGroupHandler).Methods("POST")
@@ -39,10 +36,9 @@ func SetupRouter() *mux.Router {
 	r.HandleFunc("/api/groups/leave", controllers.LeaveGroupHandler).Methods("POST")
 	r.HandleFunc("/api/messages", controllers.SendMessageHandler).Methods("POST")
 
-	//r.HandleFunc("/api/messages", controllers.RetrieveMessagesHandler).Methods("GET")
 	r.HandleFunc("/api/messages/bulk", controllers.SendMessageBulkHandler).Methods("POST")
 	r.HandleFunc("/api/messages", controllers.GetSearchMessagesHandler).Methods("GET")
-
+	r.HandleFunc("/api/token", controllers.CreateToken).Methods("POST")
 	r.HandleFunc("/api/result", controllers.GetMessagesHandler).Methods("GET")
 	r.HandleFunc("/api/result/{id}", controllers.GetMessagesByIdHandler).Methods("GET")
 
@@ -58,9 +54,9 @@ func SetupRouter() *mux.Router {
 
 	//router.POST("/api/system/webhook", SetWebhookHandler)
 
-	r.HandleFunc("/api/getinfo", controllers.GetInfoHandler).Methods("GET")
+	//r.HandleFunc("/api/getinfo", controllers.GetInfoHandler).Methods("GET")
 	r.HandleFunc("/api/system/devices", controllers.CreateDevice).Methods("GET")
-	r.HandleFunc("/api/system", controllers.ListDevices).Methods("GET")
+	//r.HandleFunc("/api/system", controllers.ListDevices).Methods("GET")
 	//r.HandleFunc("/status/qr/list", controllers.GetConnectedClientsList).Methods("GET")
 
 	///r.HandleFunc("/api/token", controllers.CreateToken).Methods("POST")

@@ -4,14 +4,14 @@ import (
 	"log"
 	"net/http"
 	"os"
-
-	"github.com/gorilla/handlers"
 	"github.com/joho/godotenv"
-	_ "github.com/mattn/go-sqlite3"
 	"go.mau.fi/whatsmeow/store/sqlstore"
 	waLog "go.mau.fi/whatsmeow/util/log"
 	"wagobot.com/controllers"
+	"wagobot.com/db"
 	"wagobot.com/router"
+	"wagobot.com/middleware"
+
 )
 
 func main() {
@@ -22,33 +22,12 @@ func main() {
 	}
 
 	// Retrieve values from environment variables
-	//secretKey := os.Getenv("SECRET_KEY")
 	port := os.Getenv("PORT")
-	dbPath := os.Getenv("DB_PATH") // Get DB_PATH from .env
+	dbPath := os.Getenv("DB_PATH")
 
 	// Configure database logging
 	dbLog := waLog.Stdout("Database", "DEBUG", true)
-	/*
-		index := strings.Index(dbPath, ":")
-		if index == -1 {
-			fmt.Println("Format dbPath tidak valid")
-			return
-		}
 
-		// Ambil substring setelah titik dua dan sebelum tanda tanya (?)
-		substring := dbPath[index+1:]
-		endIndex := strings.Index(substring, "?")
-		if endIndex == -1 {
-			fmt.Println("Format dbPath tidak valid")
-			return
-		}
-
-		fileName := substring[:endIndex]
-		err = removeFile(fileName)
-		if err != nil {
-			log.Printf("Failed to remove SQLite database file: %v", err)
-		}
-	*/
 	// Initialize SQL store
 	storeContainer, err := sqlstore.New("sqlite3", dbPath, dbLog)
 	if err != nil {
@@ -57,6 +36,13 @@ func main() {
 
 	// Set storeContainer to the controller package variable
 	controllers.SetStoreContainer(storeContainer)
+
+	// Initialize the database
+	err = db.InitDB()
+	if err != nil {
+		log.Fatalf("Could not initialize database: %v", err)
+	}
+	defer db.CloseDB()
 
 	// Setup router
 	r := router.SetupRouter()
@@ -67,25 +53,8 @@ func main() {
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))
 
 	// Enable CORS for development
-	corsHandler := handlers.CORS(
-		handlers.AllowedOrigins([]string{"http://localhost:8081"}),
-		handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE"}),
-		handlers.AllowedHeaders([]string{"Content-Type"}),
-	)(r)
-
+	corsHandler := middleware.SetupCORS(r)
+	
 	log.Printf("Server is running on port %s\n", port)
 	log.Fatal(http.ListenAndServe(":"+port, corsHandler))
-}
-
-// Helper function to remove file
-func removeFile(filePath string) error {
-	//fmt.Println("di eksekusi")
-	if filePath == "" {
-		return nil
-	}
-	err := os.Remove(filePath)
-	if err != nil && !os.IsNotExist(err) {
-		return err
-	}
-	return nil
 }

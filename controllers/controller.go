@@ -216,32 +216,6 @@ type GroupCollection struct {
 	Groups []types.GroupInfo
 }
 
-func ScanQrCode(client *whatsmeow.Client) {
-	if client.Store.ID == nil {
-		qrChannel, _ := client.GetQRChannel(context.Background())
-		go func() {
-			for evt := range qrChannel {
-				switch evt.Event {
-				case "code":
-					fmt.Println("QR Code:", evt.Code)
-				case "login":
-					fmt.Println("Login successful")
-				}
-			}
-		}()
-		err := client.Connect()
-		if err != nil {
-			log.Fatalf("Failed to connect: %v", err)
-		}
-		<-qrChannel
-	} else {
-		err := client.Connect()
-		if err != nil {
-			log.Fatalf("Failed to connect: %v", err)
-		}
-	}
-}
-
 func GetSearchMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	// Parse request parameters
 	r.ParseForm()
