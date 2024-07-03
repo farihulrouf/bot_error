@@ -61,6 +61,8 @@ func SetupRouter() *mux.Router {
 
 	///r.HandleFunc("/api/token", controllers.CreateToken).Methods("POST")
 
+	r.HandleFunc("/api/webhook/update", controllers.UpdateUserURLHandler).Methods("PUT")
+
 	// Add more routes here if needed
 	return r
 }

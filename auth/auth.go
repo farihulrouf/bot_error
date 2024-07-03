@@ -50,6 +50,7 @@ func GenerateToken(username string) (string, error) {
 
 // ParseToken parses the JWT token and returns the claims if valid.
 func ParseToken(tokenString string) (jwt.MapClaims, error) {
+	fmt.Println("data token", tokenString)
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		// Validate the signing method
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {

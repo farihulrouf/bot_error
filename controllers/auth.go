@@ -1,8 +1,11 @@
 package controllers
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"net/http"
+	"strings"
 
 	//"github.com/golang-jwt/jwt"
 	"golang.org/x/crypto/bcrypt"
@@ -29,7 +32,7 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	user.Password = string(hashedPassword)
 
 	// Save the user to the database
-	err = db.CreateUser(user.Username, user.Password, user.Email, user.FirstName, user.LastName)
+	err = db.CreateUser(user.Username, user.Password, user.Email, user.FirstName, user.LastName, user.Url)
 	if err != nil {
 		http.Error(w, "Failed to register user", http.StatusInternalServerError)
 		return
@@ -107,4 +110,58 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"status": "success"})
 	*/
+}
+
+// Register handles user registration.
+func UpdateUserURLHandler(w http.ResponseWriter, r *http.Request) {
+	tokenStr := r.Header.Get("Authorization")
+	if tokenStr == "" {
+		http.Error(w, "Authorization header missing", http.StatusUnauthorized)
+		return
+	}
+
+	tokenStr = strings.TrimPrefix(tokenStr, "Bearer ")
+	//ParseToken
+	claims, err := auth.ParseToken(tokenStr)
+	if err != nil {
+		http.Error(w, "Invalid token", http.StatusUnauthorized)
+		return
+	}
+	//fmt.Println("Check token claims:", tokenStr)
+	//fmt.Println("Check token claims:", claims)
+
+	username, ok := claims["username"].(string)
+	//fmt.Println("data", username)
+	if !ok {
+		http.Error(w, "Invalid usernem in token", http.StatusUnauthorized)
+		return
+	}
+
+	var req struct {
+		Url string `json:"url"`
+	}
+	err = json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
+
+	if req.Url == "" {
+		http.Error(w, "URL cannot be empty", http.StatusBadRequest)
+		return
+	}
+
+	err = db.UpdateUserURLWebhook(username, req.Url)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "User not found", http.StatusNotFound)
+		} else {
+			http.Error(w, "Failed to update URL", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("User URL updated successfully"))
 }

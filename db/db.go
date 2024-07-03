@@ -50,7 +50,8 @@ func InitDB() error {
 		password TEXT NOT NULL,
 		email TEXT NOT NULL UNIQUE,
 		first_name TEXT,
-		last_name TEXT
+		last_name TEXT,
+		url TEXT
 	)`)
 	if err != nil {
 		return err
@@ -67,16 +68,16 @@ func CloseDB() {
 	}
 }
 
-func CreateUser(username, password, email, firstName, lastName string) error {
+func CreateUser(username, password, email, firstName, lastName, url string) error {
 	// Prepare the SQL statement.
-	stmt, err := db.Prepare("INSERT INTO users (username, password, email, first_name, last_name) VALUES (?, ?, ?, ?, ?)")
+	stmt, err := db.Prepare("INSERT INTO users (username, password, email, first_name, last_name, url) VALUES (?, ?, ?, ?, ?, ?)")
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
 	// Execute the SQL statement with user data.
-	_, err = stmt.Exec(username, password, email, firstName, lastName)
+	_, err = stmt.Exec(username, password, email, firstName, lastName, url)
 	if err != nil {
 		return err
 	}
@@ -132,4 +133,10 @@ func OpenDatabase() (*sql.DB, error) {
 	}
 
 	return db, nil
+}
+
+func UpdateUserURLWebhook(Username string, url string) error {
+	query := `UPDATE users SET url = ? WHERE username = ?`
+	_, err := db.Exec(query, url, Username)
+	return err
 }
