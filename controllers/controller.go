@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"io/ioutil"
 	"math/rand"
 	"time"
 
@@ -26,23 +27,6 @@ import (
 	"wagobot.com/model"
 	"wagobot.com/response"
 )
-
-/*var client *whatsmeow.Client
-
-func SetClient(c *whatsmeow.Client) {
-	client = c
-}
-
-var (
-	clients        = make(map[string]*whatsmeow.Client)
-	mutex          = &sync.Mutex{}
-	StoreContainer *sqlstore.Container
-)
-
-func SetStoreContainer(container *sqlstore.Container) {
-	StoreContainer = container
-}
-*/
 
 // maping client to map
 const (
@@ -157,8 +141,7 @@ func EventHandler(evt interface{}) {
 			thumbnaildoc := v.Message.DocumentMessage.GetJpegThumbnail()
 			url := v.Message.ImageMessage.GetUrl()
 			mimeTipe := v.Message.ImageMessage.GetMimetype()
-			//comment := v.Message.CommentMessage.GetMessage()
-			//relyId := v.Message.GetCommentMessage().Message
+
 			tipe := v.Info.Type
 			isdocument := v.IsDocumentWithCaption
 			//chatText := v.Info.Chat
@@ -199,8 +182,42 @@ func EventHandler(evt interface{}) {
 				// Replies: v.Message.Replies,
 			})
 		}
-		//case *events.PairSuccess:
-		//	fmt.Println("pari succeess", v.ID.User)
+		webhookURL := "https://webhook.site/b20c292d-fb51-4e2e-8187-bdda1279c9b0"
+		err := sendPayloadToWebhook(v.Message.GetConversation(), webhookURL)
+		if err != nil {
+			fmt.Printf("Failed to send payload to webhook: %v\n", err)
+		}
+	case *events.PairSuccess:
+		fmt.Println("pari succeess", v.ID.User)
+	case *events.HistorySync:
+		fmt.Println("Received a history sync", v.Data.GetConversations())
+		/*for _, conv := range v.Data.GetConversations() {
+			for _, historymsg := range conv.GetMessages() {
+				chatJID, _ := types.ParseJID(conv.GetId())
+				evt, err := clients["device"].ParseWebMessage(chatJID, historymsg.GetMessage())
+				if err != nil {
+					log.Println(err)
+				}
+				EventHandler(evt)
+			}
+		}*/
+	case *events.Receipt:
+		if v.Type == events.ReceiptTypeRead || v.Type == events.ReceiptTypeReadSelf {
+			fmt.Printf("%v was read by %s at %s\n", v.MessageIDs, v.SourceString(), v.Timestamp)
+			// Membuat payload untuk webhook
+			/*webhookPayload := model.ReadReceipt{
+				MessageID: v.MessageIDs[0],
+				ReadBy:    v.SourceString(),
+				Time:      v.Timestamp.UnixMilli(),
+			}*/
+			// Mengirimkan payload ke webhook
+			//webhookURL := "http://localhost:8080/webhook"
+			err := sendPayloadToWebhook(string(v.Type), webhookURL)
+			if err != nil {
+				fmt.Printf("Failed to send read receipt to webhook: %v\n", err)
+			}
+		}
+
 		/*case *events.Receipt:
 		if v.Type == types.ReceiptTypeRead || v.Type == types.ReceiptTypeReadSelf {
 			fmt.Println("%v was read by %s at %s", v.MessageIDs, v.SourceString(), v.Timestamp)
@@ -642,4 +659,25 @@ func generateRandomString(prefix string, length int) string {
 		b[i] = charset[rand.Intn(len(charset))]
 	}
 	return fmt.Sprintf("%s-%s", prefix, string(b))
+}
+
+func WebhookHandler(w http.ResponseWriter, r *http.Request) {
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Failed to read request body", http.StatusBadRequest)
+		return
+	}
+
+	fmt.Printf("Received raw payload: %s\n", string(body)) // Logging payload mentah
+
+	var payload model.WebhookPayload
+	err = json.Unmarshal(body, &payload)
+	if err != nil {
+		http.Error(w, "Failed to parse webhook payload", http.StatusBadRequest)
+		return
+	}
+
+	fmt.Printf("Parsed webhook payload: %+v\n", payload)
+
+	w.WriteHeader(http.StatusOK)
 }

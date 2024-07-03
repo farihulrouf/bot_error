@@ -48,7 +48,7 @@ func SetupRouter() *mux.Router {
 
 	r.HandleFunc("/api/system/ver", controllers.VersionHandler).Methods("GET") // Add the logout route
 
-	r.HandleFunc("/api/system/webhook", controllers.SetWebhookHandler).Methods("POST")
+	r.HandleFunc("/api/system/webhook", controllers.WebhookHandler).Methods("POST")
 
 	r.HandleFunc("/api/group/invite", controllers.GetGroupInviteLinkHandler).Methods("GET")
 

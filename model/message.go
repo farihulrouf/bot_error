@@ -100,3 +100,18 @@ type GroupResponse struct {
 	JID  string `json:"jid"`
 	Name string `json:"name"`
 }
+
+type ReadReceipt struct {
+	MessageID string `json:"message_id"`
+	ReadBy    string `json:"read_by"`
+	Time      int64  `json:"time"`
+}
+
+
+type WebhookPayload struct {
+	ID     string `json:"id"`
+	From   string `json:"from"`
+	To     string `json:"to"`
+	Time   int64  `json:"time"`
+	Status string `json:"status"`
+}
