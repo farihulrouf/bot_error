@@ -182,8 +182,30 @@ func EventHandler(evt interface{}) {
 				// Replies: v.Message.Replies,
 			})
 		}
+		payload := response.Message{
+			ID:             v.Info.ID,
+			Chat:           v.Info.Sender.String(),
+			Time:           v.Info.Timestamp.Unix(),
+			Text:           v.Message.GetConversation(),
+			Group:          v.Info.IsGroup,
+			IsFromMe:       v.Info.IsFromMe,
+			Caption:        v.Message.GetImageMessage().GetCaption(),
+			VideoMessage:   v.Message.GetVideoMessage().GetCaption(),
+			DocMessage:     v.Message.GetDocumentMessage().GetCaption(),
+			MimeTipe:       v.Message.GetImageMessage().GetMimetype(),
+			Name:           v.Info.PushName,
+			To:             v.Info.PushName,
+			Url:            v.Message.GetImageMessage().GetUrl(),
+			Thumbnail:      base64.StdEncoding.EncodeToString(v.Message.GetImageMessage().GetJpegThumbnail()),
+			Thumbnailvideo: base64.StdEncoding.EncodeToString(v.Message.GetVideoMessage().GetJpegThumbnail()),
+			Thumbnaildoc:   base64.StdEncoding.EncodeToString(v.Message.GetDocumentMessage().GetJpegThumbnail()),
+			Tipe:           v.Info.Type,
+			IsDocument:     v.IsDocumentWithCaption,
+			Mediatipe:      v.Info.MediaType,
+		}
+
 		webhookURL := "https://webhook.site/b20c292d-fb51-4e2e-8187-bdda1279c9b0"
-		err := sendPayloadToWebhook(v.Message.GetConversation(), webhookURL)
+		err := sendPayloadToWebhook(payload, webhookURL)
 		if err != nil {
 			fmt.Printf("Failed to send payload to webhook: %v\n", err)
 		}
@@ -212,10 +234,10 @@ func EventHandler(evt interface{}) {
 			}*/
 			// Mengirimkan payload ke webhook
 			//webhookURL := "http://localhost:8080/webhook"
-			err := sendPayloadToWebhook(string(v.Type), webhookURL)
+			/*err := sendPayloadToWebhook(string(v.Type), webhookURL)
 			if err != nil {
 				fmt.Printf("Failed to send read receipt to webhook: %v\n", err)
-			}
+			}*/
 		}
 
 		/*case *events.Receipt:

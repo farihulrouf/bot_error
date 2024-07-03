@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -206,19 +205,4 @@ func sendErrorResponse(w http.ResponseWriter, statusCode int, message, phoneNumb
 	w.Write(jsonBytes)
 }
 
-func sendPayloadToWebhook(payload string, url string) error {
-    fmt.Println("data payload", payload)
-    
-    resp, err := http.Post(url, "application/json", bytes.NewBuffer([]byte(payload)))
-    if err != nil {
-        return fmt.Errorf("failed to send payload to webhook: %v", err)
-    }
-    defer resp.Body.Close()
-
-    if resp.StatusCode != http.StatusOK {
-        return fmt.Errorf("received non-200 response from webhook: %s", resp.Status)
-    }
-
-    return nil
-}
 

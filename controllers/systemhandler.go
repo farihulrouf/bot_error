@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-
+	"bytes"
 	"wagobot.com/model"
 )
 
@@ -136,6 +136,31 @@ func SetWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
 }
+
+
+func sendPayloadToWebhook(payload interface{}, url string) error {
+    // Convert the payload object to a JSON string
+    payloadBytes, err := json.Marshal(payload)
+    if err != nil {
+        return fmt.Errorf("failed to marshal payload: %v", err)
+    }
+
+    fmt.Println("data payload", string(payloadBytes))
+
+    // Send the JSON string to the webhook
+    resp, err := http.Post(url, "application/json", bytes.NewBuffer(payloadBytes))
+    if err != nil {
+        return fmt.Errorf("failed to send payload to webhook: %v", err)
+    }
+    defer resp.Body.Close()
+
+    if resp.StatusCode != http.StatusOK {
+        return fmt.Errorf("received non-200 response from webhook: %s", resp.Status)
+    }
+
+    return nil
+}
+
 
 /*
 func GetStatus(w http.ResponseWriter, r *http.Request) {
