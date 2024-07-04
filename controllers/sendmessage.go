@@ -55,6 +55,7 @@ func SendMessageGroupHandler(w http.ResponseWriter, r *http.Request) {
 // SendMessageHandler handles sending messages.
 
 func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
+
 	var requestData model.SendMessageDataRequest
 	var value_client = clients["device1"]
 	matchFound := false
@@ -72,33 +73,32 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Checking key:", key)
 		whoami := clients[key].Store.ID.String()
 		parts := strings.Split(whoami, ":")
-		fmt.Println("whoami:", whoami)
 		fmt.Println("whoami:", parts[0])
 
 		if requestData.From == parts[0] {
 			fmt.Println("Match found, requestData.From:", requestData.From)
 			value_client = clients[key]
-			fmt.Println("whoami:", value_client)
 			matchFound = true
 			break
 		}
 	}
+
 	if !matchFound {
 		helpers.SendErrorResponse(w, http.StatusBadRequest, "No matching number found for requestData.From")
+		return
 	}
 
 	if requestData.Type == "text" {
 		err = helpers.SendMessageToPhoneNumber(value_client, requestData.To, requestData.Text)
 		if err != nil {
-			// Tangani kesalahan jika gagal mengirim pesan
 			helpers.SendErrorResponse(w, http.StatusInternalServerError, errors.ErrFailedToSendMessage)
+			return
 		}
 	} else {
 		helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidMessageType)
 		return
 	}
-	//fmt.Println("check admin xsilver", adminGroupJIDs)
-	//webhookURL := "http://localhost:8080/webhook"
+
 	response := model.SendMessageResponse{
 		ID:     uuid.New().String(),
 		From:   requestData.From,
@@ -106,8 +106,6 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		Time:   time.Now().UnixMilli(),
 		Status: "delivered",
 	}
-
-	//sendPayloadToWebhook(response, webhookURL)
 
 	jsonResponse, err := json.Marshal(response)
 	if err != nil {
@@ -118,7 +116,6 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(jsonResponse)
-
 }
 
 func SendMessageBulkHandler(w http.ResponseWriter, r *http.Request) {

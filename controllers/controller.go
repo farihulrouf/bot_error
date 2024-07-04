@@ -35,6 +35,7 @@ const (
 
 var (
 	clients        = make(map[string]*whatsmeow.Client)
+	data_client    = make(map[string]*whatsmeow.Client)
 	mutex          = &sync.Mutex{}
 	StoreContainer *sqlstore.Container
 	clientLog      waLog.Logger
@@ -182,7 +183,7 @@ func EventHandler(evt interface{}) {
 				// Replies: v.Message.Replies,
 			})
 		}
-		payload := response.Message{
+		/*payload := response.Message{
 			ID:             v.Info.ID,
 			Chat:           v.Info.Sender.String(),
 			Time:           v.Info.Timestamp.Unix(),
@@ -209,8 +210,10 @@ func EventHandler(evt interface{}) {
 		if err != nil {
 			fmt.Printf("Failed to send payload to webhook: %v\n", err)
 		}
+		*/
 	case *events.PairSuccess:
 		fmt.Println("pari succeess", v.ID.User)
+		initialClient()
 	case *events.HistorySync:
 		//fmt.Println("Received a history sync", v.Data.GetConversations())
 		/*for _, conv := range v.Data.GetConversations() {
@@ -376,6 +379,9 @@ func AddClient(id string, client *whatsmeow.Client) {
 func CreateDevice(w http.ResponseWriter, r *http.Request) {
 	deviceStore := StoreContainer.NewDevice()
 	client := GetClient(deviceStore)
+	deviceID := generateRandomString("Device", 3)
+	data_client[deviceID] = client
+	//AddClient(deviceStore.ID.String(), client)
 	//fmt.Println("cek data", deviceStore)
 	qrCode, jid := connectClient(client)
 
@@ -592,6 +598,15 @@ func RetrieveMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	*/
 }
 
+func initialClient() {
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	for key, value := range data_client {
+		clients[key] = value
+	}
+}
+
 func TriggerEventHandler(w http.ResponseWriter, r *http.Request) {
 
 	for _, client := range clients {
@@ -727,12 +742,4 @@ func getClientWhoamiByDeviceName(nama_device string) (string, error) {
 
 	// Jika tidak ada yang cocok, kembalikan error
 	return "", fmt.Errorf("client not found for device name: %s", nama_device)
-}
-
-// SaveClient menyimpan klien ke dalam map clients
-func SaveClient(jid string, client *whatsmeow.Client) {
-	mutex.Lock()
-	defer mutex.Unlock()
-
-	clients[jid] = client
 }
