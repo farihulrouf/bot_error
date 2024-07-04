@@ -204,5 +204,3 @@ func sendErrorResponse(w http.ResponseWriter, statusCode int, message, phoneNumb
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(jsonBytes)
 }
-
-

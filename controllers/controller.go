@@ -728,3 +728,11 @@ func getClientWhoamiByDeviceName(nama_device string) (string, error) {
 	// Jika tidak ada yang cocok, kembalikan error
 	return "", fmt.Errorf("client not found for device name: %s", nama_device)
 }
+
+// SaveClient menyimpan klien ke dalam map clients
+func SaveClient(jid string, client *whatsmeow.Client) {
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	clients[jid] = client
+}
