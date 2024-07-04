@@ -1,11 +1,11 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"context"
-	"fmt"
 	"os/signal"
 	"syscall"
 
@@ -20,32 +20,32 @@ import (
 )
 
 func main() {
-	// Load values from .env file
+	// Memuat nilai dari file .env
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
+		log.Fatalf("Gagal memuat file .env: %v", err)
 	}
 
-	// Retrieve values from environment variables
+	// Mengambil nilai dari variabel lingkungan
 	port := os.Getenv("PORT")
 	dbPath := os.Getenv("DB_PATH")
 
-	// Configure database logging
+	// Mengatur logging untuk database
 	dbLog := waLog.Stdout("Database", "DEBUG", true)
 
-	// Initialize SQL store
+	// Menginisialisasi SQL store
 	storeContainer, err := sqlstore.New("sqlite3", dbPath, dbLog)
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		log.Fatalf("Gagal terhubung ke database: %v", err)
 	}
 
-	// Set storeContainer to the controller package variable
+	// Menetapkan storeContainer ke variabel package controller
 	controllers.SetStoreContainer(storeContainer)
 
-	// Get all devices from the database
+	// Mengambil semua perangkat dari database
 	devices, err := storeContainer.GetAllDevices()
 	if err != nil {
-		log.Fatalf("Failed to get devices from database: %v", err)
+		log.Fatalf("Gagal mengambil perangkat dari database: %v", err)
 	}
 
 	clientLog := waLog.Stdout("Client", "DEBUG", true)
@@ -55,53 +55,53 @@ func main() {
 		client.AddEventHandler(controllers.EventHandler)
 
 		if client.Store.ID == nil {
-			// New login
+			// Login baru
 			qrChan, _ := client.GetQRChannel(context.Background())
 			err = client.Connect()
 			if err != nil {
-				log.Fatalf("Failed to connect client: %v", err)
+				log.Fatalf("Gagal menghubungkan klien: %v", err)
 			}
 			for evt := range qrChan {
 				if evt.Event == "code" {
-					// Render QR code
+					// Menampilkan QR code
 					fmt.Println("QR code:", evt.Code)
 				} else {
-					fmt.Println("Login event:", evt.Event)
+					fmt.Println("Event login:", evt.Event)
 				}
 			}
 		} else {
-			// Already logged in, just connect
+			// Sudah login, langsung hubungkan
 			err = client.Connect()
 			if err != nil {
-				log.Fatalf("Failed to connect client: %v", err)
+				log.Fatalf("Gagal menghubungkan klien: %v", err)
 			}
 		}
 	}
 
-	// Initialize the database
+	// Inisialisasi database
 	err = db.InitDB()
 	if err != nil {
-		log.Fatalf("Could not initialize database: %v", err)
+		log.Fatalf("Gagal menginisialisasi database: %v", err)
 	}
 	defer db.CloseDB()
 
-	// Setup router
+	// Mengatur router
 	r := router.SetupRouter()
 	apiRouter := router.SetupRouter()
 	r.PathPrefix("/api").Handler(http.StripPrefix("/api", apiRouter))
 
-	// Serve static files
+	// Menyajikan file statis
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))
 
-	// Enable CORS for development
+	// Mengaktifkan CORS untuk pengembangan
 	corsHandler := middleware.SetupCORS(r)
 
-	log.Printf("Server is running on port %s\n", port)
+	log.Printf("Server berjalan di port %s\n", port)
 	go func() {
 		log.Fatal(http.ListenAndServe(":"+port, corsHandler))
 	}()
 
-	// Graceful shutdown
+	// Shutdown yang aman
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	<-c
