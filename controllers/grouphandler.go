@@ -16,9 +16,7 @@ import (
 )
 
 func GetGroupsHandler(w http.ResponseWriter, r *http.Request) {
-	//getConnectedClients()
-	//fmt.Println("Check connecction", getConnectedClients())
-	//fmt.Println("check connection", getConnectedClients())
+
 	phone := r.URL.Query().Get("phone")
 	if phone == "" {
 		helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrPhoneNumberRequired)
@@ -100,8 +98,8 @@ func JoinGroupHandler(w http.ResponseWriter, r *http.Request) {
 		helpers.SendErrorResponse(w, http.StatusBadRequest, "code and phone are required fields")
 		return
 	}
-	//check nunber is login in device 
-	
+	//check nunber is login in device
+
 	for key := range clients {
 		fmt.Println("Checking key:", key)
 		whoami := clients[key].Store.ID.String()
@@ -119,7 +117,7 @@ func JoinGroupHandler(w http.ResponseWriter, r *http.Request) {
 	if !matchFound {
 		helpers.SendErrorResponse(w, http.StatusBadRequest, "No matching number found")
 	}
-	
+
 	// Attempt to join the group with the provided invite link (code)
 	groupJID, err := value_client.JoinGroupWithLink(req.Code)
 	if err != nil {

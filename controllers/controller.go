@@ -381,15 +381,9 @@ func CreateDevice(w http.ResponseWriter, r *http.Request) {
 	client := GetClient(deviceStore)
 	deviceID := generateRandomString("Device", 3)
 	data_client[deviceID] = client
-	//AddClient(deviceStore.ID.String(), client)
-	//fmt.Println("cek data", deviceStore)
+
 	qrCode, jid := connectClient(client)
 
-	//deviceID := generateRandomString("Device", 3)
-	//fmt.Println("dta devive", deviceID)
-
-	// Add the new client to the clients map with generated device ID
-	//AddClient(deviceID, client)
 	var response []ClientInfo
 
 	fmt.Println("Data client setelah ditambahkan:", clients, jid)
@@ -605,17 +599,7 @@ func initialClient() {
 	for key, value := range data_client {
 		clients[key] = value
 	}
-}
-
-func TriggerEventHandler(w http.ResponseWriter, r *http.Request) {
-
-	for _, client := range clients {
-		client.AddEventHandler(EventHandler)
-	}
-	for key := range clients {
-		fmt.Println("Checking key:", key)
-		EventHandler(clients[key])
-	}
+	fmt.Println("cek data", clients)
 }
 
 func ListDevices(w http.ResponseWriter, r *http.Request) {

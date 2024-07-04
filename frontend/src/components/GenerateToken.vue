@@ -52,15 +52,15 @@ export default {
     return {
       token: '', // Variabel untuk menyimpan token
       webhook: '', // Variabel untuk menyimpan URL webhook
-      displayedToken: '', // Variabel untuk menampilkan token yang dipotong
+      displayedToken: '', // Variabel untuk menampilkan 15 karakter terakhir token
       isLoading: false // Variabel untuk menunjukkan status loading
     };
   },
   created() {
     // Ambil token dari localStorage saat komponen dibuat
     this.token = localStorage.getItem('token');
-    // Potong token menjadi 10 karakter
-    this.displayedToken = this.token ? this.token.slice(0, 10) : '';
+    // Potong token menjadi 15 karakter terakhir
+    this.displayedToken = this.token ? this.token.slice(-15) : '';
     this.fetchUserData();
   },
   methods: {
@@ -79,7 +79,7 @@ export default {
         const token = localStorage.getItem('token');
         const config = {
           headers: { Authorization: `Bearer ${token}` }
-        };c
+        };
         const response = await api.get('/api/user/detail', config);
         
         // Assign nilai URL webhook dari response data ke variabel webhook
@@ -98,7 +98,7 @@ export default {
 
         // Perbarui token di data komponen
         this.token = newToken;
-        this.displayedToken = newToken.slice(0, 10);
+        this.displayedToken = newToken.slice(-15);
 
         // Menunda perubahan status isLoading menjadi false
         setTimeout(() => {
