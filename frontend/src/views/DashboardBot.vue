@@ -51,7 +51,7 @@ export default {
       deviceData: [],
       isLoading: true,
       account: 'farihul', // Updated to be set dynamically
-      devicesCount: 2,
+      devicesCount: 1,
       expiredAt: '2030-12-12',
       balance: '30000',
       setting: 'token, webhook',

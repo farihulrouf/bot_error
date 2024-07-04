@@ -4,6 +4,14 @@
     <div class="w-1/2 pr-4">
       <h3 class="font-bold">Webhook</h3>
       <input type="text" v-model="webhook" class="border-gray-300 border rounded px-3 py-2 w-full mt-2">
+      <div class="flex justify-end mt-2">
+        <button @click="saveWebhook" :disabled="isLoading" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mr-2 focus:outline-none focus:shadow-outline">
+          Save
+        </button>
+        <button @click="closeWebhook" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+          Close
+        </button>
+      </div>
     </div>
 
     <!-- Bagian untuk menampilkan label dan nilai token -->
@@ -24,7 +32,7 @@
       </div>
     </div>
 
-    <!-- LoadingSpin ditampilkan di tengah -->
+    <!-- LoadingSpin ditampilkan di tengah saat isLoading true -->
     <div v-if="isLoading" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75">
       <LoadingSpin />
     </div>
@@ -43,7 +51,7 @@ export default {
   data() {
     return {
       token: '', // Variabel untuk menyimpan token
-      webhook: 'https://example.com/webhook', // Ganti dengan nilai webhook yang sesuai
+      webhook: '', // Variabel untuk menyimpan URL webhook
       displayedToken: '', // Variabel untuk menampilkan token yang dipotong
       isLoading: false // Variabel untuk menunjukkan status loading
     };
@@ -53,6 +61,7 @@ export default {
     this.token = localStorage.getItem('token');
     // Potong token menjadi 10 karakter
     this.displayedToken = this.token ? this.token.slice(0, 10) : '';
+    this.fetchUserData();
   },
   methods: {
     copyToken() {
@@ -64,6 +73,22 @@ export default {
       document.execCommand('copy');
       document.body.removeChild(textarea);
       alert('Token copied to clipboard');
+    },
+    async fetchUserData() {
+      try {
+        const token = localStorage.getItem('token');
+        const config = {
+          headers: { Authorization: `Bearer ${token}` }
+        };c
+        const response = await api.get('/api/user/detail', config);
+        
+        // Assign nilai URL webhook dari response data ke variabel webhook
+        this.webhook = response.url; // Pastikan 'url' sesuai dengan field yang mengandung URL
+
+        console.log('Fetched User Data:', response);
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      }
     },
     async generateNewToken() {
       try {
@@ -84,6 +109,33 @@ export default {
         alert('Failed to generate new token');
         this.isLoading = false; // Set loading menjadi false jika terjadi error
       }
+    },
+    async saveWebhook() {
+      try {
+        this.isLoading = true; // Set loading menjadi true saat memulai proses
+        const token = localStorage.getItem('token');
+        const config = {
+          headers: { Authorization: `Bearer ${token}` }
+        };
+        const data = { url: this.webhook }; // Siapkan data untuk dikirim ke API
+        const response = await api.put('webhook/update', data, config); // Menggunakan method PUT untuk update
+
+        console.log('Webhook updated successfully:', response);
+        alert('Webhook updated successfully'); // Tampilkan alert atau feedback sukses
+
+        // Menunda perubahan status isLoading menjadi false
+        setTimeout(() => {
+          this.isLoading = false; // Set loading menjadi false setelah beberapa detik
+        }, 1000); // Delay 2 detik (2000 milidetik)
+      } catch (error) {
+        console.error('Error updating webhook:', error);
+        alert('Failed to update webhook'); // Tampilkan alert atau feedback error
+        this.isLoading = false; // Set loading menjadi false jika terjadi error
+      }
+    },
+    closeWebhook() {
+      // Tambahkan logika jika diperlukan saat tombol Close ditekan
+      console.log('Close button clicked');
     }
   }
 };

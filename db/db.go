@@ -140,3 +140,10 @@ func UpdateUserURLWebhook(Username string, url string) error {
 	_, err := db.Exec(query, url, Username)
 	return err
 }
+
+func GetUserByID(username string) (model.User, error) {
+	var user model.User
+	query := `SELECT id, username, email, first_name, last_name, url FROM users WHERE username = ?`
+	err := db.QueryRow(query, username).Scan(&user.ID, &user.Username, &user.Email, &user.FirstName, &user.LastName, &user.Url)
+	return user, err
+}

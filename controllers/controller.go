@@ -204,7 +204,7 @@ func EventHandler(evt interface{}) {
 			Mediatipe:      v.Info.MediaType,
 		}
 
-		webhookURL := "https://webhook.site/b20c292d-fb51-4e2e-8187-bdda1279c9b0"
+		webhookURL := "https://localhost:8080/api/webhook"
 		err := sendPayloadToWebhook(payload, webhookURL)
 		if err != nil {
 			fmt.Printf("Failed to send payload to webhook: %v\n", err)
@@ -212,7 +212,7 @@ func EventHandler(evt interface{}) {
 	case *events.PairSuccess:
 		fmt.Println("pari succeess", v.ID.User)
 	case *events.HistorySync:
-		fmt.Println("Received a history sync", v.Data.GetConversations())
+		//fmt.Println("Received a history sync", v.Data.GetConversations())
 		/*for _, conv := range v.Data.GetConversations() {
 			for _, historymsg := range conv.GetMessages() {
 				chatJID, _ := types.ParseJID(conv.GetId())
@@ -379,16 +379,12 @@ func CreateDevice(w http.ResponseWriter, r *http.Request) {
 	//fmt.Println("cek data", deviceStore)
 	qrCode, jid := connectClient(client)
 
-	deviceID := generateRandomString("Device", 3)
+	//deviceID := generateRandomString("Device", 3)
+	//fmt.Println("dta devive", deviceID)
 
 	// Add the new client to the clients map with generated device ID
-	AddClient(deviceID, client)
-	fmt.Println("cek data ", clients)
+	//AddClient(deviceID, client)
 	var response []ClientInfo
-	//clients["device"] = deviceStore
-	// Check if there are devices in the database
-	//AddClient("silver", client)
-	// Add the client to the slice
 
 	fmt.Println("Data client setelah ditambahkan:", clients, jid)
 
@@ -404,8 +400,7 @@ func CreateDevice(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to get devices from the database", http.StatusInternalServerError)
 		return
 	}
-	//fmt.Println("cek data silver", clients)
-	// Add existing devices from the database to the response
+
 	if len(devices) > 0 {
 		for _, d := range devices {
 			response = append(response, ClientInfo{
@@ -430,30 +425,6 @@ func CreateDevice(w http.ResponseWriter, r *http.Request) {
 			Name:   "",
 		})
 	}
-	//mutex.Lock()
-	//clients["silver"] = client
-	//mutex.Unlock()
-	/*if jid != nil {
-		mutex.Lock()
-		clients[jid.User] = client
-		mutex.Unlock()
-	}
-	*/
-
-	// Add existing connected clients to the response
-	/*mutex.Lock()
-	for _, c := range clients {
-		if c.IsConnected() {
-			response = append(response, ClientInfo{
-				ID:     "93847384", // Example ID
-				Number: c.Store.ID.User,
-				Status: "connected",
-				Name:   "dfarihul", // Example name
-			})
-		}
-	}
-	mutex.Unlock()
-	*/
 	w.Header().Set("Content-Type", "application/json")
 	if len(response) > 0 {
 		json.NewEncoder(w).Encode(response)
@@ -702,4 +673,58 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("Parsed webhook payload: %+v\n", payload)
 
 	w.WriteHeader(http.StatusOK)
+}
+
+func GetClientByDeviceNameHandler(w http.ResponseWriter, r *http.Request) {
+	// Ambil parameter name_device dari URL query string atau path
+	params := r.URL.Query()
+	nama_device := params.Get("name_device")
+
+	whoami, err := getClientWhoamiByDeviceName(nama_device)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Client not found for device name: %s", nama_device), http.StatusNotFound)
+		return
+	}
+
+	// Buat JSON response
+	response := struct {
+		WhoAmI string `json:"whoami"`
+	}{
+		WhoAmI: whoami,
+	}
+
+	jsonResponse, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, "Failed to marshal JSON response", http.StatusInternalServerError)
+		return
+	}
+
+	// Set header Content-Type sebagai application/json
+	w.Header().Set("Content-Type", "application/json")
+	// Tulis response JSON ke ResponseWriter
+	w.Write(jsonResponse)
+}
+
+func getClientWhoamiByDeviceName(nama_device string) (string, error) {
+	// Iterasi melalui semua pasangan kunci-nilai dalam map clients
+	for key, value := range clients {
+		fmt.Printf("Kunci: %s, Nilai: %v\n", key, value)
+
+		// Membandingkan kunci dengan nama_device
+		if key == nama_device {
+			// Mengakses ID dari Store
+			whoami := clients[key].Store.ID.String()
+
+			// Memeriksa apakah whoami tidak kosong
+			if whoami == "" {
+				return "", fmt.Errorf("whoami value is empty for client with device name: %s", nama_device)
+			}
+
+			// Mengembalikan whoami dan nil (tanpa error)
+			return whoami, nil
+		}
+	}
+
+	// Jika tidak ada yang cocok, kembalikan error
+	return "", fmt.Errorf("client not found for device name: %s", nama_device)
 }

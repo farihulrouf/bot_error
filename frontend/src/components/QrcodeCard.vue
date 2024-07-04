@@ -7,17 +7,15 @@
       :class="{ 'bg-blue-100': isHovering }"
     >
       <div class="relative z-10 mx-auto max-w-md">
-        <div
-          class="space-y-6 pt-5 text-base leading-7 text-gray-600 transition-all duration-300"
-        >
+        <div class="space-y-6 pt-5 text-base leading-7 text-gray-600 transition-all duration-300">
           <template v-if="!device.qr">
             <p v-if="device.id">ID: {{ device.id }}</p>
             <p v-if="device.number">Phone: {{ device.number }}</p>
             <p v-if="device.name">Name: {{ device.name }}</p>
-            <p>Status: getMessage</p>
+            <p>Status: {{ getMessage }}</p>
           </template>
           <div v-if="device.qr">
-            <img :src="generateQRCodeURL(device.qr)" alt="QR Code">
+            <qrcode-vue :value="device.qr" size="220" level="H" render-as="canvas"></qrcode-vue>
           </div>
         </div>
       </div>
@@ -26,6 +24,8 @@
 </template>
 
 <script>
+import QrcodeVue from 'qrcode.vue';
+
 export default {
   name: 'QrcodeCard',
   props: {
@@ -34,15 +34,18 @@ export default {
       required: true
     }
   },
+  components: {
+    QrcodeVue
+  },
   data() {
     return {
       isHovering: false
     };
   },
-  methods: {
-    generateQRCodeURL(qrCodeData) {
-      // Example: Replace with actual method to generate QR code URL or image
-      return `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qrCodeData)}`;
+  computed: {
+    getMessage() {
+      // Implement logic to get status message based on device status
+      return 'Active';
     }
   }
 };
