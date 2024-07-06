@@ -8,7 +8,7 @@
         <label for="type" class="block text-sm font-medium text-gray-700">Type:</label>
         <select id="type" v-model="type" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
           <option value="text">Text</option>
-          <option value="media">Media</option>
+          <option value="video">Video</option>
           <option value="document">Document</option>
           <option value="image">Image</option>
         </select>
