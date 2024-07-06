@@ -183,7 +183,7 @@ func EventHandler(evt interface{}) {
 				// Replies: v.Message.Replies,
 			})
 		}
-		/*payload := response.Message{
+		payload := response.Message{
 			ID:             v.Info.ID,
 			Chat:           v.Info.Sender.String(),
 			Time:           v.Info.Timestamp.Unix(),
@@ -204,13 +204,12 @@ func EventHandler(evt interface{}) {
 			IsDocument:     v.IsDocumentWithCaption,
 			Mediatipe:      v.Info.MediaType,
 		}
-
-		webhookURL := "https://localhost:8080/api/webhook"
+		webhookURL := "https://webhook.site/80e531b0-8876-4036-9806-24d8914cb221"
 		err := sendPayloadToWebhook(payload, webhookURL)
 		if err != nil {
 			fmt.Printf("Failed to send payload to webhook: %v\n", err)
 		}
-		*/
+
 	case *events.PairSuccess:
 		fmt.Println("pari succeess", v.ID.User)
 		initialClient()
@@ -388,33 +387,20 @@ func CreateDevice(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println("Data client setelah ditambahkan:", clients, jid)
 
-	dbx, err := db.OpenDatabase()
-	if err != nil {
-		http.Error(w, "Failed to connect to the database", http.StatusInternalServerError)
-		return
-	}
-	defer dbx.Close()
-
-	devices, err := model.GetDevicesFromDB(dbx)
-	if err != nil {
-		http.Error(w, "Failed to get devices from the database", http.StatusInternalServerError)
-		return
-	}
-
-	if len(devices) > 0 {
-		for _, d := range devices {
-			response = append(response, ClientInfo{
-				ID:     d.RegistrationID,
-				Number: d.JID,
-				Busy:   true,
-				QR:     "",
-				Status: "connected",
-				Name:   d.PushName,
-			})
-		}
+	// Iterasi melalui peta `clients` untuk membuat respons
+	for key, client := range clients {
+		fmt.Printf(key)
+		response = append(response, ClientInfo{
+			ID:     generateRandomString("Device", 3),
+			Number: client.Store.ID.String(),
+			Busy:   true,
+			QR:     "",
+			Status: "connected",
+			Name:   client.Store.PushName,
+		})
 	}
 
-	// Add the new client to the response and clients map
+	// Add the new client to the response
 	if qrCode != "" {
 		response = append(response, ClientInfo{
 			ID:     "",
@@ -425,6 +411,7 @@ func CreateDevice(w http.ResponseWriter, r *http.Request) {
 			Name:   "",
 		})
 	}
+
 	w.Header().Set("Content-Type", "application/json")
 	if len(response) > 0 {
 		json.NewEncoder(w).Encode(response)
@@ -726,4 +713,27 @@ func getClientWhoamiByDeviceName(nama_device string) (string, error) {
 
 	// Jika tidak ada yang cocok, kembalikan error
 	return "", fmt.Errorf("client not found for device name: %s", nama_device)
+}
+
+func RemoveClient(w http.ResponseWriter, r *http.Request) {
+	var req response.RequestLogout
+	// Dekode body request ke dalam struktur Request
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	key := req.Key
+	// Cek apakah kunci ada di dalam map
+	if _, exists := clients[key]; exists {
+		// Hapus kunci dari map
+		clients[key].Logout()
+		delete(clients, key)
+		response := response.ResponseLogout{Status: "success", Message: "Data berhasil dihapus"}
+		json.NewEncoder(w).Encode(response)
+	} else {
+		response := response.ResponseLogout{Status: "fail", Message: "Kunci tidak ditemukan"}
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(response)
+	}
 }

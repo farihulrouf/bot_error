@@ -55,7 +55,6 @@ export default {
 .table-header {
   display: block;
   width: 100%;
-  background-color: #f0f0f0;
   padding: 10px;
   border-radius: 4px;
 }

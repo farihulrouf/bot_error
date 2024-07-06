@@ -68,3 +68,11 @@ type MessageFilter struct {
 type Response struct {
 	Data []MessageFilter `json:"data"`
 }
+
+type ResponseLogout struct {
+	Status  string `json:"status"`
+	Message string `json:"message"`
+}
+type RequestLogout struct {
+	Key string `json:"key"`
+}

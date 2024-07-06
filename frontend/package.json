@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@jamescoyle/vue-icon": "^0.1.2",
+    "@mdi/js": "^7.4.47",
     "axios": "^1.7.2",
     "core-js": "^3.8.3",
     "jwt-decode": "^4.0.0",
