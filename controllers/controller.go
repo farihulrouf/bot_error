@@ -714,25 +714,25 @@ func getClientWhoamiByDeviceName(nama_device string) (string, error) {
 	// Jika tidak ada yang cocok, kembalikan error
 	return "", fmt.Errorf("client not found for device name: %s", nama_device)
 }
-
 func RemoveClient(w http.ResponseWriter, r *http.Request) {
-	var req response.RequestLogout
-	// Dekode body request ke dalam struktur Request
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+	vars := mux.Vars(r)
+	phone := vars["phone"]
 
-	key := req.Key
+	// Lock untuk mengamankan akses ke map clients (jika diperlukan)
+	mutex.Lock()
+	defer mutex.Unlock()
+
 	// Cek apakah kunci ada di dalam map
-	if _, exists := clients[key]; exists {
+	if _, exists := clients[phone]; exists {
 		// Hapus kunci dari map
-		clients[key].Logout()
-		delete(clients, key)
+		clients[phone].Logout()
+		delete(clients, phone)
 		response := response.ResponseLogout{Status: "success", Message: "Data berhasil dihapus"}
+		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(response)
 	} else {
 		response := response.ResponseLogout{Status: "fail", Message: "Kunci tidak ditemukan"}
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotFound)
 		json.NewEncoder(w).Encode(response)
 	}

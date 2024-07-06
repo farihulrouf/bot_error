@@ -74,5 +74,5 @@ type ResponseLogout struct {
 	Message string `json:"message"`
 }
 type RequestLogout struct {
-	Key string `json:"key"`
+	Phone string `json:"phone"`
 }

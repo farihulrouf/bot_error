@@ -24,7 +24,6 @@ api.interceptors.request.use(
     return Promise.reject(error);
   }
 );
-////https://chatgpt.com/c/46121827-36e9-4c0f-a9cf-7f2db1ea9b5e
 
 // Handler untuk mengambil error response dari server
 const errorHandler = (error) => {

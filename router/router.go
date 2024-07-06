@@ -57,7 +57,7 @@ func SetupRouter() *mux.Router {
 	//r.HandleFunc("/api/getinfo", controllers.GetInfoHandler).Methods("GET")
 	r.HandleFunc("/api/system/devices", controllers.CreateDevice).Methods("GET")
 	r.HandleFunc("/api/get/client", controllers.GetClientByDeviceNameHandler).Methods("GET")
-	r.HandleFunc("/api/system/logout", controllers.RemoveClient).Methods("DELETE")
+	r.HandleFunc("/api/system/logout/{phone}", controllers.RemoveClient).Methods("DELETE")
 
 	//r.HandleFunc("/api/system", controllers.ListDevices).Methods("GET")
 	//r.HandleFunc("/status/qr/list", controllers.GetConnectedClientsList).Methods("GET")
