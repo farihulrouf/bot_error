@@ -1,5 +1,5 @@
 <template>
-  <div class="relative w-[350px] h-[300px] overflow-hidden py-2 p-2 rounded-xl">
+  <div class="relative w-[300px] h-[300px] overflow-hidden py-2 p-2 rounded-xl">
     <div class="absolute z-20 left-0" v-if="!device.qr">
       <!-- Meneruskan properti bgColor ke DropDown -->
       <DropDown
@@ -26,7 +26,7 @@
             <p>Status: ready</p>
             <p>Process: getMessages</p>
           </template>
-          <div v-if="device.qr">
+          <div class="flex justify-center" v-if="device.qr">
             <qrcode-vue
               :value="device.qr"
               :size="240"
