@@ -1,6 +1,6 @@
 <template>
-  <div class="relative w-[350px] h-[370px] overflow-hidden py-4 p-4">
-    <div v-if="!device.qr">
+  <div class="relative w-[350px] h-[370px] overflow-hidden py-4 p-4 rounded-xl">
+    <div class="absolute z-20 left-0" v-if="!device.qr">
       <!-- Meneruskan properti bgColor ke DropDown -->
       <DropDown
         :menuItems="menuItems"
@@ -20,8 +20,8 @@
           class="space-y-6 pt-2 text-base leading-7 text-gray-600 transition-all duration-300"
         >
           <template v-if="!device.qr">
-            <p v-if="device.id">{{ device.id }}</p>
-            <p v-if="device.number">Phone: {{ device.number }}</p>
+            <p v-if="device.id">{{ device.id }}</p> 
+            <p v-if="device.number">Phone: {{ device.number.split(':')[0] }}</p>
             <p v-if="device.name">Name: {{ device.name }}</p>
             <p>Status: ready</p>
             <p>Process: getMessages</p>
@@ -58,7 +58,7 @@ export default {
     },
     bgColor: {
       type: String,
-      default: "bg-teal-500", // Default background color (if not provided by parent)
+      default: "bg-indigo-600 rounded-full w-6 h-6 flex justify-center absolute left-4 text-white", // Default background color (if not provided by parent)
     },
   },
   data() {
@@ -66,6 +66,7 @@ export default {
       isHovering: false,
       menuItems: [
         { name: "Settings", action: "settings" },
+        { name: "Messages", action: "Messages" },
         { name: "Logout", action: "logout" },
       ],
       profile: {
@@ -94,7 +95,7 @@ export default {
           "/system/logout/" + this.device.number
         );
 
-        console.log("Logout response:", response.data);
+        console.log("Logout response:", response);
 
         if (response.data.status === "success") {
           console.log("Logout berhasil");

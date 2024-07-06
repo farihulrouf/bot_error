@@ -1,5 +1,5 @@
 <template>
-  <nav class="bg-teal-500 p-4">
+  <nav class="bg-indigo-600 p-4">
     <div class="max-w-7xl mx-auto flex justify-between items-center">
       <div class="flex items-center">
         <router-link to="/" class="text-white text-2xl font-semibold">Bot Optimasi</router-link>
