@@ -1,5 +1,5 @@
 <template>
-  <div class="relative w-[350px] h-[370px] overflow-hidden py-4 p-4 rounded-xl">
+  <div class="relative w-[350px] h-[370px] overflow-hidden py-2 p-2 rounded-xl">
     <div class="absolute z-20 left-0" v-if="!device.qr">
       <!-- Meneruskan properti bgColor ke DropDown -->
       <DropDown

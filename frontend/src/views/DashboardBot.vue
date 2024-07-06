@@ -19,7 +19,7 @@
     <div v-else-if="showProfile" class="max-w-screen-md mx-auto mt-4 mb-4">
       <UpdateProfile />
     </div>
-    <div v-else class="p-4 max-w-screen-md mt-4 mb-4 mx-auto flex justify-center flex-wrap gap-4 relative">
+    <div v-else class="p-2 max-w-screen-md mt-2 mb-2 mx-auto flex justify-center flex-wrap gap-2 relative">
       <LoadingSpin v-if="isLoading" />
       <QrcodeCard v-else v-for="device in deviceData" :key="device.id || device.qr" :device="device" />
     </div>
