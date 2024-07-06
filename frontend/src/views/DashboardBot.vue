@@ -51,7 +51,7 @@ export default {
       deviceData: [],
       isLoading: true,
       account: 'farihul', // Updated to be set dynamically
-      devicesCount: 1,
+      devicesCount: 0, // Default to 0
       expiredAt: '2030-12-12',
       balance: '30000',
       setting: 'token, webhook',
@@ -61,19 +61,28 @@ export default {
     };
   },
   created() {
-    this.decodeToken();
+   // this.checkAuth();
+
     this.fetchDeviceData();
   },
   methods: {
-    async decodeToken() {
-      try {
-        const token = localStorage.getItem('token');
-        if (token) {
+    checkAuth() {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        this.$router.push('/login'); // Redirect to login if no token
+      } else {
+        try {
           const decoded = jwtDecode(token);
-          this.account = decoded.username; // Set account from token's username
+          if (decoded.username) {
+            this.account = decoded.username; // Set account from username
+          } else {
+            console.error('Token does not contain username.');
+          }
+        } catch (error) {
+          console.error('Error decoding token:', error);
+          localStorage.removeItem('token');
+          this.$router.push('/login'); // Redirect to login if token is invalid
         }
-      } catch (error) {
-        console.error('Error decoding token:', error);
       }
     },
     async fetchDeviceData() {
@@ -84,8 +93,9 @@ export default {
         };
         const response = await api.get('/system/devices', config);
         this.deviceData = response;
+        this.devicesCount = response.length -1 ; // Hitung jumlah perangkat
         this.isLoading = false;
-        console.log('Fetched Device Data:', this.deviceData);
+       // console.log('Fetched Device Data:', this.deviceData);
       } catch (error) {
         console.error('Error fetching device data:', error);
         this.isLoading = false;

@@ -57,6 +57,7 @@ export default {
       ];
     },
   },
+  emits: ['menuClick'],  // Deklarasikan event menuClick
   methods: {
     toggleDropdown() {
       this.isOpen = !this.isOpen;

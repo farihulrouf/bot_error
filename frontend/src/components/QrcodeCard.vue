@@ -29,7 +29,7 @@
           <div v-if="device.qr">
             <qrcode-vue
               :value="device.qr"
-              size="240"
+              :size="240"
               level="H"
               render-as="canvas"
             ></qrcode-vue>
