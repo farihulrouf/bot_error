@@ -90,7 +90,7 @@ export default {
     async logout() {
       try {
         console.log("Device number before logout:", this.device.number);
-        /*const response = api.delete(
+        const response = api.delete(
           "/system/logout/" + this.device.number
         );
 
@@ -100,7 +100,7 @@ export default {
           console.log("Logout berhasil");
         } else {
           console.log("Logout gagal: ", response.data.message);
-        }*/
+        }
       } catch (error) {
         console.error("Error saat logout:", error);
       }
