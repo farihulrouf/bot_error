@@ -20,19 +20,24 @@
           class="space-y-6 pt-2 text-base leading-7 text-gray-600 transition-all duration-300"
         >
           <template v-if="!device.qr">
-            <p v-if="device.id">{{ device.id }}</p> 
+            <p v-if="device.id">{{ device.id }}</p>
             <p v-if="device.number">Phone: {{ device.number.split(':')[0] }}</p>
             <p v-if="device.name">Name: {{ device.name }}</p>
             <p>Status: ready</p>
             <p>Process: getMessages</p>
           </template>
-          <div class="flex justify-center" v-if="device.qr">
-            <qrcode-vue
+          <div class="flex justify-center w-full h-[240px]" v-if="device.qr">
+            <QRCodeVue3
+              :width="240"
+              :height="300"
               :value="device.qr"
-              :size="240"
-              level="H"
-              render-as="canvas"
-            ></qrcode-vue>
+              :qrOptions="{ errorCorrectionLevel: 'H' }"
+              :dotsOptions="{ type: 'dots', color: '#4F46E5', gradient: { type: 'linear', rotation: 0, colorStops: [{ offset: 0, color: '#4F46E5' }, { offset: 1, color: '#34495E' }] } }"
+              :imageOptions="{ hideBackgroundDots: true, imageSize: 0.4, margin: 10 }"
+              :cornersSquareOptions="{ type: 'dot', color: '#34495E' }"
+              :cornersDotOptions="{ type: undefined, color: '#41B883' }"
+              :backgroundOptions="{ color: '#FFFFFF' }"
+            />
           </div>
         </div>
       </div>
@@ -41,14 +46,15 @@
 </template>
 
 <script>
-import QrcodeVue from "qrcode.vue";
-import DropDown from "./DropDown.vue";
-import api from "../api/api.js";
-import { mdiDotsVertical } from "@mdi/js";
+import QRCodeVue3 from 'qrcode-vue3';
+import DropDown from './DropDown.vue';
+import api from '../api/api.js';
+import { mdiDotsVertical } from '@mdi/js';
+
 export default {
-  name: "QrcodeCard",
+  name: 'QrcodeCard',
   components: {
-    QrcodeVue,
+    QRCodeVue3,
     DropDown,
   },
   props: {
@@ -58,19 +64,20 @@ export default {
     },
     bgColor: {
       type: String,
-      default: "bg-indigo-600 rounded-full w-6 h-6 flex justify-center absolute left-4 text-white", // Default background color (if not provided by parent)
+      default: 'bg-indigo-600 rounded-full w-6 h-6 flex justify-center absolute left-4 text-white',
+      // Warna latar belakang default (jika tidak disediakan oleh parent)
     },
   },
   data() {
     return {
       isHovering: false,
       menuItems: [
-        { name: "Settings", action: "settings" },
-        { name: "Messages", action: "Messages" },
-        { name: "Logout", action: "logout" },
+        { name: 'Settings', action: 'settings' },
+        { name: 'Messages', action: 'Messages' },
+        { name: 'Logout', action: 'logout' },
       ],
       profile: {
-        name: "Profile", // Ganti dengan data profil yang sesuai
+        name: 'Profile', // Ganti dengan data profil yang sesuai
         // Tambahkan properti lain sesuai kebutuhan, seperti email, avatar, dll.
         comp: mdiDotsVertical, // Contoh nilai untuk properti comp
       },
@@ -78,37 +85,35 @@ export default {
   },
   methods: {
     handleMenuClick(action) {
-      if (action === "settings") {
+      if (action === 'settings') {
         this.navigateToSettings();
-      } else if (action === "logout") {
+      } else if (action === 'logout') {
         this.logout();
       }
     },
     navigateToSettings() {
-      // Logika navigasi ke settings di sini
-      console.log("Navigating to settings");
+      // Logika navigasi ke pengaturan di sini
+      console.log('Navigating to settings');
     },
     async logout() {
       try {
-        console.log("Device number before logout:", this.device.number);
-        const response = api.delete(
-          "/system/logout/" + this.device.number
-        );
+        console.log('Nomor perangkat sebelum logout:', this.device.number);
+        const response = await api.delete('/system/logout/' + this.device.number);
 
-        console.log("Logout response:", response);
+        console.log('Respon logout:', response);
 
-        if (response.data.status === "success") {
-          console.log("Logout berhasil");
+        if (response.data.status === 'success') {
+          console.log('Logout berhasil');
         } else {
-          console.log("Logout gagal: ", response.data.message);
+          console.log('Logout gagal: ', response.data.message);
         }
       } catch (error) {
-        console.error("Error saat logout:", error);
+        console.error('Error saat logout:', error);
       }
     },
     getMessage() {
-      // Implement logic to get status message based on device status
-      return "Active";
+      // Implementasikan logika untuk mendapatkan pesan status berdasarkan status perangkat
+      return 'Aktif';
     },
   },
 };
