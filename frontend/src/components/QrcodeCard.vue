@@ -77,7 +77,7 @@ export default {
         { name: 'Logout', action: 'logout' },
       ],
       profile: {
-        name: 'Profile', // Ganti dengan data profil yang sesuai
+        name: '', // Ganti dengan data profil yang sesuai
         // Tambahkan properti lain sesuai kebutuhan, seperti email, avatar, dll.
         comp: mdiDotsVertical, // Contoh nilai untuk properti comp
       },

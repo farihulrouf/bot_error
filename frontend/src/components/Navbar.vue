@@ -4,10 +4,14 @@
       <div class="flex items-center">
         <router-link to="/" class="text-white text-2xl font-semibold">Bot Optimasi</router-link>
       </div>
-      <div class="hidden md:flex items-center space-x-4">
-        <span class="text-white hover:text-gray-300">{{ firstName }} {{ lastName }}</span>
-        <router-link to="/settings" class="text-white hover:text-gray-300">Settings</router-link>
-        <button @click="handleLogout" class="text-white hover:text-gray-300">Logout</button>
+      <div class="hidden md:flex items-center space-x-4 mr-10">
+        <DropDown
+          :menuItems="menuItems"
+          :profile="profile"
+          :additionalText="additionalText"
+          @menu-click="handleMenuClick"
+           :bgColor="bgColor"
+        />
       </div>
       <div class="md:hidden flex items-center">
         <button @click="toggleMobileMenu" class="text-white focus:outline-none">
@@ -20,20 +24,58 @@
     <div v-if="isMobileMenuOpen" class="md:hidden absolute top-0 left-0 w-full bg-gray-800">
       <div class="flex flex-col items-center py-4 space-y-4">
         <router-link to="/" class="text-white hover:text-gray-300">Home</router-link>
-        <router-link to="/settings" class="text-white hover:text-gray-300">Settings</router-link>
-        <button @click="handleLogout" class="text-white hover:text-gray-300">Logout</button>
       </div>
     </div>
   </nav>
 </template>
 
 <script>
+import { mdiDotsVertical } from '@mdi/js';
+import DropDown from './DropDown.vue'; // Pastikan jalur ini sesuai dengan struktur proyek Anda
+
 export default {
   name: 'NavbarBot',
-  props: ['firstName', 'lastName'],
+  components: {
+    DropDown,
+  },
+  props: {
+    firstName: {
+      type: String,
+      required: true,
+    },
+    bgColor: {
+      type: String,
+      default: 'bg-indigo-600 rounded-full w-6 h-6 flex justify-center absolute left-4 text-white',
+      // Warna latar belakang default (jika tidak disediakan oleh parent)
+    },
+    lastName: {
+      type: String,
+      required: true,
+    },
+    additionalText: {
+      type: String,
+      default: '', // Default jika tidak ada teks tambahan yang dilempar dari parent
+    },
+    menuItems: {
+      type: Array,
+      default: () => [
+       { name: 'profile', action: 'profile' },
+        { name: 'Settings', action: 'settings' },
+        { name: 'Logout', action: 'logout' },
+      ],
+    },
+    profile: {
+      type: Object,
+      default: () => ({
+        name: 'Profile', // Ganti dengan data profil yang sesuai
+        // Tambahkan properti lain sesuai kebutuhan, seperti email, avatar, dll.
+        comp: mdiDotsVertical, // Contoh nilai untuk properti comp
+      }),
+    },
+  },
   data() {
     return {
-      isMobileMenuOpen: false
+      isMobileMenuOpen: false,
     };
   },
   methods: {
@@ -43,8 +85,16 @@ export default {
     handleLogout() {
       localStorage.removeItem('token'); // Hapus token dari local storage saat logout
       this.$router.push('/login'); // Redirect ke halaman login setelah logout
-    }
-  }
+    },
+    handleMenuClick(action) {
+      if (action === 'settings') {
+        this.$router.push('/settings');
+      } else if (action === 'logout') {
+        this.handleLogout();
+      }
+      // Menangani aksi lainnya jika diperlukan
+    },
+  },
 };
 </script>
 

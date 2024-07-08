@@ -1,12 +1,15 @@
 <template>
-  <div :class="dropdownClasses" @click="toggleDropdown">
-    <svg-icon
-      v-if="iconType === 'mdi'"
-      :type="iconType"
-      :path="profile.comp"
-      size="24"
-      :fill="iconFill"
-    />
+  <div :class="dropdownClasses" @click="toggleDropdown" v-click-outside="closeDropdown">
+    <div class="flex items-center justify-center">
+      <svg-icon
+        v-if="iconType === 'mdi'"
+        :type="iconType"
+        :path="profile.comp"
+        size="24"
+        :fill="iconFill"
+      />
+      <span v-if="profile.name" class="ml-1">{{ profile.name }}</span>
+    </div>
   </div>
   <div class="dropdown-content absolute w-44 bg-white z-40" v-if="isOpen">
     <a
@@ -22,11 +25,15 @@
 
 <script>
 import SvgIcon from "@jamescoyle/vue-icon";
+import clickOutside from "../directives/v-click-outside";
 
 export default {
   name: "DropDown",
   components: {
     SvgIcon,
+  },
+  directives: {
+    clickOutside,
   },
   props: {
     menuItems: {
@@ -62,6 +69,9 @@ export default {
     toggleDropdown() {
       this.isOpen = !this.isOpen;
     },
+    closeDropdown() { // Metode untuk menutup dropdown
+      this.isOpen = false;
+    },
     handleClick(action) {
       this.$emit("menu-click", action);
       this.isOpen = false; // Menutup dropdown setelah klik
@@ -74,6 +84,7 @@ export default {
 .dropdown {
   position: relative;
   display: inline-block;
+  text-align: center; /* Menengahkan ikon di dalam dropdown */
 }
 .dropdown-button {
   color: white;
