@@ -1,6 +1,6 @@
 <template>
   <div class="relative w-[300px] h-[300px] overflow-hidden py-2 p-2 rounded-xl">
-    <div class="absolute z-20 left-0" v-if="!device.qr">
+    <div class="absolute z-20  right-8" v-if="!device.qr">
       <!-- Meneruskan properti bgColor ke DropDown -->
       <DropDown
         :menuItems="menuItems"

@@ -1,6 +1,7 @@
 <template>
   <div :class="dropdownClasses" @click="toggleDropdown" v-click-outside="closeDropdown">
-    <div class="flex items-center justify-center">
+    <div :class="['flex', { 'justify-center items-center': !profile.name }]">
+      <span v-if="profile.name" class="ml-1">{{ profile.name }}</span>
       <svg-icon
         v-if="iconType === 'mdi'"
         :type="iconType"
@@ -8,10 +9,9 @@
         size="24"
         :fill="iconFill"
       />
-      <span v-if="profile.name" class="ml-1">{{ profile.name }}</span>
     </div>
   </div>
-  <div class="dropdown-content absolute w-44 bg-white z-40" v-if="isOpen">
+  <div class="dropdown-content absolute w-44 bg-white z-40" v-if="isOpen" style="right: 0;">
     <a
       v-for="item in menuItems"
       :key="item.name"
@@ -46,7 +46,7 @@ export default {
     },
     bgColor: {
       type: String,
-      default: "bg-gray-500", // Default background color (if not provided by parent)
+      default: "bg-gray-500", // Warna latar belakang default (jika tidak disediakan oleh parent)
     },
   },
   data() {
@@ -84,7 +84,6 @@ export default {
 .dropdown {
   position: relative;
   display: inline-block;
-  text-align: center; /* Menengahkan ikon di dalam dropdown */
 }
 .dropdown-button {
   color: white;
@@ -96,6 +95,7 @@ export default {
 .dropdown-content {
   display: block;
   box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+  right: 0; /* Menyesuaikan posisi dropdown ke kanan */
 }
 .dropdown-content a {
   color: black;

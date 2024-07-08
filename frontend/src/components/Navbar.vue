@@ -30,7 +30,7 @@
 </template>
 
 <script>
-import { mdiDotsVertical } from '@mdi/js';
+import { mdiMenuDown } from '@mdi/js';
 import DropDown from './DropDown.vue'; // Pastikan jalur ini sesuai dengan struktur proyek Anda
 
 export default {
@@ -45,7 +45,7 @@ export default {
     },
     bgColor: {
       type: String,
-      default: 'bg-indigo-600 rounded-full w-6 h-6 flex justify-center absolute left-4 text-white',
+      default: 'flex justify-center absolute left-4 text-white',
       // Warna latar belakang default (jika tidak disediakan oleh parent)
     },
     lastName: {
@@ -64,17 +64,14 @@ export default {
         { name: 'Logout', action: 'logout' },
       ],
     },
-    profile: {
-      type: Object,
-      default: () => ({
-        name: 'Profile', // Ganti dengan data profil yang sesuai
-        // Tambahkan properti lain sesuai kebutuhan, seperti email, avatar, dll.
-        comp: mdiDotsVertical, // Contoh nilai untuk properti comp
-      }),
-    },
   },
   data() {
     return {
+      profile: {
+        name: 'Profile', // Ganti dengan data profil yang sesuai
+        // Tambahkan properti lain sesuai kebutuhan, seperti email, avatar, dll.
+        comp: mdiMenuDown, // Contoh nilai untuk properti comp
+      },
       isMobileMenuOpen: false,
     };
   },
