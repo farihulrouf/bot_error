@@ -1,8 +1,8 @@
 <template>
+  <Navbar />
   <div class="container mx-auto my-4">
-    <Navbar />
     <div class="w-full mx-auto mt-4 mb-4">
-      <TableHeader 
+      <TableHeader
         :account="account"
         :devicesCount="devicesCount"
         :expiredAt="expiredAt"
@@ -19,85 +19,93 @@
     <div v-else-if="showProfile" class="max-w-screen-md mx-auto mt-4 mb-4">
       <UpdateProfile />
     </div>
-    <div v-else class="p-2 max-w-screen-md mt-2 mb-2 mx-auto flex justify-center flex-wrap gap-4 relative">
+    <div
+      v-else
+      class="p-2 max-w-screen-md mt-2 mb-2 mx-auto flex justify-center flex-wrap gap-4 relative"
+    >
       <LoadingSpin v-if="isLoading" />
-      <QrcodeCard v-else v-for="device in deviceData" :key="device.id || device.qr" :device="device" />
+      <QrcodeCard
+        v-else
+        v-for="device in deviceData"
+        :key="device.id || device.qr"
+        :device="device"
+      />
     </div>
   </div>
 </template>
 
 <script>
-import jwtDecode from 'jwt-decode';  // Import jwt-decode library
-import Navbar from '@/components/Navbar.vue';
-import QrcodeCard from '@/components/QrcodeCard.vue';
-import LoadingSpin from '@/components/LoadingSpin.vue';
-import TableHeader from '@/components/TableHeader.vue';
-import GenerateTokenVue from '../components/GenerateToken.vue';
-import UpdateProfile from '../components/UpdateProfile.vue'; // Import UpdateProfile component
+import jwtDecode from "jwt-decode"; // Import jwt-decode library
+import Navbar from "@/components/Navbar.vue";
+import QrcodeCard from "@/components/QrcodeCard.vue";
+import LoadingSpin from "@/components/LoadingSpin.vue";
+import TableHeader from "@/components/TableHeader.vue";
+import GenerateTokenVue from "../components/GenerateToken.vue";
+import UpdateProfile from "../components/UpdateProfile.vue"; // Import UpdateProfile component
 import api from "../api/api.js"; // Import Api.js untuk melakukan request HTTP
 
 export default {
-  name: 'DashboardBot',
+  name: "DashboardBot",
   components: {
     Navbar,
     QrcodeCard,
     LoadingSpin,
     TableHeader,
     GenerateTokenVue,
-    UpdateProfile
+    UpdateProfile,
   },
   data() {
     return {
       deviceData: [],
       isLoading: true,
-      account: 'farihul', // Updated to be set dynamically
+      account: "farihul", // Updated to be set dynamically
       devicesCount: 0, // Default to 0
-      expiredAt: '2030-12-12',
-      balance: '30000',
-      setting: 'token, webhook',
-      apiVersion: 'v1.14.3',
+      expiredAt: "2030-12-12",
+      balance: "30000",
+      setting: "token, webhook",
+      apiVersion: "v1.14.3",
       showTokenWebhook: false, // State to control visibility of GenerateTokenVue
-      showProfile: false // State to control visibility 
+      showProfile: false, // State to control visibility
     };
   },
   created() {
-   // this.checkAuth();
+    // this.checkAuth();
 
     this.fetchDeviceData();
   },
   methods: {
     checkAuth() {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       if (!token) {
-        this.$router.push('/login'); // Redirect to login if no token
+        this.$router.push("/login"); // Redirect to login if no token
       } else {
         try {
           const decoded = jwtDecode(token);
           if (decoded.username) {
             this.account = decoded.username; // Set account from username
           } else {
-            console.error('Token does not contain username.');
+            console.error("Token does not contain username.");
           }
         } catch (error) {
-          console.error('Error decoding token:', error);
-          localStorage.removeItem('token');
-          this.$router.push('/login'); // Redirect to login if token is invalid
+          console.error("Error decoding token:", error);
+          localStorage.removeItem("token");
+          this.$router.push("/login"); // Redirect to login if token is invalid
         }
       }
     },
     async fetchDeviceData() {
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem("token");
         const config = {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
         };
-        const response = await api.get('/system/devices', config);
+        const response = await api.get("/system/devices", config);
         this.deviceData = response;
-        this.devicesCount = response.length -1 ; // Hitung jumlah perangkat
+        this.devicesCount = response.length - 1; // Hitung jumlah perangkat
         this.isLoading = false;
-       // console.log('Fetched Device Data:', this.deviceData);
+        // console.log('Fetched Device Data:', this.deviceData);
       } catch (error) {
-        console.error('Error fetching device data:', error);
+        console.error("Error fetching device data:", error);
         this.isLoading = false;
       }
     },
@@ -108,8 +116,8 @@ export default {
     showUpdateProfile() {
       this.showProfile = true;
       this.showTokenWebhook = false; // Hide token webhook if profile is shown
-    }
-  }
+    },
+  },
 };
 </script>
 

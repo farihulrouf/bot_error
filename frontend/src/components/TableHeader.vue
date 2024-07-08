@@ -1,13 +1,27 @@
 <template>
-  <div class="table-header">
-    <div class="table-row">
-      <div class="table-cell" @click="handleAccountClick">{{ account }}</div>
-      <div class="table-cell">{{ devicesCount }}</div>
-      <div class="table-cell">{{ expiredAt }}</div>
-      <div class="table-cell">{{ balance }}</div>
-      <div class="table-cell" @click="handleSettingClick">{{ setting }}</div>
-      <div class="table-cell">{{ apiVersion }}</div>
-    </div>
+  <div class="table-header mt-4 mb-4">
+    <table>
+      <thead class="bg-white">
+        <tr>
+          <th>ACCOUNT</th>
+          <th>DEVICES</th>
+          <th>EXPIRED</th>
+          <th>BALANCE</th>
+          <th>SETTING</th>
+          <th>API</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="table-row">
+          <td @click="handleAccountClick" class="table-cell">{{ account }}</td>
+          <td class="table-cell">{{ devicesCount }}</td>
+          <td class="table-cell">{{ expiredAt }}</td>
+          <td class="table-cell">{{ balance }}</td>
+          <td @click="handleSettingClick" class="table-cell">{{ setting }}</td>
+          <td class="table-cell">{{ apiVersion }}</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </template>
 
@@ -53,26 +67,30 @@ export default {
 
 <style scoped>
 .table-header {
-  display: block;
   width: 100%;
+  overflow-x: auto; /* Membuat tabel horizontal scroll jika terlalu lebar */
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse; /* Gabungkan garis-garis tabel */
+}
+
+th, td {
   padding: 10px;
-  border-radius: 4px;
-}
-
-.table-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid #ccc;
-  padding: 8px 0;
-}
-
-.table-cell {
-  flex: 1;
   text-align: center;
   font-weight: bold;
   text-transform: uppercase;
-  color: #333;
-  cursor: pointer; /* Add cursor pointer for clickable cell */
+  color: #6b6868;
+  cursor: pointer; /* Add cursor pointer for clickable cells */
+  border-bottom: 1px solid #ccc; /* Garis bawah untuk setiap baris */
+}
+
+th {
+  background-color: #f3f4f6; /* Warna latar belakang header */
+}
+
+.table-cell {
+  min-width: 100px; /* Lebar minimum untuk setiap sel */
 }
 </style>

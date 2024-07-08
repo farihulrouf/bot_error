@@ -1,8 +1,11 @@
 <template>
-  <nav class="bg-indigo-600 p-4">
+  <nav class="bg-[#25D366] p-4">
     <div class="max-w-7xl mx-auto flex justify-between items-center">
       <div class="flex items-center">
-        <router-link to="/" class="text-white text-2xl font-semibold">Bot Optimasi</router-link>
+        <router-link to="/" class="text-white text-md flex space-x-4 items-center">
+          <svg-icon type="mdi" :path="path"></svg-icon>
+          Optimasi bot
+        </router-link>
       </div>
       <div class="hidden md:flex items-center space-x-4 mr-10">
         <DropDown
@@ -33,10 +36,14 @@
 import { mdiMenuDown } from '@mdi/js';
 import DropDown from './DropDown.vue'; // Pastikan jalur ini sesuai dengan struktur proyek Anda
 
+import SvgIcon from '@jamescoyle/vue-icon';
+import { mdiWhatsapp } from '@mdi/js';
+
 export default {
   name: 'NavbarBot',
   components: {
     DropDown,
+    SvgIcon
   },
   props: {
     firstName: {
@@ -72,6 +79,7 @@ export default {
         // Tambahkan properti lain sesuai kebutuhan, seperti email, avatar, dll.
         comp: mdiMenuDown, // Contoh nilai untuk properti comp
       },
+      path: mdiWhatsapp,
       isMobileMenuOpen: false,
     };
   },
