@@ -1,4 +1,5 @@
 <template>
+  <div class="">
   <Navbar />
   <div class="container mx-auto my-4">
     <div class="w-full mx-auto mt-4 mb-4">
@@ -29,9 +30,11 @@
         v-for="device in deviceData"
         :key="device.id || device.qr"
         :device="device"
+        @device-logged-out="fetchDeviceData" 
       />
     </div>
   </div>
+</div>
 </template>
 
 <script>

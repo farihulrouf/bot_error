@@ -1,5 +1,5 @@
 <template>
-  <div class="flex justify-center relative">
+  <div class="p-4 bg-[#dcf8c6] flex justify-center relative">
     <div class="absolute z-20 right-8" v-if="!device.qr">
       <!-- Meneruskan properti bgColor ke DropDown -->
       <DropDown
@@ -11,25 +11,25 @@
     </div>
     <div
       class="block w-[300px] rounded-lg bg-warning text-black shadow-secondary-1 p-4"
-    >
-      <div class="w-full flex-grow space-y-4" v-if="!device.qr">
+>
+      <div class="w-full flex-grow space-y-8 text-[#075e54]" v-if="!device.qr">
         <p v-if="device.id">{{ device.id }}</p>
         <p v-if="device.number">Phone: {{ device.number.split(":")[0] }}</p>
         <p v-if="device.name">Name: {{ device.name }}</p>
         <p>Status: ready</p>
         <p>Process: getMessages</p>
       </div>
-      <div class="flex justify-center w-full" v-if="device.qr">
+      <div v-if="device.qr">
       <QRCodeVue3
-        :width="240"
-        :height="300"
+        :width="500"
+        :height="500"
         :value="device.qr"
         :qrOptions="{ errorCorrectionLevel: 'H' }"
-        :dotsOptions="{ type: 'dots', color: '#34B7F1', gradient: { type: 'linear', rotation: 0, colorStops: [{ offset: 0, color: '#4F46E5' }, { offset: 1, color: '#075E54' }] } }"
+        :dotsOptions="{ type: 'dots', color: '#34B7F1', gradient: { type: 'linear', rotation: 0, colorStops: [{ offset: 0, color: '#4F46E5' }, { offset: 1, color: '#075e54' }] } }"
         :imageOptions="{ hideBackgroundDots: true, imageSize: 0.4, margin: 10 }"
         :cornersSquareOptions="{ type: 'dot', color: '#25D366' }"
         :cornersDotOptions="{ type: undefined, color: '#41B883' }"
-        :backgroundOptions="{ color: '#FFFFFF' }"
+        :backgroundOptions="{ color: '#dcf8c6' }"
       />
     </div>
   
@@ -56,12 +56,13 @@ export default {
     bgColor: {
       type: String,
       default:
-        "bg-[#34B7F1] rounded-full w-6 h-6 flex justify-center absolute left-4 text-white",
+        "bg-[#25d366] rounded-full w-6 h-6 flex justify-center absolute left-4 text-white",
       // Warna latar belakang default (jika tidak disediakan oleh parent)
     },
   },
   data() {
     return {
+      isLoading: false, 
       isHovering: false,
       menuItems: [
         { name: "Settings", action: "settings" },
@@ -89,15 +90,14 @@ export default {
     },
     async logout() {
       try {
-        console.log("Nomor perangkat sebelum logout:", this.device.number);
-        const response = await api.delete(
-          "/system/logout/" + this.device.number
-        );
+        console.log("Nomor perangkat sebelum logout:", this.device.id);
+        const response = await api.delete("/system/logout/" + this.device.id);
 
         console.log("Respon logout:", response);
 
-        if (response.data.status === "success") {
+        if (response.status === "success") {
           console.log("Logout berhasil");
+          this.$emit('device-logged-out'); // Emit event to parent component
         } else {
           console.log("Logout gagal: ", response.data.message);
         }

@@ -67,6 +67,19 @@ func GetClients() map[string]*whatsmeow.Client {
 	return clients
 }
 
+func setClient_data(key string, client *whatsmeow.Client) {
+	// Clear existing data
+	for k := range data_client {
+		delete(data_client, k)
+	}
+	// Set new client
+	data_client[key] = client
+}
+
+func getClient_data(key string) *whatsmeow.Client {
+	return data_client[key]
+}
+
 func connectClient(client *whatsmeow.Client) (string, *types.JID) {
 	var err error
 	qrChan := make(chan string)
@@ -118,7 +131,7 @@ func EventHandler(evt interface{}) {
 	fmt.Println("try to excution")
 	switch v := evt.(type) {
 	case *events.Message:
-		if !v.Info.IsFromMe && v.Message.GetConversation() != "" ||
+		if !v.Info.IsFromMe || v.Message.GetConversation() != "" ||
 			v.Message.GetImageMessage().GetCaption() != "" ||
 			v.Message.GetVideoMessage().GetCaption() != "" ||
 			v.Message.GetDocumentMessage().GetCaption() != "" {
@@ -128,11 +141,11 @@ func EventHandler(evt interface{}) {
 			text := v.Message.GetConversation()
 			group := v.Info.IsGroup
 			isfrome := v.Info.IsFromMe
-			doc := v.Message.GetDocumentMessage()
+			//doc := v.Message.GetDocumentMessage()
 			captionMessage := v.Message.GetImageMessage().GetCaption()
 			videoMessage := v.Message.GetVideoMessage().GetCaption()
 			docMessage := v.Message.GetDocumentMessage().GetCaption()
-			docCaption := v.Message.GetDocumentMessage().GetTitle()
+			//docCaption := v.Message.GetDocumentMessage().GetTitle()
 			name := v.Info.PushName
 			to := v.Info.PushName
 
@@ -148,11 +161,11 @@ func EventHandler(evt interface{}) {
 			//chatText := v.Info.Chat
 			mediatype := v.Info.MediaType
 			//smtext := v.Message.Conversation()
-			fmt.Println("ID: %s, Chat: %s, Time: %d, Text: %s\n", to, mediatype, isdocument, chat, timestamp, text, group, isfrome, tipe)
+			//fmt.Println("ID: %s, Chat: %s, Time: %d, Text: %s\n", to, mediatype, isdocument, chat, timestamp, text, group, isfrome, tipe)
 			//fmt.Println("info repley", reply, coba)
 
 			// Assuming replies are stored within a field named Replies
-			fmt.Println("tipe messages", tipe, docCaption, isdocument, doc, mediatype, captionMessage, videoMessage, docMessage)
+			//fmt.Println("tipe messages", tipe, docCaption, isdocument, doc, mediatype, captionMessage, videoMessage, docMessage)
 			mu.Lock()
 			defer mu.Unlock() // Ensure mutex is always unlocked when the function returns
 			messages = append(messages, response.Message{
@@ -270,7 +283,12 @@ func GetSearchMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	var data []map[string]interface{}
 	//data := make(map[string]map[string]interface{})
 	for _, msg := range messages {
-		if textFilter != "" && !strings.Contains(msg.Text, textFilter) {
+		if textFilter != "" && !strings.Contains(msg.Text, textFilter) &&
+			!strings.Contains(msg.Text, textFilter) &&
+			!strings.Contains(msg.ID, textFilter) &&
+			!strings.Contains(msg.Name, textFilter) &&
+			!strings.Contains(msg.ID, textFilter) &&
+			!strings.Contains(msg.Caption, textFilter) {
 			continue // Skip messages that don't contain the text filter
 		}
 
@@ -378,9 +396,9 @@ func AddClient(id string, client *whatsmeow.Client) {
 func CreateDevice(w http.ResponseWriter, r *http.Request) {
 	deviceStore := StoreContainer.NewDevice()
 	client := GetClient(deviceStore)
-	deviceID := generateRandomString("Device", 3)
-	data_client[deviceID] = client
-
+	deviceID := GenerateRandomString("Device", 3)
+	//data_client[deviceID] = client
+	setClient_data(deviceID, client)
 	qrCode, jid := connectClient(client)
 
 	var response []ClientInfo
@@ -391,7 +409,7 @@ func CreateDevice(w http.ResponseWriter, r *http.Request) {
 	for key, client := range clients {
 		fmt.Printf(key)
 		response = append(response, ClientInfo{
-			ID:     generateRandomString("Device", 3),
+			ID:     key,
 			Number: client.Store.ID.String(),
 			Busy:   true,
 			QR:     "",
@@ -456,9 +474,10 @@ func GetMessagesHandler(w http.ResponseWriter, r *http.Request) {
 			msg.Mediatipe = "text"
 		}
 		messageData := map[string]interface{}{
-			"id":   msg.ID,
-			"from": strings.TrimSuffix(msg.From, "@s.whatsapp.net"),
-			"to":   msg.To,
+			"id":     msg.ID,
+			"from":   strings.TrimSuffix(msg.From, "@s.whatsapp.net"),
+			"to":     msg.To,
+			"status": "delivered",
 			//"chat": chat,
 			"time": msg.Time,
 			"type": msg.Mediatipe,
@@ -524,9 +543,10 @@ func GetMessagesByIdHandler(w http.ResponseWriter, r *http.Request) {
 		*/
 
 		messageData := map[string]interface{}{
-			"id":   msg.ID,
-			"chat": chat,
-			"time": msg.Time,
+			"id":     msg.ID,
+			"chat":   chat,
+			"time":   msg.Time,
+			"status": "delivered",
 			//"text": msg.Text,
 			//"type": msg.Mediatipe,
 		}
@@ -580,12 +600,13 @@ func RetrieveMessagesHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func initialClient() {
-	mutex.Lock()
-	defer mutex.Unlock()
-
+	//mutex.Lock()
+	//defer mutex.Unlock()
+	//getClient("myClient")
 	for key, value := range data_client {
 		clients[key] = value
 	}
+	fmt.Println("ini penamupubg", data_client)
 	fmt.Println("cek data", clients)
 }
 
@@ -631,7 +652,7 @@ func GetAllClients(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonResponse)
 }
 
-func generateRandomString(prefix string, length int) string {
+func GenerateRandomString(prefix string, length int) string {
 	rand.Seed(time.Now().UnixNano())
 	b := make([]byte, length)
 	for i := range b {
@@ -727,6 +748,9 @@ func RemoveClient(w http.ResponseWriter, r *http.Request) {
 		// Hapus kunci dari map
 		clients[phone].Logout()
 		delete(clients, phone)
+		delete(data_client, phone)
+		fmt.Println("remove", data_client)
+		fmt.Println("sekarang data clients", clients)
 		response := response.ResponseLogout{Status: "success", Message: "Data berhasil dihapus"}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(response)
@@ -736,4 +760,5 @@ func RemoveClient(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		json.NewEncoder(w).Encode(response)
 	}
+
 }

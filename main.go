@@ -53,7 +53,7 @@ func main() {
 	for _, device := range devices {
 		client := whatsmeow.NewClient(device, clientLog)
 		client.AddEventHandler(controllers.EventHandler)
-		controllers.AddClient(device.ID.String(), client)
+		controllers.AddClient(controllers.GenerateRandomString("Device", 3), client)
 		if client.Store.ID == nil {
 			// Login baru
 			qrChan, _ := client.GetQRChannel(context.Background())
