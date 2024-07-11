@@ -2,9 +2,9 @@
   <nav class="bg-[#128c7e] p-4">
     <div class="max-w-7xl mx-auto flex justify-between items-center">
       <div class="flex items-center">
-        <router-link to="/" class="text-white text-md flex space-x-4 items-center">
+        <router-link to="/" class="text-white text-md flex items-center">
           <svg-icon type="mdi" :path="path"></svg-icon>
-          ptimasi bot
+          <span class="text-xl">ptimasi bot</span>
         </router-link>
       </div>
       <div class="hidden md:flex items-center space-x-4 mr-10">

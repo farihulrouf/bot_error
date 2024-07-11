@@ -217,7 +217,7 @@ func EventHandler(evt interface{}) {
 			IsDocument:     v.IsDocumentWithCaption,
 			Mediatipe:      v.Info.MediaType,
 		}
-		webhookURL := "https://webhook.site/80e531b0-8876-4036-9806-24d8914cb221"
+		webhookURL := "https://webhook.site/#!/view/21d8717c-1628-4a4a-a3a0-8618ce6e7d3d"
 		err := sendPayloadToWebhook(payload, webhookURL)
 		if err != nil {
 			fmt.Printf("Failed to send payload to webhook: %v\n", err)
@@ -284,7 +284,7 @@ func GetSearchMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	//data := make(map[string]map[string]interface{})
 	for _, msg := range messages {
 		if textFilter != "" && !strings.Contains(msg.Text, textFilter) &&
-			!strings.Contains(msg.Text, textFilter) &&
+			!strings.Contains(msg.Chat, textFilter) &&
 			!strings.Contains(msg.ID, textFilter) &&
 			!strings.Contains(msg.Name, textFilter) &&
 			!strings.Contains(msg.ID, textFilter) &&
@@ -340,7 +340,21 @@ func GetSearchMessagesHandler(w http.ResponseWriter, r *http.Request) {
 			"mimetype":  msg.MimeTipe,
 			"thumbnail": thumb,
 		}
-		data = append(data, messageData)
+
+		exists := false
+		for _, existingMessage := range data {
+			if existingMessage["id"] == msg.ID {
+				exists = true
+				break
+			}
+		}
+
+		// Jika msg.ID belum ada, tambahkan messageData ke data
+		if !exists {
+			data = append(data, messageData)
+		}
+
+		//data = append(data, messageData)
 		//fmt.Println("chek data", msg)
 		/* example respond in maxchat.id
 		{
@@ -492,7 +506,18 @@ func GetMessagesHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Tambahkan elemen ke slice
-		data = append(data, messageData)
+		exists := false
+		for _, existingMessage := range data {
+			if existingMessage["id"] == msg.ID {
+				exists = true
+				break
+			}
+		}
+
+		// Jika msg.ID belum ada, tambahkan messageData ke data
+		if !exists {
+			data = append(data, messageData)
+		}
 	}
 
 	response := map[string]interface{}{
@@ -558,8 +583,18 @@ func GetMessagesByIdHandler(w http.ResponseWriter, r *http.Request) {
 			messageData["text"] = msg.Text
 		}
 
-		// Tambahkan elemen ke slice
-		data = append(data, messageData)
+		exists := false
+		for _, existingMessage := range data {
+			if existingMessage["id"] == msg.ID {
+				exists = true
+				break
+			}
+		}
+
+		if !exists {
+			data = append(data, messageData)
+		}
+
 	}
 
 	response := map[string]interface{}{

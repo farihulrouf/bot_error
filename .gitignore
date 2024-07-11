@@ -5,7 +5,9 @@
 *.so
 *.dylib
 
+# Ignore database files
 *.db
+
 # Test binary, built with 'go test -c'
 *.test
 

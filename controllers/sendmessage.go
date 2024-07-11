@@ -122,6 +122,7 @@ func SendMessageBulkHandler(w http.ResponseWriter, r *http.Request) {
 	var value_client = clients["device1"]
 	matchFound := false
 	var requestData []model.SendMessageDataRequest
+	allSucceeded := true
 	err := json.NewDecoder(r.Body).Decode(&requestData)
 	if err != nil {
 		helpers.SendErrorResponse(w, http.StatusBadRequest, "Failed to parse request body")
@@ -162,26 +163,36 @@ func SendMessageBulkHandler(w http.ResponseWriter, r *http.Request) {
 			err = helpers.SendMessageToPhoneNumber(value_client, message.To, message.Text)
 			if err != nil {
 				result["status"] = "failed"
+				allSucceeded = false // Set flag ke false jika tipe bukan "text"
 			}
 		} else {
 			result["status"] = "failed"
+			allSucceeded = false // Set flag ke false jika tipe bukan "text"
 		}
 
 		// Add result to results slice
 		results = append(results, result)
 	}
-
-	// Return the results as the response
-	jsonResponse, err := json.Marshal(results)
-	if err != nil {
-		helpers.SendErrorResponse(w, http.StatusInternalServerError, errors.ErrFailedToMarshalResponse)
-		return
+	if allSucceeded {
+		response := map[string]bool{"queue": true}
+		jsonResponse, err := json.Marshal(response)
+		if err != nil {
+			helpers.SendErrorResponse(w, http.StatusInternalServerError, errors.ErrFailedToMarshalResponse)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(jsonResponse)
+	} else {
+		jsonResponse, err := json.Marshal(results)
+		if err != nil {
+			helpers.SendErrorResponse(w, http.StatusInternalServerError, errors.ErrFailedToMarshalResponse)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(jsonResponse)
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(jsonResponse)
-
 }
 
 func sendErrorResponse(w http.ResponseWriter, statusCode int, message, phoneNumber string) {

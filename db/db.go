@@ -9,6 +9,7 @@ import (
 
 	"github.com/joho/godotenv"
 	_ "github.com/mattn/go-sqlite3"
+	"golang.org/x/crypto/bcrypt"
 	"wagobot.com/model"
 )
 
@@ -44,17 +45,47 @@ func InitDB() error {
 	}
 
 	_, err = db.Exec(`
-	CREATE TABLE IF NOT EXISTS users (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		username TEXT NOT NULL UNIQUE,
-		password TEXT NOT NULL,
-		email TEXT NOT NULL UNIQUE,
-		first_name TEXT,
-		last_name TEXT,
-		url TEXT
-	)`)
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT NOT NULL UNIQUE,
+        password TEXT NOT NULL,
+        email TEXT NOT NULL UNIQUE,
+        first_name TEXT,
+        last_name TEXT,
+        url TEXT
+    )`)
 	if err != nil {
 		return err
+	}
+
+	// Check if the table is empty
+	var count int
+	err = db.QueryRow("SELECT COUNT(*) FROM users").Scan(&count)
+	if err != nil {
+		return err
+	}
+
+	// If the table is empty, insert the default user
+	if count == 0 {
+		defaultUsername := os.Getenv("DEFAULT_USERNAME")
+		defaultPassword := os.Getenv("DEFAULT_PASSWORD")
+		defaultEmail := os.Getenv("DEFAULT_EMAIL")
+		defaultFirstName := os.Getenv("DEFAULT_FIRST_NAME")
+		defaultLastName := os.Getenv("DEFAULT_LAST_NAME")
+		defaultURL := os.Getenv("DEFAULT_URL")
+
+		log.Printf("Inserting default user with username: %s, email: %s", defaultUsername, defaultEmail)
+
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(defaultPassword), bcrypt.DefaultCost)
+		if err != nil {
+			log.Printf("Error hashing password: %v", err)
+			return err
+		}
+
+		// Log the dan hash password
+		log.Printf("Hashed password: %s", string(hashedPassword))
+		CreateUser(defaultUsername, string(hashedPassword), defaultEmail, defaultFirstName, defaultLastName, defaultURL)
+
 	}
 
 	log.Println("Connected to the database")

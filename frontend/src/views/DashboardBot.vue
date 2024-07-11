@@ -22,7 +22,7 @@
     </div>
     <div
       v-else
-      class="p-2 max-w-screen-md mt-2 mb-2 mx-auto flex justify-center flex-wrap gap-4 relative"
+      class="p-2 max-w-screen-md mt-8 mb-2 mx-auto flex justify-center gap-12 flex-wrap  relative"
     >
       <LoadingSpin v-if="isLoading" />
       <QrcodeCard

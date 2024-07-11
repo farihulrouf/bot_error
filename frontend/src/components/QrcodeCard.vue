@@ -32,8 +32,18 @@
         :backgroundOptions="{ color: '#dcf8c6' }"
       />
     </div>
-  
     </div>
+    <Modal v-if="showModal" @close="showModal = false">
+      <template #header>
+        <h3 class="text-lg font-bold">Messages</h3>
+      </template>
+      <template #body>
+        <p>This is the messages modal content.</p>
+      </template>
+      <template #footer>
+        <button class="bg-red-500 text-white px-4 py-2 rounded" @click="showModal = false">Close</button>
+      </template>
+    </Modal>
   </div>
 </template>
 <script>
@@ -41,12 +51,14 @@ import QRCodeVue3 from "qrcode-vue3";
 import DropDown from "./DropDown.vue";
 import api from "../api/api.js";
 import { mdiDotsVertical } from "@mdi/js";
+import Modal from "./ModalMessages.vue";
 
 export default {
   name: "QrcodeCard",
   components: {
     QRCodeVue3,
     DropDown,
+    Modal,
   },
   props: {
     device: {
@@ -64,6 +76,7 @@ export default {
     return {
       isLoading: false, 
       isHovering: false,
+      showModal: false,
       menuItems: [
         { name: "Settings", action: "settings" },
         { name: "Messages", action: "Messages" },
@@ -80,7 +93,11 @@ export default {
     handleMenuClick(action) {
       if (action === "settings") {
         this.navigateToSettings();
-      } else if (action === "logout") {
+      }
+      else if (action === "Messages") {
+        this.showModal = true;
+      } 
+      else if (action === "logout") {
         this.logout();
       }
     },
