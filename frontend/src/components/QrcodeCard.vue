@@ -69,7 +69,7 @@ export default {
     bgColor: {
       type: String,
       default:
-        "bg-[#25d366] rounded-full w-6 h-6 flex justify-center absolute left-4 text-white",
+        "bg-whatsapp_teal rounded-full w-6 h-6 flex justify-center absolute left-4 text-white",
       // Warna latar belakang default (jika tidak disediakan oleh parent)
     },
   },

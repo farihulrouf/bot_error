@@ -2,7 +2,7 @@
   <div class="flex justify-between items-start mt-12 relative">
     <!-- Bagian untuk memperbarui profil -->
     <div class="w-1/2 pr-4">
-      <h2 class="text-2xl font-bold mb-4">Update Profile</h2>
+      <h2 class="text-2xl font-bold mb-8">Update Profile</h2>
       <form @submit.prevent="updateProfile">
         <div class="mb-4">
           <div class="relative">
@@ -29,7 +29,7 @@
           </div>
         </div>
         <div class="flex items-center justify-between">
-          <button type="submit" :disabled="isLoadingProfile" class="bg-[#075E54] hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+          <button type="submit" :disabled="isLoadingProfile" class="bg-whatsapp_teal hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
             <span v-if="!isLoadingProfile">Save Profile</span>
             <loading-spin v-if="isLoadingProfile" class="ml-2"></loading-spin>
           </button>
@@ -39,7 +39,7 @@
 
     <!-- Bagian untuk mengubah kata sandi -->
     <div class="w-1/2 pl-4">
-      <h2 class="text-2xl font-bold mb-4">Change Password</h2>
+      <h2 class="text-2xl font-bold mb-8">Change Password</h2>
       <form @submit.prevent="changePassword">
         <div class="mb-4">
           <div class="relative">
@@ -60,7 +60,7 @@
           </div>
         </div>
         <div class="flex items-center justify-between">
-          <button type="submit" :disabled="isLoadingPassword" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+          <button type="submit" :disabled="isLoadingPassword" class="bg-whatsapp_teal hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
             <span v-if="!isLoadingPassword">Save Password</span>
             <loading-spin v-if="isLoadingPassword" class="ml-2"></loading-spin>
           </button>

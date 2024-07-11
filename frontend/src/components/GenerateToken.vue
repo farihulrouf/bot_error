@@ -5,10 +5,10 @@
       <h3 class="font-bold">Webhook</h3>
       <input type="text" v-model="webhook" class="border-gray-300 border rounded px-3 py-2 w-full mt-2">
       <div class="flex justify-end mt-2">
-        <button @click="saveWebhook" :disabled="isLoading" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mr-2 focus:outline-none focus:shadow-outline">
+        <button @click="saveWebhook" :disabled="isLoading" class="bg-whatsapp_teal hover:bg-green-700 text-white font-bold py-2 px-4 rounded mr-2 focus:outline-none focus:shadow-outline">
           Save
         </button>
-        <button @click="closeWebhook" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+        <button @click="closeWebhook" class="bg-whatsapp_thidr hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
           Close
         </button>
       </div>
@@ -26,7 +26,7 @@
         <button @click="copyToken" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mr-2 focus:outline-none focus:shadow-outline">
           Copy
         </button>
-        <button @click="generateNewToken" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+        <button @click="generateNewToken" class="bg-whatsapp_teal hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
           New
         </button>
       </div>
