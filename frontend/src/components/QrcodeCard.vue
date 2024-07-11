@@ -52,6 +52,7 @@ import DropDown from "./DropDown.vue";
 import api from "../api/api.js";
 import { mdiDotsVertical } from "@mdi/js";
 import Modal from "./ModalMessages.vue";
+import { showNotification } from '../utils/notification'; // Import utilitas notifikasi
 
 export default {
   name: "QrcodeCard",
@@ -114,11 +115,13 @@ export default {
 
         if (response.status === "success") {
           console.log("Logout berhasil");
+          showNotification('Success', 'Logout successfully!', 'success');
           this.$emit('device-logged-out'); // Emit event to parent component
         } else {
           console.log("Logout gagal: ", response.data.message);
         }
       } catch (error) {
+        showNotification('Error', 'Failed to Logout', 'error');
         console.error("Error saat logout:", error);
       }
     },

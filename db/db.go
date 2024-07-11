@@ -52,7 +52,9 @@ func InitDB() error {
         email TEXT NOT NULL UNIQUE,
         first_name TEXT,
         last_name TEXT,
-        url TEXT
+        url TEXT,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`)
 	if err != nil {
 		return err
@@ -100,14 +102,11 @@ func CloseDB() {
 }
 
 func CreateUser(username, password, email, firstName, lastName, url string) error {
-	// Prepare the SQL statement.
-	stmt, err := db.Prepare("INSERT INTO users (username, password, email, first_name, last_name, url) VALUES (?, ?, ?, ?, ?, ?)")
+	stmt, err := db.Prepare("INSERT INTO users (username, password, email, first_name, last_name, url, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)")
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
-
-	// Execute the SQL statement with user data.
 	_, err = stmt.Exec(username, password, email, firstName, lastName, url)
 	if err != nil {
 		return err
@@ -177,4 +176,59 @@ func GetUserByID(username string) (model.User, error) {
 	query := `SELECT id, username, email, first_name, last_name, url FROM users WHERE username = ?`
 	err := db.QueryRow(query, username).Scan(&user.ID, &user.Username, &user.Email, &user.FirstName, &user.LastName, &user.Url)
 	return user, err
+}
+
+func UpdateUserProfile(username, firstName, lastName, email, password string) error {
+	// Prepare the SQL statement for updating user profile
+	var stmt *sql.Stmt
+	var err error
+
+	if password != "" {
+		// Update profile including password
+		stmt, err = db.Prepare("UPDATE users SET first_name=?, last_name=?, email=?, password=?, updated_at=CURRENT_TIMESTAMP WHERE username=?")
+		if err != nil {
+			return fmt.Errorf("failed to prepare update statement: %v", err)
+		}
+		defer stmt.Close()
+
+		//hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+		//if err != nil {
+		//	return fmt.Errorf("failed to hash password: %v", err)
+		//}
+
+		result, err := stmt.Exec(firstName, lastName, email, password, username)
+		if err != nil {
+			return fmt.Errorf("failed to execute update statement: %v", err)
+		}
+
+		rowsAffected, err := result.RowsAffected()
+		if err != nil {
+			return fmt.Errorf("failed to get rows affected: %v", err)
+		}
+		if rowsAffected == 0 {
+			return sql.ErrNoRows
+		}
+	} else {
+		// Update profile without changing the password
+		stmt, err = db.Prepare("UPDATE users SET first_name=?, last_name=?, email=?, updated_at=CURRENT_TIMESTAMP WHERE username=?")
+		if err != nil {
+			return fmt.Errorf("failed to prepare update statement: %v", err)
+		}
+		defer stmt.Close()
+
+		result, err := stmt.Exec(firstName, lastName, email, username)
+		if err != nil {
+			return fmt.Errorf("failed to execute update statement: %v", err)
+		}
+
+		rowsAffected, err := result.RowsAffected()
+		if err != nil {
+			return fmt.Errorf("failed to get rows affected: %v", err)
+		}
+		if rowsAffected == 0 {
+			return sql.ErrNoRows
+		}
+	}
+
+	return nil // Update successful
 }

@@ -1,6 +1,11 @@
 import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router'; // Import Vue Router instance
-import './assets/css/index.css'; // Pastikan pathnya sesuai dengan letak file Anda
+import Notifications from '@kyvg/vue3-notification'; // Import Notifications plugin
+import './assets/css/index.css'; 
+const app = createApp(App);
 
-createApp(App).use(router).mount('#app');
+// Gunakan plugin Notifications
+app.use(Notifications);
+
+app.use(router).mount('#app');

@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@jamescoyle/vue-icon": "^0.1.2",
+    "@kyvg/vue3-notification": "^3.2.1",
     "@mdi/js": "^7.4.47",
     "axios": "^1.7.2",
     "core-js": "^3.8.3",
@@ -29,6 +30,8 @@
     "@vue/cli-service": "~5.0.0",
     "autoprefixer": "^10.4.19",
     "concurrently": "^8.2.2",
+    "dotenv": "^16.4.5",
+    "dotenv-webpack": "^8.1.0",
     "eslint": "^7.32.0",
     "eslint-plugin-vue": "^8.0.3",
     "postcss": "^8.4.38",

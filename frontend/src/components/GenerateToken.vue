@@ -42,6 +42,7 @@
 <script>
 import api from '../api/api.js';
 import LoadingSpin from './LoadingSpin.vue';
+import { showNotification } from '../utils/notification'; // Import utilitas notifikasi
 
 export default {
   name: 'WebhookAndToken',
@@ -72,7 +73,7 @@ export default {
       textarea.select();
       document.execCommand('copy');
       document.body.removeChild(textarea);
-      alert('Token copied to clipboard');
+      showNotification('Success', 'Token copied to clipboard', 'success');
     },
     async fetchUserData() {
       try {
@@ -103,10 +104,11 @@ export default {
         // Menunda perubahan status isLoading menjadi false
         setTimeout(() => {
           this.isLoading = false; // Set loading menjadi false setelah beberapa detik
+          showNotification('Success', 'New token generated successfully', 'success');
         }, 1000); // Delay 2 detik (2000 milidetik)
       } catch (error) {
         console.error('Error generating new token:', error);
-        alert('Failed to generate new token');
+        showNotification('Error', 'Failed to generate new token', 'error');
         this.isLoading = false; // Set loading menjadi false jika terjadi error
       }
     },
@@ -121,15 +123,15 @@ export default {
         const response = await api.put('webhook/update', data, config); // Menggunakan method PUT untuk update
 
         console.log('Webhook updated successfully:', response);
-        alert('Webhook updated successfully'); // Tampilkan alert atau feedback sukses
 
         // Menunda perubahan status isLoading menjadi false
         setTimeout(() => {
           this.isLoading = false; // Set loading menjadi false setelah beberapa detik
+          showNotification('Success', 'Webhook updated successfully', 'success'); // Tampilkan notifikasi sukses
         }, 1000); // Delay 2 detik (2000 milidetik)
       } catch (error) {
         console.error('Error updating webhook:', error);
-        alert('Failed to update webhook'); // Tampilkan alert atau feedback error
+        showNotification('Error', 'Failed to update webhook', 'error'); // Tampilkan notifikasi error
         this.isLoading = false; // Set loading menjadi false jika terjadi error
       }
     },

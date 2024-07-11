@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"regexp"
 	"strings"
 
 	//"github.com/golang-jwt/jwt"
@@ -32,6 +33,7 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	user.Password = string(hashedPassword)
 
 	// Save the user to the database
+
 	err = db.CreateUser(user.Username, user.Password, user.Email, user.FirstName, user.LastName, user.Url)
 	if err != nil {
 		http.Error(w, "Failed to register user", http.StatusInternalServerError)
@@ -112,8 +114,7 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	*/
 }
 
-// Register handles user registration.
-func UpdateUserURLHandler(w http.ResponseWriter, r *http.Request) {
+func UpdateWbhookURLHandler(w http.ResponseWriter, r *http.Request) {
 	tokenStr := r.Header.Get("Authorization")
 	if tokenStr == "" {
 		http.Error(w, "Authorization header missing", http.StatusUnauthorized)
@@ -166,8 +167,6 @@ func UpdateUserURLHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("User URL updated successfully"))
 }
 
-
-
 func GetUserHandler(w http.ResponseWriter, r *http.Request) {
 	tokenStr := r.Header.Get("Authorization")
 	if tokenStr == "" {
@@ -182,14 +181,11 @@ func GetUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
 	userIDStr, ok := claims["username"].(string)
 	if !ok {
 		http.Error(w, "Invalid user ID in token", http.StatusUnauthorized)
 		return
 	}
-
-	
 
 	user, err := db.GetUserByID(userIDStr)
 	if err != nil {
@@ -203,4 +199,92 @@ func GetUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(user)
+}
+
+func UserUpdateHandler(w http.ResponseWriter, r *http.Request) {
+	// Ambil token dari header Authorization
+	tokenStr := r.Header.Get("Authorization")
+	if tokenStr == "" {
+		http.Error(w, "Authorization header missing", http.StatusUnauthorized)
+		return
+	}
+
+	// Hapus prefix "Bearer " dari token
+	tokenStr = strings.TrimPrefix(tokenStr, "Bearer ")
+	claims, err := auth.ParseToken(tokenStr)
+	if err != nil {
+		http.Error(w, "Invalid token", http.StatusUnauthorized)
+		return
+	}
+
+	// Ambil username dari claims JWT
+	username, ok := claims["username"].(string)
+	if !ok {
+		http.Error(w, "Invalid username in token", http.StatusUnauthorized)
+		return
+	}
+
+	var req model.User
+
+	// Decode body request JSON ke struct model.User
+	err = json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
+
+	// Validasi: Format email
+	if req.Email != "" && !isValidEmail(req.Email) {
+		http.Error(w, "Invalid email format", http.StatusBadRequest)
+		return
+	}
+
+	// Cek apakah current password sama dengan yang tersimpan
+	if req.CurrentPassword != "" && req.NewPassword != "" {
+		user, err := db.GetUserByUsername(username)
+		if err != nil {
+			http.Error(w, "Failed to retrieve user data", http.StatusInternalServerError)
+			return
+		}
+
+		err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.CurrentPassword))
+		if err != nil {
+			http.Error(w, "Current password is incorrect", http.StatusUnauthorized)
+			return
+		}
+
+		// Hash password baru
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
+		if err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+
+		// Update profil dengan password baru yang ter-hash
+		err = db.UpdateUserProfile(username, req.FirstName, req.LastName, req.Email, string(hashedPassword))
+		if err != nil {
+			http.Error(w, "Failed to update profile", http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Profile updated successfully with password"))
+		return
+	}
+
+	// Update profil tanpa mengubah password
+	err = db.UpdateUserProfile(username, req.FirstName, req.LastName, req.Email, req.NewPassword)
+	if err != nil {
+		http.Error(w, "Failed to update profile", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Profile updated successfully without password"))
+}
+
+func isValidEmail(email string) bool {
+	emailRegex := `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
+	match, _ := regexp.MatchString(emailRegex, email)
+	return match // Placeholder for demo purpose
 }
