@@ -13,6 +13,7 @@ import (
 	"wagobot.com/auth"
 	"wagobot.com/db"
 	"wagobot.com/model"
+	"wagobot.com/response"
 )
 
 // Register handles user registration.
@@ -44,12 +45,19 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("User registered successfully"))
 }
 
-// Login handles user login.
+// @Summary Login user
+// @Description Logs in a user with username and password
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param credentials body response.Credentials true "Username and Password"
+// @Success 200 {object} response.TokenResponse
+// @Failure 400 {object} response.ErrorResponse
+// @Failure 401 {object} response.ErrorResponse
+// @Router /api/login [post]
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
-	var credentials struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
-	}
+	var credentials response.Credentials
+
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
@@ -76,9 +84,12 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Respond with the generated token
-	response := map[string]string{"token": token}
+	response := response.TokenResponse{Token: token}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 }
 
 func CreateToken(w http.ResponseWriter, r *http.Request) {

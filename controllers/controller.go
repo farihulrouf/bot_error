@@ -128,7 +128,7 @@ func GetClient(deviceStore *store.Device) *whatsmeow.Client {
 //var silver = ""
 */
 func EventHandler(evt interface{}) {
-	fmt.Println("try to excution")
+	//fmt.Println("try to excution")
 	switch v := evt.(type) {
 	case *events.Message:
 		if !v.Info.IsFromMe || v.Message.GetConversation() != "" ||
@@ -196,48 +196,55 @@ func EventHandler(evt interface{}) {
 				// Replies: v.Message.Replies,
 			})
 		}
-		payload := response.Message{
-			ID:             v.Info.ID,
-			Chat:           v.Info.Sender.String(),
-			Time:           v.Info.Timestamp.Unix(),
-			Text:           v.Message.GetConversation(),
-			Group:          v.Info.IsGroup,
-			IsFromMe:       v.Info.IsFromMe,
-			Caption:        v.Message.GetImageMessage().GetCaption(),
-			VideoMessage:   v.Message.GetVideoMessage().GetCaption(),
-			DocMessage:     v.Message.GetDocumentMessage().GetCaption(),
-			MimeTipe:       v.Message.GetImageMessage().GetMimetype(),
-			Name:           v.Info.PushName,
-			To:             v.Info.PushName,
-			Url:            v.Message.GetImageMessage().GetUrl(),
-			Thumbnail:      base64.StdEncoding.EncodeToString(v.Message.GetImageMessage().GetJpegThumbnail()),
-			Thumbnailvideo: base64.StdEncoding.EncodeToString(v.Message.GetVideoMessage().GetJpegThumbnail()),
-			Thumbnaildoc:   base64.StdEncoding.EncodeToString(v.Message.GetDocumentMessage().GetJpegThumbnail()),
-			Tipe:           v.Info.Type,
-			IsDocument:     v.IsDocumentWithCaption,
-			Mediatipe:      v.Info.MediaType,
-		}
-		webhookURL := "https://webhook.site/#!/view/21d8717c-1628-4a4a-a3a0-8618ce6e7d3d"
-		err := sendPayloadToWebhook(payload, webhookURL)
-		if err != nil {
-			fmt.Printf("Failed to send payload to webhook: %v\n", err)
-		}
-
+		/*
+			payload := response.Message{
+				ID:             v.Info.ID,
+				Chat:           v.Info.Sender.String(),
+				Time:           v.Info.Timestamp.Unix(),
+				Text:           v.Message.GetConversation(),
+				Group:          v.Info.IsGroup,
+				IsFromMe:       v.Info.IsFromMe,
+				Caption:        v.Message.GetImageMessage().GetCaption(),
+				VideoMessage:   v.Message.GetVideoMessage().GetCaption(),
+				DocMessage:     v.Message.GetDocumentMessage().GetCaption(),
+				MimeTipe:       v.Message.GetImageMessage().GetMimetype(),
+				Name:           v.Info.PushName,
+				To:             v.Info.PushName,
+				Url:            v.Message.GetImageMessage().GetUrl(),
+				Thumbnail:      base64.StdEncoding.EncodeToString(v.Message.GetImageMessage().GetJpegThumbnail()),
+				Thumbnailvideo: base64.StdEncoding.EncodeToString(v.Message.GetVideoMessage().GetJpegThumbnail()),
+				Thumbnaildoc:   base64.StdEncoding.EncodeToString(v.Message.GetDocumentMessage().GetJpegThumbnail()),
+				Tipe:           v.Info.Type,
+				IsDocument:     v.IsDocumentWithCaption,
+				Mediatipe:      v.Info.MediaType,
+			}
+			webhookURL := "https://webhook.site/aa9bbb63-611c-4d7a-97cd-f4eb6d4b775d"
+			err := sendPayloadToWebhook(payload, webhookURL)
+			if err != nil {
+				fmt.Printf("Failed to send payload to webhook: %v\n", err)
+			}
+		*/
 	case *events.PairSuccess:
 		fmt.Println("pari succeess", v.ID.User)
 		initialClient()
 	case *events.HistorySync:
-		//fmt.Println("Received a history sync", v.Data.GetConversations())
-		/*for _, conv := range v.Data.GetConversations() {
+		for _, conv := range v.Data.GetConversations() {
 			for _, historymsg := range conv.GetMessages() {
 				chatJID, _ := types.ParseJID(conv.GetId())
-				evt, err := clients["device"].ParseWebMessage(chatJID, historymsg.GetMessage())
+				//client := getClient_data("Device-aoA")
+				var first_client *whatsmeow.Client
+				for _, client := range clients {
+					first_client = client
+					break
+				}
+				evt, err := first_client.ParseWebMessage(chatJID, historymsg.GetMessage())
+				fmt.Println("data message", historymsg.GetMessage())
 				if err != nil {
 					log.Println(err)
 				}
 				EventHandler(evt)
 			}
-		}*/
+		}
 	case *events.Receipt:
 		if v.Type == events.ReceiptTypeRead || v.Type == events.ReceiptTypeReadSelf {
 			fmt.Printf("%v was read by %s at %s\n", v.MessageIDs, v.SourceString(), v.Timestamp)
@@ -490,7 +497,7 @@ func GetMessagesHandler(w http.ResponseWriter, r *http.Request) {
 		messageData := map[string]interface{}{
 			"id":     msg.ID,
 			"from":   strings.TrimSuffix(msg.From, "@s.whatsapp.net"),
-			"to":     msg.To,
+			"to":     strings.TrimSuffix(msg.From, "@s.whatsapp.net"),
 			"status": "delivered",
 			//"chat": chat,
 			"time": msg.Time,

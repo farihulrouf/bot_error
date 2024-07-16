@@ -8,4 +8,11 @@ const app = createApp(App);
 // Gunakan plugin Notifications
 app.use(Notifications);
 
+app.use(router);
+
+
 app.use(router).mount('#app');
+
+
+
+

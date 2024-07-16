@@ -10,6 +10,7 @@ import (
 	"syscall"
 
 	"github.com/joho/godotenv"
+	httpSwagger "github.com/swaggo/http-swagger"
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/store/sqlstore"
 	waLog "go.mau.fi/whatsmeow/util/log"
@@ -91,6 +92,9 @@ func main() {
 	r := router.SetupRouter()
 	apiRouter := router.SetupRouter()
 	r.PathPrefix("/api").Handler(http.StripPrefix("/api", apiRouter))
+
+	//Tambahkan Endpoin swager
+	r.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 
 	// Menyajikan file statis
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))

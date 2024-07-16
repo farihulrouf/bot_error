@@ -2,8 +2,12 @@ package router
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/mux"
+	httpSwagger "github.com/swaggo/http-swagger"
+
+	// sesuaikan dengan path yang sesuai
 	//"go.mau.fi/whatsmeow"
 
 	"wagobot.com/auth"
@@ -15,20 +19,23 @@ func SetupRouter() *mux.Router {
 	//controllers.SetClient(client)
 
 	// Menetapkan penanganan rute untuk endpoint registrasi dan login
-	r.HandleFunc("/api/register", controllers.RegisterHandler).Methods("POST")
-	r.HandleFunc("/api/login", controllers.LoginHandler).Methods("POST")
+
 	//r.HandleFunc("/api/scanqr/{device}", controllers.ScanQRHandler).Methods("GET")
 
 	// Middleware JWT digunakan untuk semua rute kecuali /api/login dan /api/register /scanqr
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/api/login" || r.URL.Path == "/api/register" {
+			if r.URL.Path == "/api/login" || r.URL.Path == "/api/register" ||
+				strings.HasPrefix(r.URL.Path, "/swagger/") {
 				next.ServeHTTP(w, r)
 				return
 			}
 			auth.JWTMiddleware(next).ServeHTTP(w, r)
 		})
 	})
+	r.HandleFunc("/api/register", controllers.RegisterHandler).Methods("POST")
+	r.HandleFunc("/api/login", controllers.LoginHandler).Methods("POST")
+	r.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 
 	r.HandleFunc("/api/groups", controllers.GetGroupsHandler).Methods("GET")
 	r.HandleFunc("/api/groups", controllers.JoinGroupHandler).Methods("POST")
@@ -67,10 +74,8 @@ func SetupRouter() *mux.Router {
 	r.HandleFunc("/api/webhook/update", controllers.UpdateWbhookURLHandler).Methods("PUT")
 	r.HandleFunc("/api/user/detail", controllers.GetUserHandler).Methods("GET")
 	r.HandleFunc("/api/user/update", controllers.UserUpdateHandler).Methods("PUT")
-	//
-	//
-	//
-	//GetUserHandler
-	// Add more routes here if needed
+
+	//r.HandleFunc("/api/messages/images", controllers.SendImageHandler).Methods("POST")
+
 	return r
 }

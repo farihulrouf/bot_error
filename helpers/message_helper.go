@@ -36,6 +36,54 @@ func SendMessageToPhoneNumber(client *whatsmeow.Client, recipient, message strin
 	fmt.Printf("Sending message '%s' to phone number: %s\n", message, recipient)
 	return nil
 }
+
+func UploadImageAndCreateMessage(client *whatsmeow.Client, imageBytes []byte, caption, mimeType string) (*waProto.ImageMessage, error) {
+	// Unggah gambar
+	resp, err := client.Upload(context.Background(), imageBytes, whatsmeow.MediaImage)
+	if err != nil {
+		return nil, fmt.Errorf("error uploading image: %v", err)
+	}
+
+	// Buat pesan gambar
+	imageMsg := &waProto.ImageMessage{
+		Caption:  proto.String(caption),
+		Mimetype: proto.String("image/jpeg"), // replace this with the actual mime type
+		// you can also optionally add other fields like ContextInfo and JpegThumbnail here
+		ThumbnailDirectPath: &resp.DirectPath,
+		ThumbnailSha256:     resp.FileSHA256,
+		ThumbnailEncSha256:  resp.FileEncSHA256,
+		//JpegThumbnail:       jpegBytes,
+
+		Url:           &resp.URL,
+		DirectPath:    &resp.DirectPath,
+		MediaKey:      resp.MediaKey,
+		FileEncSha256: resp.FileEncSHA256,
+		FileSha256:    resp.FileSHA256,
+		FileLength:    &resp.FileLength,
+	}
+
+	return imageMsg, nil
+}
+
+func SendImageToPhoneNumber(client *whatsmeow.Client, recipient string, imageMsg *waProto.ImageMessage) error {
+	// Konversi recipient ke JID
+	jid, err := types.ParseJID(recipient + "@s.whatsapp.net")
+	if err != nil {
+		return fmt.Errorf("invalid recipient JID: %v", err)
+	}
+
+	// Kirim pesan gambar
+	_, err = client.SendMessage(context.Background(), jid, &waProto.Message{
+		ImageMessage: imageMsg,
+	})
+	if err != nil {
+		return fmt.Errorf("error sending image message: %v", err)
+	}
+
+	fmt.Printf("Sending image to phone number: %s\n", recipient)
+	return nil
+}
+
 func SendMessage(client *whatsmeow.Client, jid types.JID, req model.SendMessageDataRequest) error {
 	// Create the message based on the type
 	var msg *waProto.Message

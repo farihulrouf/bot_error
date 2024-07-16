@@ -3,7 +3,9 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -94,6 +96,34 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 			helpers.SendErrorResponse(w, http.StatusInternalServerError, errors.ErrFailedToSendMessage)
 			return
 		}
+	} else if requestData.Type == "media" {
+		file, err := os.Open(requestData.URL)
+		if err != nil {
+			fmt.Printf("Error opening file: %v\n", err)
+			return
+		}
+		defer file.Close()
+
+		// Membaca konten file gambar ke dalam byte array
+		imageBytes, err := ioutil.ReadAll(file)
+		if err != nil {
+			http.Error(w, "Error reading image file content", http.StatusInternalServerError)
+			return
+		}
+
+		imageMsg, err := helpers.UploadImageAndCreateMessage(value_client, imageBytes, requestData.Caption, requestData.Type)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Kirim pesan gambar
+		err = helpers.SendImageToPhoneNumber(value_client, requestData.To, imageMsg)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
 	} else {
 		helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidMessageType)
 		return
