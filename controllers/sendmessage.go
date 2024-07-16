@@ -96,7 +96,7 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 			helpers.SendErrorResponse(w, http.StatusInternalServerError, errors.ErrFailedToSendMessage)
 			return
 		}
-	} else if requestData.Type == "media" {
+	} else if requestData.Type == "image" {
 		file, err := os.Open(requestData.URL)
 		if err != nil {
 			fmt.Printf("Error opening file: %v\n", err)
@@ -124,6 +124,62 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+	} else if requestData.Type == "doc" {
+		file, err := os.Open(requestData.URL)
+		if err != nil {
+			fmt.Printf("Error opening file: %v\n", err)
+			return
+		}
+		defer file.Close()
+
+		// Membaca konten file  ke dalam byte array
+		docBytes, err := ioutil.ReadAll(file)
+		//fmt.Println("cek doc", docBytes)
+		if err != nil {
+			http.Error(w, "Error reading doc file content", http.StatusInternalServerError)
+			return
+		}
+
+		docMsg, err := helpers.UploadDocAndCreateMessage(value_client, docBytes, requestData.Caption, requestData.Type)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Kirim pesan gambar
+		err = helpers.SendDocToPhoneNumber(value_client, requestData.To, docMsg)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	} else if requestData.Type == "video" {
+		file, err := os.Open(requestData.URL)
+		if err != nil {
+			fmt.Printf("Error opening file: %v\n", err)
+			return
+		}
+		defer file.Close()
+
+		// Membaca konten file  ke dalam byte array
+		vidBytes, err := ioutil.ReadAll(file)
+		//fmt.Println("cek doc", docBytes)
+		if err != nil {
+			http.Error(w, "Error reading doc file content", http.StatusInternalServerError)
+			return
+		}
+
+		vidMsg, err := helpers.UploadVideoAndCreateMessage(value_client, vidBytes, requestData.Caption, requestData.Type)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Kirim pesan video
+		err = helpers.SendVideoToPhoneNumber(value_client, requestData.To, vidMsg)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	} else {
 		helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidMessageType)
 		return
@@ -189,12 +245,42 @@ func SendMessageBulkHandler(w http.ResponseWriter, r *http.Request) {
 		if !matchFound {
 			helpers.SendErrorResponse(w, http.StatusBadRequest, "No matching number found for requestData.From")
 		}
+
 		if message.Type == "text" {
 			err = helpers.SendMessageToPhoneNumber(value_client, message.To, message.Text)
 			if err != nil {
 				result["status"] = "failed"
 				allSucceeded = false // Set flag ke false jika tipe bukan "text"
 			}
+
+		} else if message.Type == "image" {
+			file, err := os.Open(message.URL)
+			if err != nil {
+				fmt.Printf("Error opening file: %v\n", err)
+				return
+			}
+			defer file.Close()
+
+			// Membaca konten file gambar ke dalam byte array
+			imageBytes, err := ioutil.ReadAll(file)
+			if err != nil {
+				http.Error(w, "Error reading image file content", http.StatusInternalServerError)
+				return
+			}
+
+			imageMsg, err := helpers.UploadImageAndCreateMessage(value_client, imageBytes, message.Text, message.Type)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			// Kirim pesan gambar
+			err = helpers.SendImageToPhoneNumber(value_client, message.To, imageMsg)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
 		} else {
 			result["status"] = "failed"
 			allSucceeded = false // Set flag ke false jika tipe bukan "text"

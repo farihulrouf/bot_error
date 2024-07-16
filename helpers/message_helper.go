@@ -3,6 +3,8 @@ package helpers
 import (
 	"context"
 	"fmt"
+	"mime/multipart"
+	"net/http"
 	"strings"
 	"time"
 
@@ -46,9 +48,8 @@ func UploadImageAndCreateMessage(client *whatsmeow.Client, imageBytes []byte, ca
 
 	// Buat pesan gambar
 	imageMsg := &waProto.ImageMessage{
-		Caption:  proto.String(caption),
-		Mimetype: proto.String("image/jpeg"), // replace this with the actual mime type
-		// you can also optionally add other fields like ContextInfo and JpegThumbnail here
+		Caption:             proto.String(caption),
+		Mimetype:            proto.String("image/jpeg"),
 		ThumbnailDirectPath: &resp.DirectPath,
 		ThumbnailSha256:     resp.FileSHA256,
 		ThumbnailEncSha256:  resp.FileEncSHA256,
@@ -65,6 +66,99 @@ func UploadImageAndCreateMessage(client *whatsmeow.Client, imageBytes []byte, ca
 	return imageMsg, nil
 }
 
+func MultipartFormFileHeaderToBytes(fileHeader *multipart.FileHeader) []byte {
+	file, _ := fileHeader.Open()
+	defer file.Close()
+
+	fileBytes := make([]byte, fileHeader.Size)
+	_, _ = file.Read(fileBytes)
+
+	return fileBytes
+}
+
+func UploadDocAndCreateMessage(client *whatsmeow.Client, docBytes []byte, caption, mimeType string) (*waProto.DocumentMessage, error) {
+	// Unggah Doc
+
+	//client.Upload(context.Background(), data, whatsmeow.MediaDocument)
+	//fileMimeType := http.DetectContentType(docBytes)
+
+	resp, err := client.Upload(context.Background(), docBytes, whatsmeow.MediaDocument)
+	if err != nil {
+		return nil, fmt.Errorf("error uploading do: %v", err)
+	}
+	msg := &waProto.DocumentMessage{
+		Url:      proto.String(resp.URL),
+		Mimetype: proto.String(http.DetectContentType(docBytes)),
+		//Title:         proto.String(resp.File.Filename),
+		FileSha256: resp.FileSHA256,
+		FileLength: proto.Uint64(resp.FileLength),
+		MediaKey:   resp.MediaKey,
+		//FileName:      proto.String(resp.File.Filename),
+		FileEncSha256: resp.FileEncSHA256,
+		DirectPath:    proto.String(resp.DirectPath),
+		Caption:       proto.String(caption),
+	}
+	// Buat pesan Doc
+	/*docMsg := &waProto.DocumentMessage{
+		Caption: proto.String(caption),
+		//Mimetype:            proto.String("image/jpeg"),
+		Mimetype:            proto.String(http.DetectContentType(docBytes)),
+		ThumbnailDirectPath: &resp.DirectPath,
+		ThumbnailSha256:     resp.FileSHA256,
+		ThumbnailEncSha256:  resp.FileEncSHA256,
+		//JpegThumbnail:       jpegBytes,
+
+		Url:           &resp.URL,
+		DirectPath:    &resp.DirectPath,
+		MediaKey:      resp.MediaKey,
+		FileEncSha256: resp.FileEncSHA256,
+		FileSha256:    resp.FileSHA256,
+		FileLength:    &resp.FileLength,
+	}*/
+	//UploadDocAndCreateMessage
+	return msg, nil
+}
+
+func UploadVideoAndCreateMessage(client *whatsmeow.Client, videoBytes []byte, caption, mimeType string) (*waProto.VideoMessage, error) {
+
+	resp, err := client.Upload(context.Background(), videoBytes, whatsmeow.MediaVideo)
+	if err != nil {
+		return nil, fmt.Errorf("error uploading do: %v", err)
+	}
+	msg := &waProto.VideoMessage{
+		Url:      proto.String(resp.URL),
+		Mimetype: proto.String(http.DetectContentType(videoBytes)),
+		//Title:         proto.String(resp.File.Filename),
+		FileSha256: resp.FileSHA256,
+		FileLength: proto.Uint64(resp.FileLength),
+		MediaKey:   resp.MediaKey,
+		//FileName:      proto.String(resp.File.Filename),
+		FileEncSha256: resp.FileEncSHA256,
+		DirectPath:    proto.String(resp.DirectPath),
+		Caption:       proto.String(caption),
+	}
+	return msg, nil
+}
+
+func SendVideoToPhoneNumber(client *whatsmeow.Client, recipient string, videoMsg *waProto.VideoMessage) error {
+	// Konversi recipient ke JID
+	jid, err := types.ParseJID(recipient + "@s.whatsapp.net")
+	if err != nil {
+		return fmt.Errorf("invalid recipient JID: %v", err)
+	}
+
+	// Kirim pesan gambar
+	_, err = client.SendMessage(context.Background(), jid, &waProto.Message{
+		VideoMessage: videoMsg,
+	})
+	if err != nil {
+		return fmt.Errorf("error sending image message: %v", err)
+	}
+
+	fmt.Printf("Sending image to phone number: %s\n", recipient)
+	return nil
+}
+
 func SendImageToPhoneNumber(client *whatsmeow.Client, recipient string, imageMsg *waProto.ImageMessage) error {
 	// Konversi recipient ke JID
 	jid, err := types.ParseJID(recipient + "@s.whatsapp.net")
@@ -78,6 +172,25 @@ func SendImageToPhoneNumber(client *whatsmeow.Client, recipient string, imageMsg
 	})
 	if err != nil {
 		return fmt.Errorf("error sending image message: %v", err)
+	}
+
+	fmt.Printf("Sending image to phone number: %s\n", recipient)
+	return nil
+}
+
+func SendDocToPhoneNumber(client *whatsmeow.Client, recipient string, docMsg *waProto.DocumentMessage) error {
+	// Konversi recipient ke JID
+	jid, err := types.ParseJID(recipient + "@s.whatsapp.net")
+	if err != nil {
+		return fmt.Errorf("invalid recipient JID: %v", err)
+	}
+
+	// Kirim pesan Doc
+	_, err = client.SendMessage(context.Background(), jid, &waProto.Message{
+		DocumentMessage: docMsg,
+	})
+	if err != nil {
+		return fmt.Errorf("error sending doc message: %v", err)
 	}
 
 	fmt.Printf("Sending image to phone number: %s\n", recipient)
