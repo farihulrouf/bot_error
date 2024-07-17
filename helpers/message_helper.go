@@ -2,6 +2,9 @@ package helpers
 
 import (
 	"context"
+	"crypto/md5"
+	"crypto/sha256"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -348,8 +351,13 @@ func IsLoggedInByNumber(client *whatsmeow.Client, phoneNumber string) bool {
 	return true
 }
 func IsValidURL(str string) bool {
-	_, err := url.ParseRequestURI(str)
-	return err == nil
+	u, err := url.ParseRequestURI(str)
+	if err != nil {
+		return false
+	}
+
+	// Periksa bahwa skema (scheme) URL adalah http atau https
+	return u.Scheme == "http" || u.Scheme == "https"
 }
 
 // Fungsi untuk mendeteksi ekstensi file dan jenis file
@@ -408,14 +416,97 @@ func DetectFileTypeByContentType(urlStr string) (string, error) {
 	contentType := resp.Header.Get("Content-Type")
 	switch {
 	case strings.HasPrefix(contentType, "image/"):
-		return "Image", nil
+		// Deteksi berbagai jenis gambar
+		switch {
+		case contentType == "image/jpeg":
+			return "Image: JPEG", nil
+		case contentType == "image/png":
+			return "Image: PNG", nil
+		case contentType == "image/gif":
+			return "Image: GIF", nil
+		case contentType == "image/webp":
+			return "Image: WEBP", nil
+		case contentType == "image/bmp":
+			return "Image: BMP", nil
+		case contentType == "image/svg+xml":
+			return "Image: SVG", nil
+		case contentType == "image/tiff":
+			return "Image: TIFF", nil
+		default:
+			return "Image: Unknown format", nil
+		}
 	case strings.HasPrefix(contentType, "video/"):
-		return "Video", nil
-	case strings.HasPrefix(contentType, "application/pdf") || strings.HasPrefix(contentType, "application/vnd.openxmlformats-officedocument") || strings.HasPrefix(contentType, "application/msword") || strings.HasPrefix(contentType, "application/vnd.ms-excel") || strings.HasPrefix(contentType, "application/vnd.ms-powerpoint"):
-		return "Document", nil
+		// Deteksi berbagai jenis video
+		switch {
+		case contentType == "video/mp4":
+			return "Video: MP4", nil
+		case contentType == "video/avi":
+			return "Video: AVI", nil
+		case contentType == "video/mkv":
+			return "Video: MKV", nil
+		case contentType == "video/webm":
+			return "Video: WEBM", nil
+		case contentType == "video/quicktime":
+			return "Video: QuickTime", nil
+		default:
+			return "Video: Unknown format", nil
+		}
+	case strings.HasPrefix(contentType, "application/pdf"):
+		return "Document: PDF", nil
+	case strings.HasPrefix(contentType, "application/vnd.openxmlformats-officedocument/wordprocessingml.document"):
+		return "Document: DOCX", nil
+	case strings.HasPrefix(contentType, "application/msword"):
+		return "Document: DOC", nil
+	case strings.HasPrefix(contentType, "application/vnd.openxmlformats-officedocument/spreadsheetml.sheet"):
+		return "Document: XLSX", nil
+	case strings.HasPrefix(contentType, "application/vnd.ms-excel"):
+		return "Document: XLS", nil
+	case strings.HasPrefix(contentType, "application/vnd.openxmlformats-officedocument/presentationml.presentation"):
+		return "Document: PPTX", nil
+	case strings.HasPrefix(contentType, "application/vnd.ms-powerpoint"):
+		return "Document: PPT", nil
 	case strings.HasPrefix(contentType, "audio/"):
-		return "Audio", nil
+		// Deteksi berbagai jenis audio
+		switch {
+		case contentType == "audio/mpeg":
+			return "Audio: MP3", nil
+		case contentType == "audio/wav":
+			return "Audio: WAV", nil
+		case contentType == "audio/ogg":
+			return "Audio: OGG", nil
+		case contentType == "audio/flac":
+			return "Audio: FLAC", nil
+		default:
+			return "Audio: Unknown format", nil
+		}
 	default:
 		return "Unknown type", nil
 	}
+}
+
+// Fungsi untuk memeriksa apakah string adalah Base64 yang valid
+func IsBase64(str string) bool {
+	_, err := base64.StdEncoding.DecodeString(str)
+	return err == nil
+}
+
+// Fungsi untuk mengonversi Base64 ke byte array dan menghitung hash dari data
+func Base64ToHash(base64Str string) ([]byte, []byte, error) {
+	// Dekode string Base64 menjadi byte array
+	data, err := base64.StdEncoding.DecodeString(base64Str)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Hitung hash SHA-256
+	hashSHA256 := sha256.New()
+	hashSHA256.Write(data)
+	hashSHA256Bytes := hashSHA256.Sum(nil)
+
+	// Hitung hash MD5
+	hashMD5 := md5.New()
+	hashMD5.Write(data)
+	hashMD5Bytes := hashMD5.Sum(nil)
+
+	return hashSHA256Bytes, hashMD5Bytes, nil
 }

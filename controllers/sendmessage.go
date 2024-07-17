@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -97,17 +98,35 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else if requestData.Type == "image" {
-		file, err := os.Open(requestData.URL)
-		if err != nil {
-			fmt.Printf("Error opening file: %v\n", err)
-			return
-		}
-		defer file.Close()
+		var imageBytes []byte
+		var err error // Deklarasikan variabel err di sini
 
-		// Membaca konten file gambar ke dalam byte array
-		imageBytes, err := ioutil.ReadAll(file)
-		if err != nil {
-			http.Error(w, "Error reading image file content", http.StatusInternalServerError)
+		if helpers.IsValidURL(requestData.URL) {
+			fileType, detectErr := helpers.DetectFileTypeByContentType(requestData.URL)
+			fmt.Println("cek data", fileType)
+			if detectErr != nil {
+				fmt.Println("Error detecting file type:", detectErr)
+				http.Error(w, "Error detecting file type", http.StatusInternalServerError)
+				return
+			}
+
+			imageBytes, err = helpers.DownloadFile(requestData.URL)
+			if err != nil {
+				fmt.Println("Error downloading file:", err)
+				http.Error(w, "Error downloading file", http.StatusInternalServerError)
+				return
+			}
+		} else if helpers.IsBase64(requestData.URL) {
+			// Jangan deklarasikan variabel baru, cukup gunakan yang sudah ada
+			var decodeErr error
+			imageBytes, decodeErr = base64.StdEncoding.DecodeString(requestData.URL)
+			if decodeErr != nil {
+				fmt.Println("Error decoding Base64 string:", decodeErr)
+				http.Error(w, "Error decoding Base64 string", http.StatusInternalServerError)
+				return
+			}
+		} else {
+			http.Error(w, "Invalid URL and not a Base64 or url string", http.StatusBadRequest)
 			return
 		}
 
@@ -125,18 +144,35 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 	} else if requestData.Type == "doc" {
-		file, err := os.Open(requestData.URL)
-		if err != nil {
-			fmt.Printf("Error opening file: %v\n", err)
-			return
-		}
-		defer file.Close()
+		var docBytes []byte
+		var err error // Deklarasikan variabel err di sini
 
-		// Membaca konten file  ke dalam byte array
-		docBytes, err := ioutil.ReadAll(file)
-		//fmt.Println("cek doc", docBytes)
-		if err != nil {
-			http.Error(w, "Error reading doc file content", http.StatusInternalServerError)
+		if helpers.IsValidURL(requestData.URL) {
+			fileType, detectErr := helpers.DetectFileTypeByContentType(requestData.URL)
+			fmt.Println("cek data", fileType)
+			if detectErr != nil {
+				fmt.Println("Error detecting file type:", detectErr)
+				http.Error(w, "Error detecting file type", http.StatusInternalServerError)
+				return
+			}
+
+			docBytes, err = helpers.DownloadFile(requestData.URL)
+			if err != nil {
+				fmt.Println("Error downloading file:", err)
+				http.Error(w, "Error downloading file", http.StatusInternalServerError)
+				return
+			}
+		} else if helpers.IsBase64(requestData.URL) {
+			// Jangan deklarasikan variabel baru, cukup gunakan yang sudah ada
+			var decodeErr error
+			docBytes, decodeErr = base64.StdEncoding.DecodeString(requestData.URL)
+			if decodeErr != nil {
+				fmt.Println("Error decoding Base64 string:", decodeErr)
+				http.Error(w, "Error decoding Base64 string", http.StatusInternalServerError)
+				return
+			}
+		} else {
+			http.Error(w, "Invalid URL and not a Base64 or url string", http.StatusBadRequest)
 			return
 		}
 
@@ -146,7 +182,7 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Kirim pesan gambar
+		// Kirim pesan doc
 		err = helpers.SendDocToPhoneNumber(value_client, requestData.To, docMsg)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

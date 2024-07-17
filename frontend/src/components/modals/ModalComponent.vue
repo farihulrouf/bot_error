@@ -12,8 +12,9 @@
         <label class="block mb-2 font-bold" for="type">Type</label>
         <select id="type" v-model="type" class="w-full p-2 border border-gray-300 rounded">
           <option value="text">Text</option>
-          <option value="media">Media</option>
+          <option value="image">Image</option>
           <option value="audio">Audio</option>
+          <option value="video">Video</option>
           <option value="doc">Doc</option>
         </select>
       </div>
