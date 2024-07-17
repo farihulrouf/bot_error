@@ -3,8 +3,10 @@ package helpers
 import (
 	"context"
 	"fmt"
+	"io"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -344,4 +346,76 @@ func IsLoggedInByNumber(client *whatsmeow.Client, phoneNumber string) bool {
 
 	// Nomor Telepon ditemukan
 	return true
+}
+func IsValidURL(str string) bool {
+	_, err := url.ParseRequestURI(str)
+	return err == nil
+}
+
+// Fungsi untuk mendeteksi ekstensi file dan jenis file
+func DetectFileType(urlStr string) string {
+	parsedURL, err := url.Parse(urlStr)
+	if err != nil {
+		return "Error parsing URL"
+	}
+
+	// Mendapatkan path dari URL
+	path := parsedURL.Path
+	// Mendapatkan ekstensi file
+	ext := strings.ToLower(strings.TrimPrefix(path[strings.LastIndex(path, "."):], "."))
+
+	// Menentukan jenis file berdasarkan ekstensi
+	switch {
+	case ext == "jpg" || ext == "jpeg" || ext == "png" || ext == "gif" || ext == "bmp":
+		return "Image"
+	case ext == "mp4" || ext == "mkv" || ext == "avi" || ext == "mov" || ext == "webm":
+		return "Video"
+	case ext == "pdf" || ext == "doc" || ext == "docx" || ext == "xls" || ext == "xlsx" || ext == "ppt" || ext == "pptx":
+		return "Document"
+	case ext == "mp3" || ext == "wav" || ext == "flac" || ext == "ogg":
+		return "Audio"
+	default:
+		return "Unknown type"
+	}
+}
+
+func DownloadFile(urlStr string) ([]byte, error) {
+	resp, err := http.Get(urlStr)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to download file: %s", resp.Status)
+	}
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
+func DetectFileTypeByContentType(urlStr string) (string, error) {
+	resp, err := http.Head(urlStr)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	contentType := resp.Header.Get("Content-Type")
+	switch {
+	case strings.HasPrefix(contentType, "image/"):
+		return "Image", nil
+	case strings.HasPrefix(contentType, "video/"):
+		return "Video", nil
+	case strings.HasPrefix(contentType, "application/pdf") || strings.HasPrefix(contentType, "application/vnd.openxmlformats-officedocument") || strings.HasPrefix(contentType, "application/msword") || strings.HasPrefix(contentType, "application/vnd.ms-excel") || strings.HasPrefix(contentType, "application/vnd.ms-powerpoint"):
+		return "Document", nil
+	case strings.HasPrefix(contentType, "audio/"):
+		return "Audio", nil
+	default:
+		return "Unknown type", nil
+	}
 }
