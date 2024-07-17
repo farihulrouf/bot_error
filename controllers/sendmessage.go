@@ -18,38 +18,57 @@ import (
 //var client *whatsmeow.Client
 
 func SendMessageGroupHandler(w http.ResponseWriter, r *http.Request) {
-	/*
-		var req model.SendMessageDataRequest
+	var req model.SendMessageDataRequest
+	var value_client = clients["device1"]
+	matchFound := false
+	// Decode the JSON request
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidRequestPayload)
+		return
+	}
 
-		// Decode the JSON request
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidRequestPayload)
-			return
+	// Validate the request data
+	if req.Type == "" || req.Text == "" {
+		helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrMissingRequiredFields)
+		return
+	}
+
+	// Convert to JID
+	jid, err := helpers.ConvertToJID(req.To)
+	if err != nil {
+		http.Error(w, fmt.Sprintf(errors.ErrInvalidRecipient, ":%v", err), http.StatusBadRequest)
+		return
+	}
+
+	for key := range clients {
+		fmt.Println("Checking key:", key)
+		whoami := clients[key].Store.ID.String()
+		parts := strings.Split(whoami, ":")
+		fmt.Println("whoami:", parts[0])
+
+		if req.From == parts[0] {
+			fmt.Println("Match found, requestData.From:", req.From)
+			value_client = clients[key]
+			matchFound = true
+			break
 		}
+	}
 
-		// Validate the request data
-		if req.Type == "" || req.Text == "" {
-			helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrMissingRequiredFields)
-			return
-		}
+	if !matchFound {
+		helpers.SendErrorResponse(w, http.StatusBadRequest, "No matching number found for requestData.From")
+		return
+	}
 
-		// Convert to JID
-		jid, err := helpers.ConvertToJID(req.To)
-		if err != nil {
-			http.Error(w, fmt.Sprintf(errors.ErrInvalidRecipient, ":%v", err), http.StatusBadRequest)
-			return
-		}
+	// Send the message
+	if err := helpers.SendMessage(value_client, jid, req); err != nil {
+		helpers.SendErrorResponse(w, http.StatusBadRequest, fmt.Sprintf(errors.ErrInvalidMessageType, ":%v", err))
+		return
+	}
 
-		// Send the message
-		if err := helpers.SendMessage(client, jid, req); err != nil {
-			helpers.SendErrorResponse(w, http.StatusBadRequest, fmt.Sprintf(errors.ErrInvalidMessageType, ":%v", err))
-			return
-		}
+	// Respond with success
+	w.WriteHeader(http.StatusOK)
+	//fmt.Fprintf(w, "Message sent to: %s", req.To)
 
-		// Respond with success
-		w.WriteHeader(http.StatusOK)
-		//fmt.Fprintf(w, "Message sent to: %s", req.To)
-	*/
 }
 
 // SendMessageHandler handles sending messages.
