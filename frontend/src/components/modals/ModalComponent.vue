@@ -22,15 +22,10 @@
         <label class="block mb-2 font-bold" for="message">Message</label>
         <textarea id="message" v-model="text" class="w-full p-2 border border-gray-300 rounded" rows="4"></textarea>
       </div>
-      <div class="mb-2">
-        <label class="block mb-2 font-bold" for="caption">Caption</label>
-        <input type="text" id="caption" v-model="caption" class="w-full p-2 border border-gray-300 rounded" />
-      </div>
-      <div class="mb-2 flex items-center">
-        <div class="w-1/2">
-          <label class="block mb-2 font-bold" for="file">Upload Image</label>
-          <input type="file" id="file" @change="handleFileUpload" class="w-full p-2 border border-gray-300 rounded" />
-          <p v-if="selectedFile" class="mt-2 text-sm text-gray-500">Selected File: {{ selectedFile.name }}</p>
+      <div class="mb-2 flex">
+        <div class="w-1/2 pr-2">
+          <label class="block mb-2 font-bold" for="caption">Caption</label>
+          <input type="text" id="caption" v-model="caption" class="w-full p-2 border border-gray-300 rounded" />
         </div>
         <div class="w-1/2 pl-2">
           <label class="block mb-2 font-bold" for="url">File URL</label>
@@ -52,8 +47,8 @@
 </template>
 
 <script>
-import api from '@/api/api.js'; // Sesuaikan path sesuai struktur aplikasi Anda
-import { showNotification } from '@/utils/notification.js'; // Import fungsi showNotification
+import api from '@/api/api.js'; // Adjust path as per your application's structure
+import { showNotification } from '@/utils/notification.js'; // Import showNotification function
 import SvgIcon from '@jamescoyle/vue-icon';
 import { mdiSendCheck, mdiClose } from '@mdi/js';
 
@@ -82,7 +77,6 @@ export default {
       type: "text",
       text: "",
       caption: "",
-      selectedFile: null,
       fileUrl: "",
       sendPath: mdiSendCheck,
       closePath: mdiClose
@@ -90,7 +84,7 @@ export default {
   },
   methods: {
     send() {
-      // Validasi bidang yang diperlukan
+      // Validate required fields
       if (!this.to || !this.type || !this.text || !this.phone) {
         alert("Missing required fields: 'to', 'type', 'text', or 'from'");
         return;
@@ -106,45 +100,33 @@ export default {
         from: this.phone
       };
 
-      // Mengirim permintaan POST ke API
+      // Send POST request to API
       api.post('/api/messages', payload, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       })
       .then(response => {
-        // Handle respon dari server
+        // Handle response from server
         console.log('Response:', response);
-        // Menampilkan notifikasi sukses
+        // Display success notification
         showNotification('Success', 'Message sent successfully', 'success');
-        // Bersihkan form setelah berhasil dikirim
+        // Clear form after successful submission
         this.clearForm();
-        // Emit event untuk menutup modal
+        // Emit event to close modal
         this.$emit('close');
       })
       .catch(error => {
-        // Tangani error jika permintaan gagal
+        // Handle error if request fails
         console.error('Error:', error);
-        // Anda dapat menambahkan logika penanganan error sesuai kebutuhan
+        // Add error handling logic as needed
       });
-    },
-    handleFileUpload(event) {
-      const file = event.target.files[0];
-      if (file) {
-        this.selectedFile = file;
-
-        // Simulasi pengunggahan file ke server
-        setTimeout(() => {
-          this.fileUrl = file.name; // Simulasi URL file yang diunggah
-        }, 1000);
-      }
     },
     clearForm() {
       this.to = "";
       this.type = "text";
       this.text = "";
       this.caption = "";
-      this.selectedFile = null;
       this.fileUrl = "";
     }
   }
@@ -152,5 +134,5 @@ export default {
 </script>
 
 <style scoped>
-/* Optional: Tambahkan styling khusus di sini jika diperlukan */
+/* Optional: Add specific styling here if needed */
 </style>
