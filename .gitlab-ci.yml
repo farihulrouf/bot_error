@@ -26,6 +26,8 @@ deploy:
   script:
     - echo "Deploying to server..."
     - mkdir -p ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
     - ssh-keyscan -H $DEPLOY_SERVER >> ~/.ssh/known_hosts
     - scp whatsapbot $DEPLOY_USER@$DEPLOY_SERVER:$DEPLOY_PATH/whatsapbot
     - ssh $DEPLOY_USER@$DEPLOY_SERVER "cd $DEPLOY_PATH && chmod +x whatsapbot && ./whatsapbot"
