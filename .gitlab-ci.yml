@@ -24,11 +24,11 @@ compile:
 deploy:
   stage: deploy
   script:
-    - mkdir -p ~/.ssh  # Membuat direktori .ssh jika belum ada
+    - apk add --no-cache openssh-client
     - eval $(ssh-agent -s)  # Mulai ssh-agent
     - echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
     - chmod 600 ~/.ssh/id_rsa
-    - ssh-add ~/.ssh/id_rsa  # Masukkan passphrase secara manual
+    - ssh-add ~/.ssh/id_rsa <<< "$SSH_PASSPHRASE"
     - ssh-keyscan -H $DEPLOY_SERVER >> ~/.ssh/known_hosts
     - scp -i ~/.ssh/id_rsa whatsapbot $DEPLOY_USER@$DEPLOY_SERVER:$DEPLOY_PATH
   environment: production
