@@ -7,7 +7,7 @@ stages:
 
 variables:
   # Variabel lingkungan untuk konfigurasi deployment
-  SSH_PRIVATE_KEY: "<isi dengan kunci pribadi SSH Anda>"
+  SSH_PRIVATE_KEY: "peruvian"
   DEPLOY_SERVER: "128.199.76.91"
   DEPLOY_USER: "root"
   DEPLOY_PATH: "/home/peratan/bot-whatsapp/"
@@ -17,6 +17,10 @@ build:
   script:
     - go mod download
     - go build -o myapp .
+    - ls -l myapp  # Periksa apakah file myapp dibuat
+  artifacts:
+    paths:
+      - myapp
 
 test:
   stage: test
@@ -33,5 +37,6 @@ deploy:
     - chmod 600 ~/.ssh/id_rsa
     - ssh-keyscan -H $DEPLOY_SERVER >> ~/.ssh/known_hosts
   script:
+    - ls -l myapp  # Pastikan file myapp ada sebelum di-upload
     - scp myapp $DEPLOY_USER@$DEPLOY_SERVER:$DEPLOY_PATH
     - ssh $DEPLOY_USER@$DEPLOY_SERVER "cd $DEPLOY_PATH && ./myapp"
