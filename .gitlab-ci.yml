@@ -21,15 +21,12 @@ compile:
     paths:
       - whatsapbot
 
-deploy:
-  stage: deploy
-  script:
+script:
     - mkdir -p ~/.ssh  # Membuat direktori .ssh jika belum ada
     - eval $(ssh-agent -s)  # Mulai ssh-agent
     - echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
     - chmod 600 ~/.ssh/id_rsa
+    - ssh-add ~/.ssh/id_rsa  # Masukkan passphrase secara manual
     - ssh-keyscan -H $DEPLOY_SERVER >> ~/.ssh/known_hosts
     - scp -i ~/.ssh/id_rsa whatsapbot $DEPLOY_USER@$DEPLOY_SERVER:$DEPLOY_PATH
   environment: production
-
-
