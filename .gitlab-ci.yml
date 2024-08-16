@@ -23,8 +23,8 @@ format:
 compile:
   stage: build
   script:
-    - mkdir -p whatsappbot
-    - go build -o whatsappbot ./...
+    - mkdir -p whatsapbot
+    - go build -o whatsapbot ./...
   artifacts:
     paths:
       - whatsappbot
