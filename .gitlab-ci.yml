@@ -21,7 +21,9 @@ compile:
     paths:
       - whatsapbot
 
-script:
+deploy:
+  stage: deploy
+  script:
     - mkdir -p ~/.ssh  # Membuat direktori .ssh jika belum ada
     - eval $(ssh-agent -s)  # Mulai ssh-agent
     - echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
