@@ -22,8 +22,6 @@ import (
 	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
 	waLog "go.mau.fi/whatsmeow/util/log"
-	"wagobot.com/db"
-	"wagobot.com/helpers"
 	"wagobot.com/model"
 	"wagobot.com/response"
 )
@@ -61,12 +59,6 @@ type ClientInfo struct {
 	Busy   bool   `json:"busy,omitempty"`
 }
 
-func GetClients() map[string]*whatsmeow.Client {
-	mutex.Lock()
-	defer mutex.Unlock()
-	return clients
-}
-
 func setClient_data(key string, client *whatsmeow.Client) {
 	// Clear existing data
 	for k := range data_client {
@@ -74,10 +66,6 @@ func setClient_data(key string, client *whatsmeow.Client) {
 	}
 	// Set new client
 	data_client[key] = client
-}
-
-func getClient_data(key string) *whatsmeow.Client {
-	return data_client[key]
 }
 
 func connectClient(client *whatsmeow.Client) (string, *types.JID) {
@@ -111,26 +99,19 @@ func connectClient(client *whatsmeow.Client) (string, *types.JID) {
 
 func GetClient(deviceStore *store.Device) *whatsmeow.Client {
 	client := whatsmeow.NewClient(deviceStore, clientLog)
-	//clients := client[generateRandomString(5)]
-	//fmt.Println("data", clients)
 	client.AddEventHandler(EventHandler)
 	return client
 }
 
-/*
-	func sendToAPI(sender string, message string) {
-		mu.Lock()
-		messages = append(messages, model.Message{Sender: sender, Message: message})
-		mu.Unlock()
-	}
-
-*
-//var silver = ""
-*/
 func EventHandler(evt interface{}) {
-	//fmt.Println("try to excution")
+
 	switch v := evt.(type) {
 	case *events.Message:
+		for key := range clients {
+			//fmt.Println("whoami:", key)
+			fmt.Println("end client", clients[key])
+		}
+
 		if !v.Info.IsFromMe || v.Message.GetConversation() != "" ||
 			v.Message.GetImageMessage().GetCaption() != "" ||
 			v.Message.GetVideoMessage().GetCaption() != "" ||
@@ -228,24 +209,21 @@ func EventHandler(evt interface{}) {
 		fmt.Println("pari succeess", v.ID.User)
 		initialClient()
 	case *events.HistorySync:
-		for _, conv := range v.Data.GetConversations() {
+		fmt.Println("Received a history sync")
+		/*for _, conv := range v.Data.GetConversations() {
 			for _, historymsg := range conv.GetMessages() {
 				chatJID, _ := types.ParseJID(conv.GetId())
-				//client := getClient_data("Device-aoA")
-				var first_client *whatsmeow.Client
-				for _, client := range clients {
-					first_client = client
-					break
-				}
-				evt, err := first_client.ParseWebMessage(chatJID, historymsg.GetMessage())
-				fmt.Println("data message", historymsg.GetMessage())
+				evt, err := client.ParseWebMessage(chatJID, historymsg.GetMessage())
 				if err != nil {
 					log.Println(err)
 				}
-				EventHandler(evt)
+				eventHandler(evt)
 			}
-		}
+		}*/
+	case *events.LoggedOut:
+		//initialClient()
 	case *events.Receipt:
+		fmt.Println("terima")
 		if v.Type == events.ReceiptTypeRead || v.Type == events.ReceiptTypeReadSelf {
 			fmt.Printf("%v was read by %s at %s\n", v.MessageIDs, v.SourceString(), v.Timestamp)
 			// Membuat payload untuk webhook
@@ -424,11 +402,11 @@ func CreateDevice(w http.ResponseWriter, r *http.Request) {
 
 	var response []ClientInfo
 
-	fmt.Println("Data client setelah ditambahkan:", clients, jid)
+	fmt.Println("Data client setelah ditambahkan:", jid)
 
 	// Iterasi melalui peta `clients` untuk membuat respons
 	for key, client := range clients {
-		fmt.Printf(key)
+		//fmt.Printf(key)
 		response = append(response, ClientInfo{
 			ID:     key,
 			Number: client.Store.ID.String(),
@@ -615,83 +593,11 @@ func GetMessagesByIdHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func RetrieveMessagesHandler(w http.ResponseWriter, r *http.Request) {
-	/*identifier := r.URL.Query().Get("identifier")
-	if identifier == "" {
-		http.Error(w, "Missing identifier", http.StatusBadRequest)
-		return
-	}
-
-	messages, err := helpers.GetAllMessagesByPhoneNumberOrGroupID(client, identifier)
-	if err != nil {
-		http.Error(w, "Failed to get messages", http.StatusInternalServerError)
-		return
-	}
-
-	response := model.GetMessagesResponse{Data: messages}
-	jsonResponse, err := json.Marshal(response)
-	if err != nil {
-		helpers.SendErrorResponse(w, http.StatusInternalServerError, errors.ErrFailedToMarshalResponse)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(jsonResponse)
-	*/
-}
-
 func initialClient() {
-	//mutex.Lock()
-	//defer mutex.Unlock()
-	//getClient("myClient")
+
 	for key, value := range data_client {
 		clients[key] = value
 	}
-	fmt.Println("ini penamupubg", data_client)
-	fmt.Println("cek data", clients)
-}
-
-func ListDevices(w http.ResponseWriter, r *http.Request) {
-	db, err := db.OpenDatabase()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer db.Close()
-
-	devices, err := model.GetDevicesFromDB(db)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to retrieve devices: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(devices)
-}
-
-func GetAllClients(w http.ResponseWriter, r *http.Request) {
-	var allClients []map[string]string
-
-	for deviceName, client := range clients {
-		clientInfo := map[string]string{
-			"device_name":  deviceName,
-			"phone_number": client.Store.ID.User,
-			"status":       "active",
-			"qr":           "", // QR kosong karena klien sudah aktif
-		}
-		allClients = append(allClients, clientInfo)
-	}
-
-	jsonResponse, err := json.Marshal(allClients)
-	if err != nil {
-		helpers.SendErrorResponse(w, http.StatusInternalServerError, "Failed to marshal response")
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(jsonResponse)
 }
 
 func GenerateRandomString(prefix string, length int) string {
@@ -724,59 +630,6 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func GetClientByDeviceNameHandler(w http.ResponseWriter, r *http.Request) {
-	// Ambil parameter name_device dari URL query string atau path
-	params := r.URL.Query()
-	nama_device := params.Get("name_device")
-
-	whoami, err := getClientWhoamiByDeviceName(nama_device)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Client not found for device name: %s", nama_device), http.StatusNotFound)
-		return
-	}
-
-	// Buat JSON response
-	response := struct {
-		WhoAmI string `json:"whoami"`
-	}{
-		WhoAmI: whoami,
-	}
-
-	jsonResponse, err := json.Marshal(response)
-	if err != nil {
-		http.Error(w, "Failed to marshal JSON response", http.StatusInternalServerError)
-		return
-	}
-
-	// Set header Content-Type sebagai application/json
-	w.Header().Set("Content-Type", "application/json")
-	// Tulis response JSON ke ResponseWriter
-	w.Write(jsonResponse)
-}
-
-func getClientWhoamiByDeviceName(nama_device string) (string, error) {
-	// Iterasi melalui semua pasangan kunci-nilai dalam map clients
-	for key, value := range clients {
-		fmt.Printf("Kunci: %s, Nilai: %v\n", key, value)
-
-		// Membandingkan kunci dengan nama_device
-		if key == nama_device {
-			// Mengakses ID dari Store
-			whoami := clients[key].Store.ID.String()
-
-			// Memeriksa apakah whoami tidak kosong
-			if whoami == "" {
-				return "", fmt.Errorf("whoami value is empty for client with device name: %s", nama_device)
-			}
-
-			// Mengembalikan whoami dan nil (tanpa error)
-			return whoami, nil
-		}
-	}
-
-	// Jika tidak ada yang cocok, kembalikan error
-	return "", fmt.Errorf("client not found for device name: %s", nama_device)
-}
 func RemoveClient(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	phone := vars["phone"]
@@ -791,8 +644,7 @@ func RemoveClient(w http.ResponseWriter, r *http.Request) {
 		clients[phone].Logout()
 		delete(clients, phone)
 		delete(data_client, phone)
-		fmt.Println("remove", data_client)
-		fmt.Println("sekarang data clients", clients)
+
 		response := response.ResponseLogout{Status: "success", Message: "Data berhasil dihapus"}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(response)

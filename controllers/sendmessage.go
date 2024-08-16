@@ -41,13 +41,13 @@ func SendMessageGroupHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for key := range clients {
-		fmt.Println("Checking key:", key)
+		//fmt.Println("Checking key:", key)
 		whoami := clients[key].Store.ID.String()
 		parts := strings.Split(whoami, ":")
-		fmt.Println("whoami:", parts[0])
+		//fmt.Println("whoami:", parts[0])
 
 		if req.From == parts[0] {
-			fmt.Println("Match found, requestData.From:", req.From)
+			//fmt.Println("Match found, requestData.From:", req.From)
 			value_client = clients[key]
 			matchFound = true
 			break
@@ -89,13 +89,13 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for key := range clients {
-		fmt.Println("Checking key:", key)
+		//fmt.Println("Checking key:", key)
 		whoami := clients[key].Store.ID.String()
 		parts := strings.Split(whoami, ":")
-		fmt.Println("whoami:", parts[0])
+		//fmt.Println("whoami:", parts[0])
 
 		if requestData.From == parts[0] {
-			fmt.Println("Match found, requestData.From:", requestData.From)
+			//fmt.Println("Match found, requestData.From:", requestData.From)
 			value_client = clients[key]
 			matchFound = true
 			break
@@ -298,15 +298,15 @@ func SendMessageBulkHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		for key := range clients {
-			fmt.Println("Checking key:", key)
+			//fmt.Println("Checking key:", key)
 			whoami := clients[key].Store.ID.String()
 			parts := strings.Split(whoami, ":")
-			fmt.Println("whoami:", whoami)
+			//fmt.Println("whoami:", whoami)
 
 			if message.From == parts[0] {
 				fmt.Println("Match found, requestData.From:", message.From)
 				value_client = clients[key]
-				fmt.Println("whoami:", value_client)
+				//fmt.Println("whoami:", value_client)
 				matchFound = true
 				break
 			}

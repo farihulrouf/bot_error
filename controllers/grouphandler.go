@@ -104,12 +104,12 @@ func JoinGroupHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Checking key:", key)
 		whoami := clients[key].Store.ID.String()
 		parts := strings.Split(whoami, ":")
-		fmt.Println("whoami:", whoami)
+		//fmt.Println("whoami:", whoami)
 
 		if req.Phone == parts[0] {
 			fmt.Println("Match found, requestData.From:", req.Phone)
 			value_client = clients[key]
-			fmt.Println("whoami:", value_client)
+			//fmt.Println("whoami:", value_client)
 			matchFound = true
 			break
 		}

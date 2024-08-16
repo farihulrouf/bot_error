@@ -1,0 +1,35 @@
+image: golang:1.20
+
+stages:
+  - build
+  - deploy
+
+variables:
+  APP_NAME: "bot_whatsapp"
+  GO_VERSION: "1.20"
+  DEPLOY_SERVER: "128.199.76.91"
+  DEPLOY_USER: "peratan"
+  DEPLOY_PATH: "/home/peratan/bot_whatsapp"
+
+before_script:
+  - mkdir -p ~/.ssh
+  - echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
+  - chmod 600 ~/.ssh/id_rsa
+  - ssh-keyscan $DEPLOY_SERVER >> ~/.ssh/known_hosts
+
+build:
+  stage: build
+  script:
+    - go mod download
+    - go build -o $APP_NAME ./main.go
+  artifacts:
+    paths:
+      - $APP_NAME
+
+deploy:
+  stage: deploy
+  script:
+    - scp -i ~/.ssh/id_rsa $APP_NAME $DEPLOY_USER@$DEPLOY_SERVER:$DEPLOY_PATH/$APP_NAME
+    - ssh -i ~/.ssh/id_rsa $DEPLOY_USER@$DEPLOY_SERVER "cd $DEPLOY_PATH && ./bot_whatsapp"
+  only:
+    - main
