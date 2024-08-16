@@ -1,98 +1,35 @@
-image: golang:1.22
+# You can copy and paste this template into a new `.gitlab-ci.yml` file.
+# You should not add this template to an existing `.gitlab-ci.yml` file by using the `include:` keyword.
+#
+# To contribute improvements to CI/CD templates, please follow the Development guide at:
+# https://docs.gitlab.com/ee/development/cicd/templates.html
+# This specific template is located at:
+# https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Go.gitlab-ci.yml
+
+image: golang:latest
 
 stages:
-  - build
   - test
+  - build
   - deploy
 
-variables:
-  # Variabel lingkungan untuk konfigurasi deployment
-  SSH_PRIVATE_KEY: "-----BEGIN OPENSSH PRIVATE KEY-----
-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
-ggpz5dfybIjgTjCnwu8zJoACM=
------END OPENSSH PRIVATE KEY-----"
-  DEPLOY_SERVER: "128.199.76.91"
-  DEPLOY_USER: "root"
-  DEPLOY_PATH: "/home/peratan/bot-whatsapp/"
-  SSH_PASSPHRASE: "peruvian"  # Variabel passphrase
-
-
-build:
-  stage: build
-  script:
-    - go mod download
-    - go build -o myapp .
-    - ls -l myapp  # Periksa apakah file myapp dibuat
-  artifacts:
-    paths:
-      - myapp
-
-test:
+format:
   stage: test
   script:
-    - go test ./...
+    - go fmt $(go list ./... | grep -v /vendor/)
+    - go vet $(go list ./... | grep -v /vendor/)
+    - go test -race $(go list ./... | grep -v /vendor/)
+
+compile:
+  stage: build
+  script:
+    - mkdir -p whatsappbot
+    - go build -o whatsappbot ./...
+  artifacts:
+    paths:
+      - whatsappbot
 
 deploy:
   stage: deploy
-  image: alpine:latest
-  before_script:
-    - apk add --no-cache openssh-client
-    - mkdir -p ~/.ssh  # Buat direktori .ssh jika belum ada
-    - eval $(ssh-agent -s)  # Mulai ssh-agent
-    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
-    - chmod 600 ~/.ssh/id_rsa
-    - echo "$SSH_PASSPHRASE" | ssh-add ~/.ssh/id_rsa  # Tambahkan kunci ke agent
-    - ssh-keyscan -H $DEPLOY_SERVER >> ~/.ssh/known_hosts
-  script:
-    - ls -l myapp  # Pastikan file myapp ada sebelum di-upload
-    - scp myapp $DEPLOY_USER@$DEPLOY_SERVER:$DEPLOY_PATH
-    - ssh $DEPLOY_USER@$DEPLOY_SERVER "cd $DEPLOY_PATH && ./myapp" systemctl restart myapp ENDSSH
-    - echo "Server started"
-    - exit 0
-
+  script: echo "Define your deployment script!"
+  environment: production
