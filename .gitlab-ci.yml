@@ -15,16 +15,17 @@ format:
 compile:
   stage: build
   script:
-    - mkdir -p mybinaries
-    - go build -o mybinaries/whatsapbot ./...
+    - go mod download
+    - go build -o whatsapbot .
   artifacts:
     paths:
-      - mybinaries/whatsapbot
+      - whatsapbot
 
 deploy:
   stage: deploy
   script:
     - echo "Deploying to server..."
-    - scp mybinaries/whatsapbot $DEPLOY_USER@$DEPLOY_SERVER:/home/peratan/bot-whatsapp/whatsapbot
-    - ssh $DEPLOY_USER@$DEPLOY_SERVER "cd /home/peratan/bot-whatsapp && chmod +x whatsapbot && ./whatsapbot"
+    - scp whatsapbot $DEPLOY_USER@$DEPLOY_SERVER:$DEPLOY_PATH/whatsapbot
+    - ssh $DEPLOY_USER@$DEPLOY_SERVER "cd $DEPLOY_PATH && chmod +x whatsapbot && ./whatsapbot"
   environment: production
+
