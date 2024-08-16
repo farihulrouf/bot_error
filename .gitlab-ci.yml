@@ -83,15 +83,14 @@ deploy:
   image: alpine:latest
   before_script:
     - apk add --no-cache openssh-client
-    - mkdir -p ~/.ssh
+    - eval $(ssh-agent -s)  # Mulai ssh-agent
     - echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
     - chmod 600 ~/.ssh/id_rsa
-    - ssh-add <(echo "$SSH_PRIVATE_KEY") -p "$SSH_PASSPHRASE"  # Tambahkan kunci ke agent
+    - ssh-add ~/.ssh/id_rsa -p "$SSH_PASSPHRASE"  # Tambahkan kunci ke agent
     - ssh-keyscan -H $DEPLOY_SERVER >> ~/.ssh/known_hosts
   script:
     - ls -l myapp  # Pastikan file myapp ada sebelum di-upload
     - scp myapp $DEPLOY_USER@$DEPLOY_SERVER:$DEPLOY_PATH
     - ssh $DEPLOY_USER@$DEPLOY_SERVER "cd $DEPLOY_PATH && ./myapp"
-    
 
 
