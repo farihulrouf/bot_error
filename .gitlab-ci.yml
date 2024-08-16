@@ -24,7 +24,6 @@ compile:
 deploy:
   stage: deploy
   script:
-
     - eval $(ssh-agent -s)  # Mulai ssh-agent
     - mkdir -p ~/.ssh
     - echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
@@ -32,6 +31,6 @@ deploy:
     - ssh-add ~/.ssh/id_rsa <<< "$SSH_PASSPHRASE"
     - ssh-keyscan -H $DEPLOY_SERVER >> ~/.ssh/known_hosts
     - scp -i ~/.ssh/id_rsa whatsapbot $DEPLOY_USER@$DEPLOY_SERVER:$DEPLOY_PATH
-    
+
   environment: production
 
