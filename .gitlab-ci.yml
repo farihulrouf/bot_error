@@ -91,8 +91,8 @@ deploy:
     - ssh-keyscan -H $DEPLOY_SERVER >> ~/.ssh/known_hosts
   script:
     - ls -l myapp
-    - scp myapp $DEPLOY_USER@$DEPLOY_SERVER:$DEPLOY_PATH
-    - ssh $DEPLOY_USER@$DEPLOY_SERVER "pkill -f myapp || true"
-    - ssh $DEPLOY_USER@$DEPLOY_SERVER "cd $DEPLOY_PATH && nohup ./myapp > myapp.log 2>&1 &"
+    - echo "DEPLOY_USER: $DEPLOY_USER"
+    - echo "DEPLOY_SERVER: $DEPLOY_SERVER"
+    - echo "DEPLOY_PATH: $DEPLOY_PATH"
 
 
