@@ -28,8 +28,8 @@ deploy:
     - eval $(ssh-agent -s)  # Mulai ssh-agent
     - echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
     - chmod 600 ~/.ssh/id_rsa
-    - ssh-add ~/.ssh/id_rsa -p "$SSH_PASSPHRASE"  # Tambahkan kunci ke agent
     - ssh-keyscan -H $DEPLOY_SERVER >> ~/.ssh/known_hosts
     - scp -i ~/.ssh/id_rsa whatsapbot $DEPLOY_USER@$DEPLOY_SERVER:$DEPLOY_PATH
   environment: production
+
 
