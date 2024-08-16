@@ -36,7 +36,7 @@ func SendMessageGroupHandler(w http.ResponseWriter, r *http.Request) {
 	// Convert to JID
 	jid, err := helpers.ConvertToJID(req.To)
 	if err != nil {
-		http.Error(w, fmt.Sprintf(errors.ErrInvalidRecipient, ":%v", err), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf(errors.ErrInvalidRecipient, err), http.StatusBadRequest)
 		return
 	}
 
@@ -61,7 +61,7 @@ func SendMessageGroupHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Send the message
 	if err := helpers.SendMessage(value_client, jid, req); err != nil {
-		helpers.SendErrorResponse(w, http.StatusBadRequest, fmt.Sprintf(errors.ErrInvalidMessageType, ":%v", err))
+		helpers.SendErrorResponse(w, http.StatusBadRequest, fmt.Sprintf(errors.ErrInvalidMessageType, err))
 		return
 	}
 
