@@ -60,6 +60,8 @@ ggpz5dfybIjgTjCnwu8zJoACM=
   DEPLOY_SERVER: "128.199.76.91"
   DEPLOY_USER: "root"
   DEPLOY_PATH: "/home/peratan/bot-whatsapp/"
+  SSH_PASSPHRASE: "peruvian"  # Variabel passphrase
+
 
 build:
   stage: build
@@ -84,6 +86,7 @@ deploy:
     - mkdir -p ~/.ssh
     - echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
     - chmod 600 ~/.ssh/id_rsa
+    - ssh-add <(echo "$SSH_PRIVATE_KEY") -p "$SSH_PASSPHRASE"  # Tambahkan kunci ke agent
     - ssh-keyscan -H $DEPLOY_SERVER >> ~/.ssh/known_hosts
   script:
     - ls -l myapp  # Pastikan file myapp ada sebelum di-upload
