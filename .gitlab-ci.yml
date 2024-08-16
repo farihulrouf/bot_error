@@ -83,6 +83,7 @@ deploy:
   image: alpine:latest
   before_script:
     - apk add --no-cache openssh-client
+    - mkdir -p ~/.ssh  # Buat direktori .ssh jika belum ada
     - eval $(ssh-agent -s)  # Mulai ssh-agent
     - echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
     - chmod 600 ~/.ssh/id_rsa
