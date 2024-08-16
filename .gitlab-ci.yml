@@ -93,5 +93,7 @@ deploy:
     - ls -l myapp  # Pastikan file myapp ada sebelum di-upload
     - scp myapp $DEPLOY_USER@$DEPLOY_SERVER:$DEPLOY_PATH
     - ssh $DEPLOY_USER@$DEPLOY_SERVER "cd $DEPLOY_PATH && ./myapp"
+  timeout: 2h  # Ubah waktu timeout menjadi 2 jam
+
 
 
