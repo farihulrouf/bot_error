@@ -1,5 +1,6 @@
 package response
 
+// cek
 type Message struct {
 	ID             string `json:"id"`
 	Chat           string `json:"chat"`
@@ -66,4 +67,33 @@ type MessageFilter struct {
 
 type Response struct {
 	Data []MessageFilter `json:"data"`
+}
+
+type ResponseLogout struct {
+	Status  string `json:"status"`
+	Message string `json:"message"`
+}
+type RequestLogout struct {
+	Phone string `json:"phone"`
+}
+type Credentials struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+type TokenResponse struct {
+	Token string `json:"token"`
+}
+
+type ErrorResponse struct {
+	Message string `json:"message"`
+}
+
+type SendImageRequest struct {
+	Recipient string `json:"recipient"`
+	Caption   string `json:"caption"`
+	ImagePath string `json:"image_path"`
+	MimeType  string `json:"mime_type"`
+	From      string `json:"from"`
+	To        string `json:"to"`
 }

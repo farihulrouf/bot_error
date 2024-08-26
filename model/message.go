@@ -4,12 +4,14 @@ package model
 
 // SendMessageGroupRequest defines the structure of the request to send a message to a group
 type SendMessageDataRequest struct {
-	To      string `json:"to"`
-	Type    string `json:"type"`
-	Text    string `json:"text"`
-	Caption string `json:"caption"`
-	URL     string `json:"url"`
-	From    string `json:"from"`
+	To        string `json:"to"`
+	Type      string `json:"type"`
+	Text      string `json:"text"`
+	Caption   string `json:"caption"`
+	URL       string `json:"url"`
+	From      string `json:"from"`
+	ImagePath string `json:"image_path"`
+	MimeType  string `json:"mime_type"`
 }
 type SendMessageResponse struct {
 	ID     string `json:"id"`
@@ -99,4 +101,18 @@ type WebhookResponse struct {
 type GroupResponse struct {
 	JID  string `json:"jid"`
 	Name string `json:"name"`
+}
+
+type ReadReceipt struct {
+	MessageID string `json:"message_id"`
+	ReadBy    string `json:"read_by"`
+	Time      int64  `json:"time"`
+}
+
+type WebhookPayload struct {
+	ID     string `json:"id"`
+	From   string `json:"from"`
+	To     string `json:"to"`
+	Time   int64  `json:"time"`
+	Status string `json:"status"`
 }

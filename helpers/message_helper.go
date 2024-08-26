@@ -2,7 +2,14 @@ package helpers
 
 import (
 	"context"
+	"crypto/md5"
+	"crypto/sha256"
+	"encoding/base64"
 	"fmt"
+	"io"
+	"mime/multipart"
+	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -36,6 +43,165 @@ func SendMessageToPhoneNumber(client *whatsmeow.Client, recipient, message strin
 	fmt.Printf("Sending message '%s' to phone number: %s\n", message, recipient)
 	return nil
 }
+
+func UploadImageAndCreateMessage(client *whatsmeow.Client, imageBytes []byte, caption, mimeType string) (*waProto.ImageMessage, error) {
+	// Unggah gambar
+	resp, err := client.Upload(context.Background(), imageBytes, whatsmeow.MediaImage)
+	if err != nil {
+		return nil, fmt.Errorf("error uploading image: %v", err)
+	}
+
+	// Buat pesan gambar
+	imageMsg := &waProto.ImageMessage{
+		Caption:             proto.String(caption),
+		Mimetype:            proto.String("image/jpeg"),
+		ThumbnailDirectPath: &resp.DirectPath,
+		ThumbnailSha256:     resp.FileSHA256,
+		ThumbnailEncSha256:  resp.FileEncSHA256,
+		//JpegThumbnail:       jpegBytes,
+
+		Url:           &resp.URL,
+		DirectPath:    &resp.DirectPath,
+		MediaKey:      resp.MediaKey,
+		FileEncSha256: resp.FileEncSHA256,
+		FileSha256:    resp.FileSHA256,
+		FileLength:    &resp.FileLength,
+	}
+
+	return imageMsg, nil
+}
+
+func MultipartFormFileHeaderToBytes(fileHeader *multipart.FileHeader) []byte {
+	file, _ := fileHeader.Open()
+	defer file.Close()
+
+	fileBytes := make([]byte, fileHeader.Size)
+	_, _ = file.Read(fileBytes)
+
+	return fileBytes
+}
+
+func UploadDocAndCreateMessage(client *whatsmeow.Client, docBytes []byte, caption, mimeType string) (*waProto.DocumentMessage, error) {
+	// Unggah Doc
+
+	//client.Upload(context.Background(), data, whatsmeow.MediaDocument)
+	//fileMimeType := http.DetectContentType(docBytes)
+
+	resp, err := client.Upload(context.Background(), docBytes, whatsmeow.MediaDocument)
+	if err != nil {
+		return nil, fmt.Errorf("error uploading do: %v", err)
+	}
+	msg := &waProto.DocumentMessage{
+		Url:      proto.String(resp.URL),
+		Mimetype: proto.String(http.DetectContentType(docBytes)),
+		//Title:         proto.String(resp.File.Filename),
+		FileSha256: resp.FileSHA256,
+		FileLength: proto.Uint64(resp.FileLength),
+		MediaKey:   resp.MediaKey,
+		//FileName:      proto.String(resp.File.Filename),
+		FileEncSha256: resp.FileEncSHA256,
+		DirectPath:    proto.String(resp.DirectPath),
+		Caption:       proto.String(caption),
+	}
+	// Buat pesan Doc
+	/*docMsg := &waProto.DocumentMessage{
+		Caption: proto.String(caption),
+		//Mimetype:            proto.String("image/jpeg"),
+		Mimetype:            proto.String(http.DetectContentType(docBytes)),
+		ThumbnailDirectPath: &resp.DirectPath,
+		ThumbnailSha256:     resp.FileSHA256,
+		ThumbnailEncSha256:  resp.FileEncSHA256,
+		//JpegThumbnail:       jpegBytes,
+
+		Url:           &resp.URL,
+		DirectPath:    &resp.DirectPath,
+		MediaKey:      resp.MediaKey,
+		FileEncSha256: resp.FileEncSHA256,
+		FileSha256:    resp.FileSHA256,
+		FileLength:    &resp.FileLength,
+	}*/
+	//UploadDocAndCreateMessage
+	return msg, nil
+}
+
+func UploadVideoAndCreateMessage(client *whatsmeow.Client, videoBytes []byte, caption, mimeType string) (*waProto.VideoMessage, error) {
+
+	resp, err := client.Upload(context.Background(), videoBytes, whatsmeow.MediaVideo)
+	if err != nil {
+		return nil, fmt.Errorf("error uploading do: %v", err)
+	}
+	msg := &waProto.VideoMessage{
+		Url:      proto.String(resp.URL),
+		Mimetype: proto.String(http.DetectContentType(videoBytes)),
+		//Title:         proto.String(resp.File.Filename),
+		FileSha256: resp.FileSHA256,
+		FileLength: proto.Uint64(resp.FileLength),
+		MediaKey:   resp.MediaKey,
+		//FileName:      proto.String(resp.File.Filename),
+		FileEncSha256: resp.FileEncSHA256,
+		DirectPath:    proto.String(resp.DirectPath),
+		Caption:       proto.String(caption),
+	}
+	return msg, nil
+}
+
+func SendVideoToPhoneNumber(client *whatsmeow.Client, recipient string, videoMsg *waProto.VideoMessage) error {
+	// Konversi recipient ke JID
+	jid, err := types.ParseJID(recipient + "@s.whatsapp.net")
+	if err != nil {
+		return fmt.Errorf("invalid recipient JID: %v", err)
+	}
+
+	// Kirim pesan gambar
+	_, err = client.SendMessage(context.Background(), jid, &waProto.Message{
+		VideoMessage: videoMsg,
+	})
+	if err != nil {
+		return fmt.Errorf("error sending image message: %v", err)
+	}
+
+	fmt.Printf("Sending image to phone number: %s\n", recipient)
+	return nil
+}
+
+func SendImageToPhoneNumber(client *whatsmeow.Client, recipient string, imageMsg *waProto.ImageMessage) error {
+	// Konversi recipient ke JID
+	jid, err := types.ParseJID(recipient + "@s.whatsapp.net")
+	if err != nil {
+		return fmt.Errorf("invalid recipient JID: %v", err)
+	}
+
+	// Kirim pesan gambar
+	_, err = client.SendMessage(context.Background(), jid, &waProto.Message{
+		ImageMessage: imageMsg,
+	})
+	if err != nil {
+		return fmt.Errorf("error sending image message: %v", err)
+	}
+
+	fmt.Printf("Sending image to phone number: %s\n", recipient)
+	return nil
+}
+
+func SendDocToPhoneNumber(client *whatsmeow.Client, recipient string, docMsg *waProto.DocumentMessage) error {
+	// Konversi recipient ke JID
+	jid, err := types.ParseJID(recipient + "@s.whatsapp.net")
+	if err != nil {
+		return fmt.Errorf("invalid recipient JID: %v", err)
+	}
+
+	// Kirim pesan Doc
+	_, err = client.SendMessage(context.Background(), jid, &waProto.Message{
+		DocumentMessage: docMsg,
+	})
+	if err != nil {
+		return fmt.Errorf("error sending doc message: %v", err)
+	}
+
+	fmt.Printf("Sending image to phone number: %s\n", recipient)
+	return nil
+}
+
 func SendMessage(client *whatsmeow.Client, jid types.JID, req model.SendMessageDataRequest) error {
 	// Create the message based on the type
 	var msg *waProto.Message
@@ -183,4 +349,164 @@ func IsLoggedInByNumber(client *whatsmeow.Client, phoneNumber string) bool {
 
 	// Nomor Telepon ditemukan
 	return true
+}
+func IsValidURL(str string) bool {
+	u, err := url.ParseRequestURI(str)
+	if err != nil {
+		return false
+	}
+
+	// Periksa bahwa skema (scheme) URL adalah http atau https
+	return u.Scheme == "http" || u.Scheme == "https"
+}
+
+// Fungsi untuk mendeteksi ekstensi file dan jenis file
+func DetectFileType(urlStr string) string {
+	parsedURL, err := url.Parse(urlStr)
+	if err != nil {
+		return "Error parsing URL"
+	}
+
+	// Mendapatkan path dari URL
+	path := parsedURL.Path
+	// Mendapatkan ekstensi file
+	ext := strings.ToLower(strings.TrimPrefix(path[strings.LastIndex(path, "."):], "."))
+
+	// Menentukan jenis file berdasarkan ekstensi
+	switch {
+	case ext == "jpg" || ext == "jpeg" || ext == "png" || ext == "gif" || ext == "bmp":
+		return "Image"
+	case ext == "mp4" || ext == "mkv" || ext == "avi" || ext == "mov" || ext == "webm":
+		return "Video"
+	case ext == "pdf" || ext == "doc" || ext == "docx" || ext == "xls" || ext == "xlsx" || ext == "ppt" || ext == "pptx":
+		return "Document"
+	case ext == "mp3" || ext == "wav" || ext == "flac" || ext == "ogg":
+		return "Audio"
+	default:
+		return "Unknown type"
+	}
+}
+
+func DownloadFile(urlStr string) ([]byte, error) {
+	resp, err := http.Get(urlStr)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to download file: %s", resp.Status)
+	}
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
+func DetectFileTypeByContentType(urlStr string) (string, error) {
+	resp, err := http.Head(urlStr)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	contentType := resp.Header.Get("Content-Type")
+	switch {
+	case strings.HasPrefix(contentType, "image/"):
+		// Deteksi berbagai jenis gambar
+		switch {
+		case contentType == "image/jpeg":
+			return "Image: JPEG", nil
+		case contentType == "image/png":
+			return "Image: PNG", nil
+		case contentType == "image/gif":
+			return "Image: GIF", nil
+		case contentType == "image/webp":
+			return "Image: WEBP", nil
+		case contentType == "image/bmp":
+			return "Image: BMP", nil
+		case contentType == "image/svg+xml":
+			return "Image: SVG", nil
+		case contentType == "image/tiff":
+			return "Image: TIFF", nil
+		default:
+			return "Image: Unknown format", nil
+		}
+	case strings.HasPrefix(contentType, "video/"):
+		// Deteksi berbagai jenis video
+		switch {
+		case contentType == "video/mp4":
+			return "Video: MP4", nil
+		case contentType == "video/avi":
+			return "Video: AVI", nil
+		case contentType == "video/mkv":
+			return "Video: MKV", nil
+		case contentType == "video/webm":
+			return "Video: WEBM", nil
+		case contentType == "video/quicktime":
+			return "Video: QuickTime", nil
+		default:
+			return "Video: Unknown format", nil
+		}
+	case strings.HasPrefix(contentType, "application/pdf"):
+		return "Document: PDF", nil
+	case strings.HasPrefix(contentType, "application/vnd.openxmlformats-officedocument/wordprocessingml.document"):
+		return "Document: DOCX", nil
+	case strings.HasPrefix(contentType, "application/msword"):
+		return "Document: DOC", nil
+	case strings.HasPrefix(contentType, "application/vnd.openxmlformats-officedocument/spreadsheetml.sheet"):
+		return "Document: XLSX", nil
+	case strings.HasPrefix(contentType, "application/vnd.ms-excel"):
+		return "Document: XLS", nil
+	case strings.HasPrefix(contentType, "application/vnd.openxmlformats-officedocument/presentationml.presentation"):
+		return "Document: PPTX", nil
+	case strings.HasPrefix(contentType, "application/vnd.ms-powerpoint"):
+		return "Document: PPT", nil
+	case strings.HasPrefix(contentType, "audio/"):
+		// Deteksi berbagai jenis audio
+		switch {
+		case contentType == "audio/mpeg":
+			return "Audio: MP3", nil
+		case contentType == "audio/wav":
+			return "Audio: WAV", nil
+		case contentType == "audio/ogg":
+			return "Audio: OGG", nil
+		case contentType == "audio/flac":
+			return "Audio: FLAC", nil
+		default:
+			return "Audio: Unknown format", nil
+		}
+	default:
+		return "Unknown type", nil
+	}
+}
+
+// Fungsi untuk memeriksa apakah string adalah Base64 yang valid
+func IsBase64(str string) bool {
+	_, err := base64.StdEncoding.DecodeString(str)
+	return err == nil
+}
+
+// Fungsi untuk mengonversi Base64 ke byte array dan menghitung hash dari data
+func Base64ToHash(base64Str string) ([]byte, []byte, error) {
+	// Dekode string Base64 menjadi byte array
+	data, err := base64.StdEncoding.DecodeString(base64Str)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Hitung hash SHA-256
+	hashSHA256 := sha256.New()
+	hashSHA256.Write(data)
+	hashSHA256Bytes := hashSHA256.Sum(nil)
+
+	// Hitung hash MD5
+	hashMD5 := md5.New()
+	hashMD5.Write(data)
+	hashMD5Bytes := hashMD5.Sum(nil)
+
+	return hashSHA256Bytes, hashMD5Bytes, nil
 }

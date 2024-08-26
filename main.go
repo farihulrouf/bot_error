@@ -1,91 +1,121 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 
-	"github.com/gorilla/handlers"
 	"github.com/joho/godotenv"
-	_ "github.com/mattn/go-sqlite3"
+	httpSwagger "github.com/swaggo/http-swagger"
+	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/store/sqlstore"
 	waLog "go.mau.fi/whatsmeow/util/log"
 	"wagobot.com/controllers"
+	"wagobot.com/db"
+	"wagobot.com/middleware"
 	"wagobot.com/router"
 )
 
 func main() {
-	// Load values from .env file
+	// Memuat nilai dari file .env
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
+		log.Fatalf("Gagal memuat file .env: %v", err)
 	}
 
-	// Retrieve values from environment variables
-	//secretKey := os.Getenv("SECRET_KEY")
+	// Mengambil nilai dari variabel lingkungan
 	port := os.Getenv("PORT")
-	dbPath := os.Getenv("DB_PATH") // Get DB_PATH from .env
+	dbPath := os.Getenv("DB_PATH")
 
-	// Configure database logging
+	// Mengatur logging untuk database
 	dbLog := waLog.Stdout("Database", "DEBUG", true)
-	/*
-		index := strings.Index(dbPath, ":")
-		if index == -1 {
-			fmt.Println("Format dbPath tidak valid")
-			return
-		}
 
-		// Ambil substring setelah titik dua dan sebelum tanda tanya (?)
-		substring := dbPath[index+1:]
-		endIndex := strings.Index(substring, "?")
-		if endIndex == -1 {
-			fmt.Println("Format dbPath tidak valid")
-			return
-		}
-
-		fileName := substring[:endIndex]
-		err = removeFile(fileName)
-		if err != nil {
-			log.Printf("Failed to remove SQLite database file: %v", err)
-		}
-	*/
-	// Initialize SQL store
+	// Menginisialisasi SQL store
 	storeContainer, err := sqlstore.New("sqlite3", dbPath, dbLog)
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		log.Fatalf("Gagal terhubung ke database: %v", err)
 	}
 
-	// Set storeContainer to the controller package variable
+	// Menetapkan storeContainer ke variabel package controller
 	controllers.SetStoreContainer(storeContainer)
 
-	// Setup router
+	// Mengambil semua perangkat dari database
+	devices, err := storeContainer.GetAllDevices()
+	if err != nil {
+		log.Fatalf("Gagal mengambil perangkat dari database: %v", err)
+	}
+
+	clientLog := waLog.Stdout("Client", "DEBUG", true)
+
+	for _, device := range devices {
+		client := whatsmeow.NewClient(device, clientLog)
+		//client.AddEventHandler(controllers.EventHandler)
+		controllers.AddClient(controllers.GenerateRandomString("Device", 3), client)
+		client.AddEventHandler(controllers.EventHandler)
+
+		if client.Store.ID == nil {
+			// Login baru
+			qrChan, _ := client.GetQRChannel(context.Background())
+			err = client.Connect()
+			if err != nil {
+				log.Fatalf("Gagal menghubungkan klien: %v", err)
+			}
+			for evt := range qrChan {
+				if evt.Event == "code" {
+					// Menampilkan QR code
+					fmt.Println("QR code:", evt.Code)
+				} else {
+					fmt.Println("Event login:", evt.Event)
+				}
+			}
+			//controllers.AddClient(device.ID.String(), client)
+
+		} else {
+			// Sudah login, langsung hubungkan
+			err = client.Connect()
+			if err != nil {
+				log.Fatalf("Gagal menghubungkan klien: %v", err)
+			}
+		}
+	}
+
+	// Inisialisasi database
+	err = db.InitDB()
+	if err != nil {
+		log.Fatalf("Gagal menginisialisasi database: %v", err)
+	}
+	defer db.CloseDB()
+
+	// Mengatur router
 	r := router.SetupRouter()
 	apiRouter := router.SetupRouter()
 	r.PathPrefix("/api").Handler(http.StripPrefix("/api", apiRouter))
 
-	// Serve static files
+	//Tambahkan Endpoin swager
+	r.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
+
+	// Menyajikan file statis
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))
 
-	// Enable CORS for development
-	corsHandler := handlers.CORS(
-		handlers.AllowedOrigins([]string{"http://localhost:8080"}),
-		handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE"}),
-		handlers.AllowedHeaders([]string{"Content-Type"}),
-	)(r)
+	// Mengaktifkan CORS untuk pengembangan
+	corsHandler := middleware.SetupCORS(r)
 
-	log.Printf("Server is running on port %s\n", port)
-	log.Fatal(http.ListenAndServe(":"+port, corsHandler))
-}
+	log.Printf("Server berjalan di port %s\n", port)
+	go func() {
+		log.Fatal(http.ListenAndServe(":"+port, corsHandler))
+	}()
 
-// Helper function to remove file
-func removeFile(filePath string) error {
-	//fmt.Println("di eksekusi")
-	if filePath == "" {
-		return nil
+	// Shutdown yang aman
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	<-c
+
+	for _, device := range devices {
+		client := whatsmeow.NewClient(device, clientLog)
+		client.Disconnect()
 	}
-	err := os.Remove(filePath)
-	if err != nil && !os.IsNotExist(err) {
-		return err
-	}
-	return nil
 }

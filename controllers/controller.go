@@ -2,6 +2,9 @@ package controllers
 
 import (
 	"context"
+	"io/ioutil"
+	"math/rand"
+	"time"
 
 	"encoding/base64"
 	"encoding/json"
@@ -19,31 +22,18 @@ import (
 	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
 	waLog "go.mau.fi/whatsmeow/util/log"
-	"wagobot.com/db"
 	"wagobot.com/model"
 	"wagobot.com/response"
 )
 
-/*var client *whatsmeow.Client
-
-func SetClient(c *whatsmeow.Client) {
-	client = c
-}
-
-var (
-	clients        = make(map[string]*whatsmeow.Client)
-	mutex          = &sync.Mutex{}
-	StoreContainer *sqlstore.Container
+// maping client to map
+const (
+	charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 )
 
-func SetStoreContainer(container *sqlstore.Container) {
-	StoreContainer = container
-}
-*/
-
-// maping client to map
 var (
 	clients        = make(map[string]*whatsmeow.Client)
+	data_client    = make(map[string]*whatsmeow.Client)
 	mutex          = &sync.Mutex{}
 	StoreContainer *sqlstore.Container
 	clientLog      waLog.Logger
@@ -69,10 +59,13 @@ type ClientInfo struct {
 	Busy   bool   `json:"busy,omitempty"`
 }
 
-func GetClients() map[string]*whatsmeow.Client {
-	mutex.Lock()
-	defer mutex.Unlock()
-	return clients
+func setClient_data(key string, client *whatsmeow.Client) {
+	// Clear existing data
+	for k := range data_client {
+		delete(data_client, k)
+	}
+	// Set new client
+	data_client[key] = client
 }
 
 func connectClient(client *whatsmeow.Client) (string, *types.JID) {
@@ -104,30 +97,22 @@ func connectClient(client *whatsmeow.Client) (string, *types.JID) {
 	return qrCode, client.Store.ID
 }
 
-func getClient(deviceStore *store.Device) *whatsmeow.Client {
+func GetClient(deviceStore *store.Device) *whatsmeow.Client {
 	client := whatsmeow.NewClient(deviceStore, clientLog)
-	//clients := client[generateRandomString(5)]
-	//fmt.Println("data", clients)
 	client.AddEventHandler(EventHandler)
-	fmt.Println("data client", client)
 	return client
 }
 
-/*
-	func sendToAPI(sender string, message string) {
-		mu.Lock()
-		messages = append(messages, model.Message{Sender: sender, Message: message})
-		mu.Unlock()
-	}
-
-*
-//var silver = ""
-*/
 func EventHandler(evt interface{}) {
-	fmt.Println("try to excution")
+
 	switch v := evt.(type) {
 	case *events.Message:
-		if !v.Info.IsFromMe && v.Message.GetConversation() != "" ||
+		for key := range clients {
+			//fmt.Println("whoami:", key)
+			fmt.Println("end client", clients[key])
+		}
+
+		if !v.Info.IsFromMe || v.Message.GetConversation() != "" ||
 			v.Message.GetImageMessage().GetCaption() != "" ||
 			v.Message.GetVideoMessage().GetCaption() != "" ||
 			v.Message.GetDocumentMessage().GetCaption() != "" {
@@ -137,11 +122,11 @@ func EventHandler(evt interface{}) {
 			text := v.Message.GetConversation()
 			group := v.Info.IsGroup
 			isfrome := v.Info.IsFromMe
-			doc := v.Message.GetDocumentMessage()
+			//doc := v.Message.GetDocumentMessage()
 			captionMessage := v.Message.GetImageMessage().GetCaption()
 			videoMessage := v.Message.GetVideoMessage().GetCaption()
 			docMessage := v.Message.GetDocumentMessage().GetCaption()
-			docCaption := v.Message.GetDocumentMessage().GetTitle()
+			//docCaption := v.Message.GetDocumentMessage().GetTitle()
 			name := v.Info.PushName
 			to := v.Info.PushName
 
@@ -151,18 +136,17 @@ func EventHandler(evt interface{}) {
 			thumbnaildoc := v.Message.DocumentMessage.GetJpegThumbnail()
 			url := v.Message.ImageMessage.GetUrl()
 			mimeTipe := v.Message.ImageMessage.GetMimetype()
-			//comment := v.Message.CommentMessage.GetMessage()
-			//relyId := v.Message.GetCommentMessage().Message
+
 			tipe := v.Info.Type
 			isdocument := v.IsDocumentWithCaption
 			//chatText := v.Info.Chat
 			mediatype := v.Info.MediaType
 			//smtext := v.Message.Conversation()
-			fmt.Println("ID: %s, Chat: %s, Time: %d, Text: %s\n", to, mediatype, isdocument, chat, timestamp, text, group, isfrome, tipe)
+			//fmt.Println("ID: %s, Chat: %s, Time: %d, Text: %s\n", to, mediatype, isdocument, chat, timestamp, text, group, isfrome, tipe)
 			//fmt.Println("info repley", reply, coba)
 
 			// Assuming replies are stored within a field named Replies
-			fmt.Println("tipe messages", tipe, docCaption, isdocument, doc, mediatype, captionMessage, videoMessage, docMessage)
+			//fmt.Println("tipe messages", tipe, docCaption, isdocument, doc, mediatype, captionMessage, videoMessage, docMessage)
 			mu.Lock()
 			defer mu.Unlock() // Ensure mutex is always unlocked when the function returns
 			messages = append(messages, response.Message{
@@ -193,8 +177,69 @@ func EventHandler(evt interface{}) {
 				// Replies: v.Message.Replies,
 			})
 		}
-		//case *events.PairSuccess:
-		//	fmt.Println("pari succeess", v.ID.User)
+		/*
+			payload := response.Message{
+				ID:             v.Info.ID,
+				Chat:           v.Info.Sender.String(),
+				Time:           v.Info.Timestamp.Unix(),
+				Text:           v.Message.GetConversation(),
+				Group:          v.Info.IsGroup,
+				IsFromMe:       v.Info.IsFromMe,
+				Caption:        v.Message.GetImageMessage().GetCaption(),
+				VideoMessage:   v.Message.GetVideoMessage().GetCaption(),
+				DocMessage:     v.Message.GetDocumentMessage().GetCaption(),
+				MimeTipe:       v.Message.GetImageMessage().GetMimetype(),
+				Name:           v.Info.PushName,
+				To:             v.Info.PushName,
+				Url:            v.Message.GetImageMessage().GetUrl(),
+				Thumbnail:      base64.StdEncoding.EncodeToString(v.Message.GetImageMessage().GetJpegThumbnail()),
+				Thumbnailvideo: base64.StdEncoding.EncodeToString(v.Message.GetVideoMessage().GetJpegThumbnail()),
+				Thumbnaildoc:   base64.StdEncoding.EncodeToString(v.Message.GetDocumentMessage().GetJpegThumbnail()),
+				Tipe:           v.Info.Type,
+				IsDocument:     v.IsDocumentWithCaption,
+				Mediatipe:      v.Info.MediaType,
+			}
+			webhookURL := "https://webhook.site/aa9bbb63-611c-4d7a-97cd-f4eb6d4b775d"
+			err := sendPayloadToWebhook(payload, webhookURL)
+			if err != nil {
+				fmt.Printf("Failed to send payload to webhook: %v\n", err)
+			}
+		*/
+	case *events.PairSuccess:
+		fmt.Println("pari succeess", v.ID.User)
+		initialClient()
+	case *events.HistorySync:
+		fmt.Println("Received a history sync")
+		/*for _, conv := range v.Data.GetConversations() {
+			for _, historymsg := range conv.GetMessages() {
+				chatJID, _ := types.ParseJID(conv.GetId())
+				evt, err := client.ParseWebMessage(chatJID, historymsg.GetMessage())
+				if err != nil {
+					log.Println(err)
+				}
+				eventHandler(evt)
+			}
+		}*/
+	case *events.LoggedOut:
+		//initialClient()
+	case *events.Receipt:
+		fmt.Println("terima")
+		if v.Type == events.ReceiptTypeRead || v.Type == events.ReceiptTypeReadSelf {
+			fmt.Printf("%v was read by %s at %s\n", v.MessageIDs, v.SourceString(), v.Timestamp)
+			// Membuat payload untuk webhook
+			/*webhookPayload := model.ReadReceipt{
+				MessageID: v.MessageIDs[0],
+				ReadBy:    v.SourceString(),
+				Time:      v.Timestamp.UnixMilli(),
+			}*/
+			// Mengirimkan payload ke webhook
+			//webhookURL := "http://localhost:8080/webhook"
+			/*err := sendPayloadToWebhook(string(v.Type), webhookURL)
+			if err != nil {
+				fmt.Printf("Failed to send read receipt to webhook: %v\n", err)
+			}*/
+		}
+
 		/*case *events.Receipt:
 		if v.Type == types.ReceiptTypeRead || v.Type == types.ReceiptTypeReadSelf {
 			fmt.Println("%v was read by %s at %s", v.MessageIDs, v.SourceString(), v.Timestamp)
@@ -210,32 +255,6 @@ type GroupCollection struct {
 	Groups []types.GroupInfo
 }
 
-func ScanQrCode(client *whatsmeow.Client) {
-	if client.Store.ID == nil {
-		qrChannel, _ := client.GetQRChannel(context.Background())
-		go func() {
-			for evt := range qrChannel {
-				switch evt.Event {
-				case "code":
-					fmt.Println("QR Code:", evt.Code)
-				case "login":
-					fmt.Println("Login successful")
-				}
-			}
-		}()
-		err := client.Connect()
-		if err != nil {
-			log.Fatalf("Failed to connect: %v", err)
-		}
-		<-qrChannel
-	} else {
-		err := client.Connect()
-		if err != nil {
-			log.Fatalf("Failed to connect: %v", err)
-		}
-	}
-}
-
 func GetSearchMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	// Parse request parameters
 	r.ParseForm()
@@ -249,7 +268,12 @@ func GetSearchMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	var data []map[string]interface{}
 	//data := make(map[string]map[string]interface{})
 	for _, msg := range messages {
-		if textFilter != "" && !strings.Contains(msg.Text, textFilter) {
+		if textFilter != "" && !strings.Contains(msg.Text, textFilter) &&
+			!strings.Contains(msg.Chat, textFilter) &&
+			!strings.Contains(msg.ID, textFilter) &&
+			!strings.Contains(msg.Name, textFilter) &&
+			!strings.Contains(msg.ID, textFilter) &&
+			!strings.Contains(msg.Caption, textFilter) {
 			continue // Skip messages that don't contain the text filter
 		}
 
@@ -301,7 +325,21 @@ func GetSearchMessagesHandler(w http.ResponseWriter, r *http.Request) {
 			"mimetype":  msg.MimeTipe,
 			"thumbnail": thumb,
 		}
-		data = append(data, messageData)
+
+		exists := false
+		for _, existingMessage := range data {
+			if existingMessage["id"] == msg.ID {
+				exists = true
+				break
+			}
+		}
+
+		// Jika msg.ID belum ada, tambahkan messageData ke data
+		if !exists {
+			data = append(data, messageData)
+		}
+
+		//data = append(data, messageData)
 		//fmt.Println("chek data", msg)
 		/* example respond in maxchat.id
 		{
@@ -341,43 +379,45 @@ func GetSearchMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func AddClient(id string, client *whatsmeow.Client) {
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	if client == nil {
+		log.Printf("Failed to add client: client is nil for id %s\n", id)
+		return
+	}
+
+	clients[id] = client
+	log.Printf("Client added successfully: %s\n", id)
+}
+
 func CreateDevice(w http.ResponseWriter, r *http.Request) {
 	deviceStore := StoreContainer.NewDevice()
-	client := getClient(deviceStore)
-
+	client := GetClient(deviceStore)
+	deviceID := GenerateRandomString("Device", 3)
+	//data_client[deviceID] = client
+	setClient_data(deviceID, client)
 	qrCode, jid := connectClient(client)
-	fmt.Println("cek nilai client ", clients)
 
 	var response []ClientInfo
 
-	// Check if there are devices in the database
-	dbx, err := db.OpenDatabase()
-	if err != nil {
-		http.Error(w, "Failed to connect to the database", http.StatusInternalServerError)
-		return
-	}
-	defer dbx.Close()
+	fmt.Println("Data client setelah ditambahkan:", jid)
 
-	devices, err := model.GetDevicesFromDB(dbx)
-	if err != nil {
-		http.Error(w, "Failed to get devices from the database", http.StatusInternalServerError)
-		return
-	}
-
-	// If there are devices, add them to the response
-	if len(devices) > 0 {
-		for _, d := range devices {
-			response = append(response, ClientInfo{
-				ID:     d.RegistrationID,
-				Number: d.JID,
-				Busy:   true,
-				Status: "connected",
-				Name:   d.PushName,
-			})
-		}
+	// Iterasi melalui peta `clients` untuk membuat respons
+	for key, client := range clients {
+		//fmt.Printf(key)
+		response = append(response, ClientInfo{
+			ID:     key,
+			Number: client.Store.ID.String(),
+			Busy:   true,
+			QR:     "",
+			Status: "connected",
+			Name:   client.Store.PushName,
+		})
 	}
 
-	// Add the new client to the response and clients map
+	// Add the new client to the response
 	if qrCode != "" {
 		response = append(response, ClientInfo{
 			ID:     "",
@@ -387,21 +427,6 @@ func CreateDevice(w http.ResponseWriter, r *http.Request) {
 			Status: "pairing",
 			Name:   "",
 		})
-	}
-	if jid != nil {
-		clients[jid.User] = client
-	}
-
-	// Add existing connected clients to the response
-	for _, c := range clients {
-		if c.IsConnected() {
-			response = append(response, ClientInfo{
-				ID:     "93847384", // Example ID
-				Number: c.Store.ID.User,
-				Status: "connected",
-				Name:   "dfarihul", // Example name
-			})
-		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -448,9 +473,10 @@ func GetMessagesHandler(w http.ResponseWriter, r *http.Request) {
 			msg.Mediatipe = "text"
 		}
 		messageData := map[string]interface{}{
-			"id":   msg.ID,
-			"from": strings.TrimSuffix(msg.From, "@s.whatsapp.net"),
-			"to":   msg.To,
+			"id":     msg.ID,
+			"from":   strings.TrimSuffix(msg.From, "@s.whatsapp.net"),
+			"to":     strings.TrimSuffix(msg.From, "@s.whatsapp.net"),
+			"status": "delivered",
 			//"chat": chat,
 			"time": msg.Time,
 			"type": msg.Mediatipe,
@@ -465,7 +491,18 @@ func GetMessagesHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Tambahkan elemen ke slice
-		data = append(data, messageData)
+		exists := false
+		for _, existingMessage := range data {
+			if existingMessage["id"] == msg.ID {
+				exists = true
+				break
+			}
+		}
+
+		// Jika msg.ID belum ada, tambahkan messageData ke data
+		if !exists {
+			data = append(data, messageData)
+		}
 	}
 
 	response := map[string]interface{}{
@@ -516,9 +553,10 @@ func GetMessagesByIdHandler(w http.ResponseWriter, r *http.Request) {
 		*/
 
 		messageData := map[string]interface{}{
-			"id":   msg.ID,
-			"chat": chat,
-			"time": msg.Time,
+			"id":     msg.ID,
+			"chat":   chat,
+			"time":   msg.Time,
+			"status": "delivered",
 			//"text": msg.Text,
 			//"type": msg.Mediatipe,
 		}
@@ -530,8 +568,18 @@ func GetMessagesByIdHandler(w http.ResponseWriter, r *http.Request) {
 			messageData["text"] = msg.Text
 		}
 
-		// Tambahkan elemen ke slice
-		data = append(data, messageData)
+		exists := false
+		for _, existingMessage := range data {
+			if existingMessage["id"] == msg.ID {
+				exists = true
+				break
+			}
+		}
+
+		if !exists {
+			data = append(data, messageData)
+		}
+
 	}
 
 	response := map[string]interface{}{
@@ -545,57 +593,66 @@ func GetMessagesByIdHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func RetrieveMessagesHandler(w http.ResponseWriter, r *http.Request) {
-	/*identifier := r.URL.Query().Get("identifier")
-	if identifier == "" {
-		http.Error(w, "Missing identifier", http.StatusBadRequest)
-		return
-	}
+func initialClient() {
 
-	messages, err := helpers.GetAllMessagesByPhoneNumberOrGroupID(client, identifier)
+	for key, value := range data_client {
+		clients[key] = value
+	}
+}
+
+func GenerateRandomString(prefix string, length int) string {
+	rand.Seed(time.Now().UnixNano())
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[rand.Intn(len(charset))]
+	}
+	return fmt.Sprintf("%s-%s", prefix, string(b))
+}
+
+func WebhookHandler(w http.ResponseWriter, r *http.Request) {
+	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, "Failed to get messages", http.StatusInternalServerError)
+		http.Error(w, "Failed to read request body", http.StatusBadRequest)
 		return
 	}
 
-	response := model.GetMessagesResponse{Data: messages}
-	jsonResponse, err := json.Marshal(response)
+	fmt.Printf("Received raw payload: %s\n", string(body)) // Logging payload mentah
+
+	var payload model.WebhookPayload
+	err = json.Unmarshal(body, &payload)
 	if err != nil {
-		helpers.SendErrorResponse(w, http.StatusInternalServerError, errors.ErrFailedToMarshalResponse)
+		http.Error(w, "Failed to parse webhook payload", http.StatusBadRequest)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	fmt.Printf("Parsed webhook payload: %+v\n", payload)
+
 	w.WriteHeader(http.StatusOK)
-	w.Write(jsonResponse)
-	*/
 }
 
-func TriggerEventHandler(w http.ResponseWriter, r *http.Request) {
+func RemoveClient(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	phone := vars["phone"]
 
-	for _, client := range clients {
-		client.AddEventHandler(EventHandler)
-	}
-	for key := range clients {
-		fmt.Println("Checking key:", key)
-		EventHandler(clients[key])
-	}
-}
+	// Lock untuk mengamankan akses ke map clients (jika diperlukan)
+	mutex.Lock()
+	defer mutex.Unlock()
 
-func ListDevices(w http.ResponseWriter, r *http.Request) {
-	db, err := db.OpenDatabase()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer db.Close()
+	// Cek apakah kunci ada di dalam map
+	if _, exists := clients[phone]; exists {
+		// Hapus kunci dari map
+		clients[phone].Logout()
+		delete(clients, phone)
+		delete(data_client, phone)
 
-	devices, err := model.GetDevicesFromDB(db)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to retrieve devices: %v", err), http.StatusInternalServerError)
-		return
+		response := response.ResponseLogout{Status: "success", Message: "Data berhasil dihapus"}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+	} else {
+		response := response.ResponseLogout{Status: "fail", Message: "Kunci tidak ditemukan"}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(response)
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(devices)
 }

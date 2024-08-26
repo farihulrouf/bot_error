@@ -1,50 +1,73 @@
 <template>
-  <div class="items-center justify-center">
-    <div class="overflow-x-auto">
-      <table class="min-w-full bg-white shadow-md rounded-xl">
-        <thead>
-          <tr class="bg-blue-gray-100 text-gray-700">
-            <th class="py-3 px-4 text-left">Account</th>
-            <th class="py-3 px-4 text-left">Devices</th>
-            <th class="py-3 px-4 text-left">Expired</th>
-            <th class="py-3 px-4 text-left">Balance</th>
-            <th class="py-3 px-4 text-left">Settings</th>
-            <th class="py-3 px-4 text-left">API</th>
-            <th class="py-3 px-4 text-left">Action</th>
-          </tr>
-        </thead>
-        <tbody class="text-blue-gray-900">
-          <!-- Single Row with Data -->
-          <tr class="border-b border-blue-gray-200">
-            <td class="py-3 px-4">Multi</td>
-            <td class="py-3 px-4">2</td>
-            <td class="py-3 px-4">2030-12-12</td>
-            <td class="py-3 px-4">$300,000.00</td>
-            <td class="py-3 px-4">Token, Webhook</td>
-            <td class="py-3 px-4">API v1.4.3</td>
-            <td class="py-3 px-4">
-              <a href="#" class="font-medium text-blue-600 hover:text-blue-800">Edit</a>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-     
+  <div>
+    <div v-if="!isLoggedIn" class="min-h-screen flex items-center justify-center bg-gray-100">
+      <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+        <h2 class="text-2xl font-bold mb-6 text-center">Login</h2>
+        <form @submit.prevent="handleLogin">
+          <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2" for="username">Username</label>
+            <input
+              type="text"
+              id="username"
+              v-model="username"
+              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              required
+            />
+          </div>
+          <div class="mb-6">
+            <label class="block text-gray-700 text-sm font-bold mb-2" for="password">Password</label>
+            <input
+              type="password"
+              id="password"
+              v-model="password"
+              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline"
+              required
+            />
+          </div>
+          <div class="flex items-center justify-between">
+            <button
+              type="submit"
+              class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            >
+              Sign In
+            </button>
+          </div>
+          <p v-if="errorMessage" class="text-red-500 text-xs italic mt-4">{{ errorMessage }}</p>
+        </form>
+      </div>
+    </div>
+
+    <div v-else>
+      <h2 class="text-2xl font-bold mb-6 text-center">Welcome, {{ username }}</h2>
+      <!-- Konten halaman setelah login -->
     </div>
   </div>
 </template>
 
 <script>
 export default {
-  name: 'ListAccount',
-  props: {
-    headers: {
-      type: Array,
-      required: true
+  data() {
+    return {
+      username: '',
+      password: '',
+      errorMessage: '',
+      isLoggedIn: false // Tambahkan variabel untuk menentukan status login
+    };
+  },
+  methods: {
+    handleLogin() {
+      // Dummy login logic
+      if (this.username === 'admin' && this.password === 'password') {
+        alert('Login successful!');
+        this.isLoggedIn = true; // Setelah login sukses, set isLoggedIn menjadi true
+      } else {
+        this.errorMessage = 'Invalid username or password';
+      }
     }
   }
 };
 </script>
 
 <style scoped>
-/* Styling menggunakan Tailwind CSS atau CSS kustom */
+/* Tambahkan CSS khusus jika diperlukan */
 </style>
