@@ -18,8 +18,6 @@ func SetupRouter() *mux.Router {
 	r := mux.NewRouter()
 	//controllers.SetClient(client)
 
-	// Menetapkan penanganan rute untuk endpoint registrasi dan login
-
 	//r.HandleFunc("/api/scanqr/{device}", controllers.ScanQRHandler).Methods("GET")
 
 	// Middleware JWT digunakan untuk semua rute kecuali /api/login dan /api/register /scanqr
@@ -33,47 +31,44 @@ func SetupRouter() *mux.Router {
 			auth.JWTMiddleware(next).ServeHTTP(w, r)
 		})
 	})
-	r.HandleFunc("/api/register", controllers.RegisterHandler).Methods("POST")
-	r.HandleFunc("/api/login", controllers.LoginHandler).Methods("POST")
-	r.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
+
+	r.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler) // not ok, file not found
+
+	r.HandleFunc("/api/login", controllers.LoginHandler).Methods("POST") // ok
+	r.HandleFunc("/api/logout", controllers.LogoutHandler).Methods("POST") // not ok, response kosong tidak berfungsi
+	r.HandleFunc("/api/ping", controllers.PingHandler).Methods("GET") // response ganti ke json {status: "online/offline"}
+	r.HandleFunc("/api/register", controllers.RegisterHandler).Methods("POST") // not ok, tidak ada validasi parameter user
+	r.HandleFunc("/api/token", controllers.CreateToken).Methods("POST") // not ok, token tidak bisa digunakan
+
+	r.HandleFunc("/api/system/logout/{phone}", controllers.RemoveClient).Methods("DELETE")
+	r.HandleFunc("/api/system/devices", controllers.CreateDevice).Methods("GET") // not ok, hang
+	r.HandleFunc("/api/system/ver", controllers.VersionHandler).Methods("GET") // ok
+	r.HandleFunc("/api/system/webhook", controllers.WebhookHandler).Methods("POST")
+	// router.POST("/api/system/webhook", SetWebhookHandler)
+
+	r.HandleFunc("/api/webhook/update", controllers.UpdateWbhookURLHandler).Methods("PUT")
+
+	r.HandleFunc("/api/user/detail", controllers.GetUserHandler).Methods("GET") // ok
+	r.HandleFunc("/api/user/update", controllers.UserUpdateHandler).Methods("PUT")
+	
+	r.HandleFunc("/api/group/invite", controllers.GetGroupInviteLinkHandler).Methods("GET")
 
 	r.HandleFunc("/api/groups", controllers.GetGroupsHandler).Methods("GET")
 	r.HandleFunc("/api/groups", controllers.JoinGroupHandler).Methods("POST")
 	r.HandleFunc("/api/groups/messages", controllers.SendMessageGroupHandler).Methods("POST")
 	r.HandleFunc("/api/groups/leave", controllers.LeaveGroupHandler).Methods("POST")
-	r.HandleFunc("/api/messages", controllers.SendMessageHandler).Methods("POST")
 
-	r.HandleFunc("/api/messages/bulk", controllers.SendMessageBulkHandler).Methods("POST")
 	r.HandleFunc("/api/messages", controllers.GetSearchMessagesHandler).Methods("GET")
-	r.HandleFunc("/api/token", controllers.CreateToken).Methods("POST")
+	r.HandleFunc("/api/messages", controllers.SendMessageHandler).Methods("POST")
+	r.HandleFunc("/api/messages/bulk", controllers.SendMessageBulkHandler).Methods("POST")
+	
 	r.HandleFunc("/api/result", controllers.GetMessagesHandler).Methods("GET")
 	r.HandleFunc("/api/result/{id}", controllers.GetMessagesByIdHandler).Methods("GET")
-
-	r.HandleFunc("/api/logout", controllers.LogoutHandler).Methods("POST") // Add the logout route
-
-	r.HandleFunc("/api/ping", controllers.PingHandler).Methods("GET") // Add the logout route
-
-	r.HandleFunc("/api/system/ver", controllers.VersionHandler).Methods("GET") // Add the logout route
-
-	r.HandleFunc("/api/system/webhook", controllers.WebhookHandler).Methods("POST")
-
-	r.HandleFunc("/api/group/invite", controllers.GetGroupInviteLinkHandler).Methods("GET")
-
-	//router.POST("/api/system/webhook", SetWebhookHandler)
-
-	r.HandleFunc("/api/system/devices", controllers.CreateDevice).Methods("GET")
+	
 	//r.HandleFunc("/api/get/client", controllers.GetClientByDeviceNameHandler).Methods("GET")
-	r.HandleFunc("/api/system/logout/{phone}", controllers.RemoveClient).Methods("DELETE")
-
 	//r.HandleFunc("/api/system", controllers.ListDevices).Methods("GET")
 	//r.HandleFunc("/status/qr/list", controllers.GetConnectedClientsList).Methods("GET")
-
-	///r.HandleFunc("/api/token", controllers.CreateToken).Methods("POST")
-
-	r.HandleFunc("/api/webhook/update", controllers.UpdateWbhookURLHandler).Methods("PUT")
-	r.HandleFunc("/api/user/detail", controllers.GetUserHandler).Methods("GET")
-	r.HandleFunc("/api/user/update", controllers.UserUpdateHandler).Methods("PUT")
-
+	//r.HandleFunc("/api/token", controllers.CreateToken).Methods("POST")
 	//r.HandleFunc("/api/messages/images", controllers.SendImageHandler).Methods("POST")
 
 	return r
