@@ -80,7 +80,7 @@ func initTableUserDevices() error {
 		return err
 	}
 
-	_, err = db.Exec(`DROP TABLE IF EXISTS user_devices; CREATE TABLE IF NOT EXISTS user_devices (
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS user_devices (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
 		user_id INTEGER NOT NULL,
 		device_jid TEXT NOT NULL
