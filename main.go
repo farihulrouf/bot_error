@@ -7,6 +7,8 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	// "strings"
+	// "reflect"
 
 	"github.com/joho/godotenv"
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -16,13 +18,15 @@ import (
 	waLog "go.mau.fi/whatsmeow/util/log"
 	waProto "go.mau.fi/whatsmeow/binary/proto"
 	"wagobot.com/controllers"
-	"wagobot.com/db"
 	"wagobot.com/middleware"
 	"wagobot.com/router"
 	"google.golang.org/protobuf/proto"
+	"wagobot.com/db"
+	"wagobot.com/model"
 )
 
 func main() {
+
 	// Memuat nilai dari file .env
 	err := godotenv.Load()
 	if err != nil {
@@ -48,7 +52,14 @@ func main() {
 	storeContainer, err := sqlstore.New("sqlite3", dbPath, dbLog)
 	if err != nil {
 		log.Fatalf("Gagal terhubung ke database: %v", err)
-	}	
+	}
+
+	// Inisialisasi database
+	err = db.InitDB()
+	if err != nil {
+		log.Fatalf("Gagal menginisialisasi database: %v", err)
+	}
+	defer db.CloseDB()
 
 	// Menetapkan storeContainer ke variabel package controller
 	controllers.SetStoreContainer(storeContainer)
@@ -63,15 +74,11 @@ func main() {
 
 	for _, device := range devices {
 		client := whatsmeow.NewClient(device, clientLog)
-		controllers.AddClient(client)
+		DevID := device.ID.String()
+		phoneNumber := model.GetPhoneNumber(DevID)
+		user, _ := db.GetUserByClientJID(phoneNumber)
+		controllers.AddClient(user.UserId, phoneNumber, client)
 	}
-
-	// Inisialisasi database
-	err = db.InitDB()
-	if err != nil {
-		log.Fatalf("Gagal menginisialisasi database: %v", err)
-	}
-	defer db.CloseDB()
 
 	// Mengatur router
 	r := router.SetupRouter()

@@ -33,9 +33,14 @@ func init() {
 }
 
 // GenerateToken generates a JWT token for the given username.
-func GenerateToken(username string) (string, error) {
+func GenerateToken(username string, id int) (string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
+	
+	if id != 0 {
+		claims["id"] = id
+	}
+
 	claims["username"] = username
 	claims["exp"] = time.Now().AddDate(1, 0, 0).Unix() // expiration
 	//claims["exp"] = time.Now().Add(time.Hour * 24).Unix() // Token expires in 24 hours
@@ -125,7 +130,7 @@ func CreateNewTokenFromExpired(expiredTokenString string) (string, error) {
 
 	claims["exp"] = time.Now().AddDate(1, 0, 0).Unix() // Token expires in one year
 
-	tokenString, err := GenerateToken("optimasi")
+	tokenString, err := GenerateToken("optimasi", 0)
 	if err != nil {
 		return "", fmt.Errorf("could not create new token: %w", err)
 	}
@@ -155,7 +160,7 @@ func CreateNewToken() (string, error) {
 		return "", fmt.Errorf("SECRET_KEY is not set in .env file")
 	}
 
-	token, err := GenerateToken(secretKey)
+	token, err := GenerateToken(secretKey, 0)
 	if err != nil {
 		return "", fmt.Errorf("could not create token: %w", err)
 	}

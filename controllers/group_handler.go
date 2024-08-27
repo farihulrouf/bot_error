@@ -26,7 +26,7 @@ func GetGroupsHandler(w http.ResponseWriter, r *http.Request) {
 	var filteredGroups []response.GroupResponse
 	mutex.Lock()
 	for _, client := range clients {
-		groups, err := client.GetJoinedGroups()
+		groups, err := client.Client.GetJoinedGroups()
 		if err != nil {
 			helpers.SendErrorResponse(w, http.StatusInternalServerError, errors.ErrFailedToFetchGroups)
 			mutex.Unlock()
@@ -84,7 +84,7 @@ func GetGroupsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func JoinGroupHandler(w http.ResponseWriter, r *http.Request) {
-	var value_client = clients["device1"]
+	var value_client = clients["device1"].Client
 	matchFound := false
 	var req model.JoinGroupRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -102,13 +102,13 @@ func JoinGroupHandler(w http.ResponseWriter, r *http.Request) {
 
 	for key := range clients {
 		fmt.Println("Checking key:", key)
-		whoami := clients[key].Store.ID.String()
+		whoami := clients[key].Client.Store.ID.String()
 		parts := strings.Split(whoami, ":")
 		//fmt.Println("whoami:", whoami)
 
 		if req.Phone == parts[0] {
 			fmt.Println("Match found, requestData.From:", req.Phone)
-			value_client = clients[key]
+			value_client = clients[key].Client
 			//fmt.Println("whoami:", value_client)
 			matchFound = true
 			break

@@ -3,7 +3,12 @@ package controllers
 import (
 	// "encoding/json"
 	"fmt"
+	// "reflect"
+	"strings"
 	"net/http"
+	"wagobot.com/auth"
+	"wagobot.com/db"
+	"wagobot.com/model"
 	// "context"
 	// "log"
 	// "time"
@@ -23,17 +28,36 @@ func GetDevicesHandler(w http.ResponseWriter, r *http.Request) {
 	mutex.Lock()
 	defer mutex.Unlock()
 
+	tokenStr := r.Header.Get("Authorization")
+	tokenStr = strings.TrimPrefix(tokenStr, "Bearer ")
+	claims, _ := auth.ParseToken(tokenStr)
+	username, _ := claims["username"].(string)
+
+	user, _ := db.GetUserByUsername(username)
+
+	fmt.Println("User ID ", user.ID)
+
 	var connectedClients []ClientInfo = []ClientInfo{}
-	for key, client := range clients {
-		whoami := client.Store.ID.String()
+	for _, client := range clients {
+
+		// fmt.Println("id user", client)
+		
+		if client.User != user.ID {
+			continue
+		}
+
+		fmt.Println(client.Client)
+
+		whoami := client.Client.Store.ID.String()
+		phone := model.GetPhoneNumber(whoami)
 		status := "disconnected"
-		if client.IsConnected() {
+		if client.Client.IsConnected() {
 			status = "connected"
 		}
 		clientInfo := ClientInfo{
 			ID:      whoami,
-			Phone:   whoami,
-			Name:    key,
+			Phone:   phone,
+			Name:    client.Client.Store.PushName,
 			Status:  status,
 			Process: "getMessage",
 			Busy:    true,
@@ -47,14 +71,28 @@ func GetDevicesHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func ScanDeviceHandler(w http.ResponseWriter, r *http.Request) {
+
+	tokenStr := r.Header.Get("Authorization")
+	tokenStr = strings.TrimPrefix(tokenStr, "Bearer ")
+	claims, _ := auth.ParseToken(tokenStr)
+	username, _ := claims["username"].(string)
+
+	user, _ := db.GetUserByUsername(username)
+
+	fmt.Println("User ID ", user.ID)
+
 	deviceStore := StoreContainer.NewDevice()
 	client := GetClient(deviceStore)
 	
-	AddClient(client)
+	deviceID := GenerateRandomString("DEVICE", 5)
+
+	AddClient(user.ID, deviceID, client)
+
+	fmt.Println(clients)
 
 	// deviceID := GenerateRandomString("DEV", 7)
 	// setClient_data(deviceID, client)
-	
+
 	qrCode, jid := connectClient(client)
 
 	fmt.Println("data client")

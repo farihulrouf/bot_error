@@ -23,26 +23,8 @@ func LoadEnv() error {
 	return nil
 }
 
-func InitDB() error {
+func initTableUsers() error {
 	err := LoadEnv()
-	if err != nil {
-		return err
-	}
-
-	databasePath := os.Getenv("DB_PATH")
-	if databasePath == "" {
-		return errors.New("DB_PATH environment variable not set")
-	}
-
-	db, err = sql.Open("sqlite3", databasePath)
-	if err != nil {
-		return err
-	}
-
-	err = db.Ping()
-	if err != nil {
-		return err
-	}
 
 	_, err = db.Exec(`
     CREATE TABLE IF NOT EXISTS users (
@@ -87,8 +69,53 @@ func InitDB() error {
 		// Log the dan hash password
 		log.Printf("Hashed password: %s", string(hashedPassword))
 		CreateUser(defaultUsername, string(hashedPassword), defaultEmail, defaultFirstName, defaultLastName, defaultURL)
-
 	}
+
+	return nil
+}
+
+func initTableUserDevices() error {
+	err := LoadEnv()
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec(`DROP TABLE IF EXISTS user_devices; CREATE TABLE IF NOT EXISTS user_devices (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+		user_id INTEGER NOT NULL,
+		device_jid TEXT NOT NULL
+    )`)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	return nil
+}
+
+func InitDB() error {
+	err := LoadEnv()
+	if err != nil {
+		return err
+	}
+
+	databasePath := os.Getenv("DB_PATH")
+	if databasePath == "" {
+		return errors.New("DB_PATH environment variable not set")
+	}
+
+	db, err = sql.Open("sqlite3", databasePath)
+	if err != nil {
+		return err
+	}
+
+	err = db.Ping()
+	if err != nil {
+		return err
+	}
+
+	initTableUsers()
+	initTableUserDevices()
 
 	log.Println("Connected to the database")
 	return nil
@@ -138,6 +165,135 @@ func GetUserByUsername(username string) (model.User, error) {
 	}
 
 	return user, nil
+}
+
+func InsertUserDevice(userDevice model.UserDevice) error {
+
+	// err := LoadEnv()
+	// if err != nil {
+	// 	return err
+	// }
+
+	// databasePath := os.Getenv("DB_PATH")
+	// if databasePath == "" {
+	// 	return errors.New("DB_PATH environment variable not set")
+	// }
+
+	// db, err = sql.Open("sqlite3", databasePath)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// err = db.Ping()
+	// if err != nil {
+	// 	return err
+	// }
+
+    // Prepare the SQL statement for inserting data
+    stmt, err := db.Prepare("INSERT INTO user_devices (user_id, device_jid) VALUES (?, ?)")
+    if err != nil {
+        return err
+    }
+    defer stmt.Close()
+
+    // Execute the SQL statement with the values
+    _, err = stmt.Exec(userDevice.UserId, userDevice.DeviceJid)
+    if err != nil {
+        return err
+    }
+
+    return nil
+}
+
+func DeleteUserDevice(phone string) error {
+	fmt.Println("deleting ", phone)
+
+    // Prepare the SQL statement for inserting data
+    stmt, err := db.Prepare("DELETE FROM user_devices WHERE device_jid = ?")
+    if err != nil {
+        return err
+    }
+    defer stmt.Close()
+
+    // Execute the SQL statement with the values
+    _, err = stmt.Exec(phone)
+    if err != nil {
+        return err
+    }
+
+    return nil
+}
+
+func CheckDatabase() error {
+
+	fmt.Println("------- testtetetettetet ------")
+
+	// err := LoadEnv()
+	// if err != nil {
+	// 	return err
+	// }
+
+	// databasePath := os.Getenv("DB_PATH")
+	// if databasePath == "" {
+	// 	return errors.New("DB_PATH environment variable not set")
+	// }
+
+	// db, err = sql.Open("sqlite3", databasePath)
+	// if err != nil {
+	// 	return err
+	// }
+
+	err := db.Ping()
+	if err != nil {
+		fmt.Println("------- errrr db ------")
+		return err
+	}
+
+	fmt.Println("------- db ok ------")
+
+    // Prepare the SQL statement for inserting data
+    stmt, err := db.Prepare("INSERT INTO user_devices (user_id, device_jid) VALUES (?, ?)")
+    if err != nil {
+        return err
+    }
+    defer stmt.Close()
+
+	userDevice := model.UserDevice{
+		UserId: 1,
+		DeviceJid: "halo",
+	}
+
+    // Execute the SQL statement with the values
+    _, err = stmt.Exec(userDevice.UserId, userDevice.DeviceJid)
+    if err != nil {
+		fmt.Println("------- hasil ------", err)
+        return err
+    }
+
+    return nil
+}
+
+func GetUserByClientJID(jid string) (model.UserDevice, error) {
+	var userDevice model.UserDevice
+
+	stmt, err := db.Prepare("SELECT id, user_id, device_jid FROM user_devices WHERE device_jid = ?")
+	if err != nil {
+		return userDevice, err
+	}
+	defer stmt.Close()
+
+	// Execute the SQL statement and scan the result into the user struct.
+	row := stmt.QueryRow(jid)
+	err = row.Scan(&userDevice.ID, &userDevice.UserId, &userDevice.DeviceJid)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			// Return a custom error when the user is not found
+			return userDevice, errors.New("user not found")
+		}
+		return userDevice, err
+	}
+
+	return userDevice, err
 }
 
 func OpenDatabase() (*sql.DB, error) {

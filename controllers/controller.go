@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"time"
+	"reflect"
 
 	"encoding/base64"
 	"encoding/json"
@@ -24,6 +25,7 @@ import (
 	waLog "go.mau.fi/whatsmeow/util/log"
 	"wagobot.com/model"
 	"wagobot.com/response"
+	"wagobot.com/db"
 )
 
 // maping client to map
@@ -31,8 +33,14 @@ const (
 	charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 )
 
+type CustomClient struct {
+    User   int
+    Client *whatsmeow.Client
+}
+
 var (
-	clients        = make(map[string]*whatsmeow.Client)
+	// clients        = make(map[string]*whatsmeow.Client)
+	clients        = make(map[string]CustomClient)
 	data_client    = make(map[string]*whatsmeow.Client)
 	mutex          = &sync.Mutex{}
 	StoreContainer *sqlstore.Container
@@ -101,6 +109,9 @@ func connectClient(client *whatsmeow.Client) (string, *types.JID) {
 func GetClient(deviceStore *store.Device) *whatsmeow.Client {
 	clientLog := waLog.Stdout("Client", "DEBUG", true)
 	client := whatsmeow.NewClient(deviceStore, clientLog)
+	// handler := &CustomEventHandler{client: client}
+	// var _ whatsmeow.EventHandler = handler
+	// client.AddEventHandler(handler)
 	client.AddEventHandler(EventHandler)
 	return client
 }
@@ -109,6 +120,27 @@ func EventHandler(evt interface{}) {
 
 	switch v := evt.(type) {
 	case *events.Message:
+		// 6285233334691:32@s.whatsapp.net
+		// 6285233334691@s.whatsapp.net
+
+		// strkey := "6285233334691@s.whatsapp.net"
+		// for key, client := range clients {
+		// 	cid := client.Client.Store.ID.String()
+		// 	fmt.Println("compare ", cid, strkey, key)
+		// 	if cid == strkey {
+		// 		fmt.Println("------ Equallll")
+		// 		err := db.InsertUserDevice(model.UserDevice{
+		// 			UserId:    client.User,
+		// 			DeviceJid: strkey,
+		// 		})
+		// 		fmt.Println("insert ", err)
+		// 		clients[strkey] = client
+		// 		delete(clients, key)
+		// 		break;
+		// 	}
+		// }
+
+		// db.CheckDatabase()
 
 		// for key := range clients {
 		// 	//fmt.Println("whoami:", key)
@@ -209,8 +241,32 @@ func EventHandler(evt interface{}) {
 			}
 		*/
 	case *events.PairSuccess:
-		fmt.Println("pari succeess", v.ID.User)
-		initialClient()
+		// fmt.Println("pari succeess", v.ID.User)
+		fmt.Println("-----------------------")
+		fmt.Println("paired success", reflect.TypeOf(evt))
+		fmt.Println(evt)
+		fmt.Println(v.ID.String())
+		// delete(clients, evt.jid)
+		fmt.Println(clients)
+		strkey :=  model.GetPhoneNumber(v.ID.String())
+		for key, client := range clients {
+			cid := model.GetPhoneNumber(client.Client.Store.ID.String())
+			// model.GetPhoneNumber(DevID)
+			// fmt.Println("compare ", cid, strkey, key)
+			if cid == strkey {
+				fmt.Println("Equallll")
+				err := db.InsertUserDevice(model.UserDevice{
+					UserId:    client.User,
+					DeviceJid: strkey,
+				})
+				fmt.Println("insert ", err)
+				clients[strkey] = client
+				delete(clients, key)
+				break;
+			}
+		}
+		
+		// initialClient()
 		
 	case *events.HistorySync:
 		fmt.Println("Received a history sync")
@@ -224,9 +280,27 @@ func EventHandler(evt interface{}) {
 				eventHandler(evt)
 			}
 		}*/
+
 	case *events.LoggedOut:
 		fmt.Println("------ Logout from mobile device ----")
+		fmt.Println("logout type", reflect.TypeOf(evt))
+		fmt.Println(evt)
+
 		//initialClient()
+
+		fmt.Println(clients)
+		for _, client := range clients {
+			cid := model.GetPhoneNumber(client.Client.Store.ID.String())
+			usr := client.Client
+			fmt.Println("compare ", cid, usr)
+			if !client.Client.IsLoggedIn() {
+				fmt.Println("Empty deelte ", cid)
+				delete(clients, cid)
+				err := db.DeleteUserDevice(cid)
+				fmt.Println("delete err: ", err)
+			}
+		}
+		fmt.Println(clients)
 
 	case *events.Receipt:
 		fmt.Println("terima")
@@ -385,7 +459,7 @@ func GetSearchMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func AddClient(client *whatsmeow.Client) {
+func AddClient(UserID int, DevID string, client *whatsmeow.Client) {
 	mutex.Lock()
 	defer mutex.Unlock()
 
@@ -394,21 +468,25 @@ func AddClient(client *whatsmeow.Client) {
 		return
 	}
 
+	// handler := &CustomEventHandler{client: client}
+	// client.AddEventHandler(handler)
 	client.AddEventHandler(EventHandler)
-	// client.SetDeviceName("Google Chrome (PEJATEN)")
 
-	devId := GenerateRandomString("DEVICE", 5)
-	if _, ok := clients[devId]; !ok {
-		clients[devId] = client
-	}
+	// devId := GenerateRandomString("DEVICE", 5)
+	// if _, ok := clients[devId]; !ok {
+		clients[DevID] = CustomClient{
+			User: UserID,
+			Client: client,
+		}
+	// }
 
-	err := clients[devId].Connect()
+	err := clients[DevID].Client.Connect()
 	if err != nil {
 		log.Fatalf("Gagal menghubungkan klien: %v", err)
 	}
 
 	// clients[id] = client
-	log.Printf("Client added successfully: %s\n", devId)
+	log.Printf("Client added successfully: %s\n", DevID)
 	fmt.Println(clients)
 }
 
@@ -429,11 +507,11 @@ func CreateDevice(w http.ResponseWriter, r *http.Request) {
 		//fmt.Printf(key)
 		response = append(response, ClientInfo{
 			ID:     key,
-			Number: client.Store.ID.String(),
+			Number: client.Client.Store.ID.String(),
 			Busy:   true,
 			QR:     "",
 			Status: "connected",
-			Name:   client.Store.PushName,
+			Name:   client.Client.Store.PushName,
 		})
 	}
 
@@ -614,9 +692,11 @@ func GetMessagesByIdHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func initialClient() {
-
 	for key, value := range data_client {
-		clients[key] = value
+		clients[key] = CustomClient {
+			User: 0,
+			Client: value,
+		}
 	}
 }
 
@@ -661,7 +741,7 @@ func RemoveClient(w http.ResponseWriter, r *http.Request) {
 	// Cek apakah kunci ada di dalam map
 	if _, exists := clients[phone]; exists {
 		// Hapus kunci dari map
-		clients[phone].Logout()
+		clients[phone].Client.Logout()
 		delete(clients, phone)
 		delete(data_client, phone)
 
