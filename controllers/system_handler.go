@@ -22,53 +22,6 @@ func VersionHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-func GetDevicesHandler(w http.ResponseWriter, r *http.Request) {
-	type ClientInfo struct {
-		ID      string `json:"id"`
-		Phone   string `json:"phone"`
-		Name    string `json:"name"`
-		Status  string `json:"status"`
-		Process string `json:"process"`
-		Busy    bool   `json:"busy"`
-		Qrcode  string `json:"qrcode"`
-	}
-
-	mutex.Lock()
-	defer mutex.Unlock()
-	//clients
-	var connectedClients []ClientInfo
-	//for key := range clients
-	for key, client := range clients {
-		if client.IsConnected() {
-			whoami := client.Store.ID.String()
-			clientInfo := ClientInfo{
-				ID:      client.Store.ID.String(),
-				Phone:   whoami,
-				Name:    key,
-				Status:  "Connected",
-				Process: "getMessage",
-				Busy:    true,
-				Qrcode:  " ",
-			}
-			connectedClients = append(connectedClients, clientInfo)
-		}
-	}
-
-	response := map[string]interface{}{
-		"data": connectedClients,
-	}
-
-	jsonResponse, err := json.MarshalIndent(response, "", "  ")
-	if err != nil {
-		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(jsonResponse)
-}
-
 // SetWebhookHandler sets the webhook URL
 func SetWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	// Lock webhookURL to ensure thread safety

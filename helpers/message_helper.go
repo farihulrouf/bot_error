@@ -56,15 +56,15 @@ func UploadImageAndCreateMessage(client *whatsmeow.Client, imageBytes []byte, ca
 		Caption:             proto.String(caption),
 		Mimetype:            proto.String("image/jpeg"),
 		ThumbnailDirectPath: &resp.DirectPath,
-		ThumbnailSha256:     resp.FileSHA256,
-		ThumbnailEncSha256:  resp.FileEncSHA256,
+		ThumbnailSHA256:     resp.FileSHA256,
+		ThumbnailEncSHA256:  resp.FileEncSHA256,
 		//JpegThumbnail:       jpegBytes,
 
-		Url:           &resp.URL,
+		URL:           &resp.URL,
 		DirectPath:    &resp.DirectPath,
 		MediaKey:      resp.MediaKey,
-		FileEncSha256: resp.FileEncSHA256,
-		FileSha256:    resp.FileSHA256,
+		FileEncSHA256: resp.FileEncSHA256,
+		FileSHA256:    resp.FileSHA256,
 		FileLength:    &resp.FileLength,
 	}
 
@@ -92,14 +92,14 @@ func UploadDocAndCreateMessage(client *whatsmeow.Client, docBytes []byte, captio
 		return nil, fmt.Errorf("error uploading do: %v", err)
 	}
 	msg := &waProto.DocumentMessage{
-		Url:      proto.String(resp.URL),
+		URL:      proto.String(resp.URL),
 		Mimetype: proto.String(http.DetectContentType(docBytes)),
 		//Title:         proto.String(resp.File.Filename),
-		FileSha256: resp.FileSHA256,
+		FileSHA256: resp.FileSHA256,
 		FileLength: proto.Uint64(resp.FileLength),
 		MediaKey:   resp.MediaKey,
 		//FileName:      proto.String(resp.File.Filename),
-		FileEncSha256: resp.FileEncSHA256,
+		FileEncSHA256: resp.FileEncSHA256,
 		DirectPath:    proto.String(resp.DirectPath),
 		Caption:       proto.String(caption),
 	}
@@ -131,14 +131,14 @@ func UploadVideoAndCreateMessage(client *whatsmeow.Client, videoBytes []byte, ca
 		return nil, fmt.Errorf("error uploading do: %v", err)
 	}
 	msg := &waProto.VideoMessage{
-		Url:      proto.String(resp.URL),
+		URL:      proto.String(resp.URL),
 		Mimetype: proto.String(http.DetectContentType(videoBytes)),
 		//Title:         proto.String(resp.File.Filename),
-		FileSha256: resp.FileSHA256,
+		FileSHA256: resp.FileSHA256,
 		FileLength: proto.Uint64(resp.FileLength),
 		MediaKey:   resp.MediaKey,
 		//FileName:      proto.String(resp.File.Filename),
-		FileEncSha256: resp.FileEncSHA256,
+		FileEncSHA256: resp.FileEncSHA256,
 		DirectPath:    proto.String(resp.DirectPath),
 		Caption:       proto.String(caption),
 	}

@@ -1,8 +1,8 @@
 package main
 
 import (
-	"context"
-	"fmt"
+	// "context"
+	// "fmt"
 	"log"
 	"net/http"
 	"os"
@@ -53,34 +53,7 @@ func main() {
 
 	for _, device := range devices {
 		client := whatsmeow.NewClient(device, clientLog)
-		//client.AddEventHandler(controllers.EventHandler)
-		controllers.AddClient(controllers.GenerateRandomString("Device", 3), client)
-		client.AddEventHandler(controllers.EventHandler)
-
-		if client.Store.ID == nil {
-			// Login baru
-			qrChan, _ := client.GetQRChannel(context.Background())
-			err = client.Connect()
-			if err != nil {
-				log.Fatalf("Gagal menghubungkan klien: %v", err)
-			}
-			for evt := range qrChan {
-				if evt.Event == "code" {
-					// Menampilkan QR code
-					fmt.Println("QR code:", evt.Code)
-				} else {
-					fmt.Println("Event login:", evt.Event)
-				}
-			}
-			//controllers.AddClient(device.ID.String(), client)
-
-		} else {
-			// Sudah login, langsung hubungkan
-			err = client.Connect()
-			if err != nil {
-				log.Fatalf("Gagal menghubungkan klien: %v", err)
-			}
-		}
+		controllers.AddClient(client)
 	}
 
 	// Inisialisasi database

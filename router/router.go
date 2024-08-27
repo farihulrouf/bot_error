@@ -66,10 +66,16 @@ func SetupRouter() *mux.Router {
 	r.HandleFunc("/api/result/{id}", controllers.GetMessagesByIdHandler).Methods("GET")
 	
 	//r.HandleFunc("/api/get/client", controllers.GetClientByDeviceNameHandler).Methods("GET")
-	//r.HandleFunc("/api/system", controllers.ListDevices).Methods("GET")
 	//r.HandleFunc("/status/qr/list", controllers.GetConnectedClientsList).Methods("GET")
 	//r.HandleFunc("/api/token", controllers.CreateToken).Methods("POST")
 	//r.HandleFunc("/api/messages/images", controllers.SendImageHandler).Methods("POST")
+
+	r.HandleFunc("/api/devices", controllers.GetDevicesHandler).Methods("GET")
+	r.HandleFunc("/api/device/scan", controllers.ScanDeviceHandler).Methods("GET")
+	// r.HandleFunc("/api/device/{id}", controllers.GetDevicesHandler).Methods("GET")
+	// r.HandleFunc("/api/device/{id}", controllers.GetDevicesHandler).Methods("PUT")
+	// r.HandleFunc("/api/device/{id}", controllers.GetDevicesHandler).Methods("DELETE")
+
 
 	return r
 }

@@ -28,7 +28,7 @@ import (
 
 // maping client to map
 const (
-	charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 )
 
 var (
@@ -89,6 +89,7 @@ func connectClient(client *whatsmeow.Client) (string, *types.JID) {
 			}
 		}
 	}()
+
 	err = client.Connect()
 	if err != nil {
 		log.Fatalf("Failed to connect: %v", err)
@@ -98,6 +99,7 @@ func connectClient(client *whatsmeow.Client) (string, *types.JID) {
 }
 
 func GetClient(deviceStore *store.Device) *whatsmeow.Client {
+	clientLog := waLog.Stdout("Client", "DEBUG", true)
 	client := whatsmeow.NewClient(deviceStore, clientLog)
 	client.AddEventHandler(EventHandler)
 	return client
@@ -131,10 +133,10 @@ func EventHandler(evt interface{}) {
 			to := v.Info.PushName
 
 			//to : = v.Info.na
-			thumbnail := v.Message.ImageMessage.GetJpegThumbnail()
-			thumbnailvideo := v.Message.VideoMessage.GetJpegThumbnail()
-			thumbnaildoc := v.Message.DocumentMessage.GetJpegThumbnail()
-			url := v.Message.ImageMessage.GetUrl()
+			thumbnail := v.Message.ImageMessage.GetJPEGThumbnail()
+			thumbnailvideo := v.Message.VideoMessage.GetJPEGThumbnail()
+			thumbnaildoc := v.Message.DocumentMessage.GetJPEGThumbnail()
+			url := v.Message.ImageMessage.GetURL()
 			mimeTipe := v.Message.ImageMessage.GetMimetype()
 
 			tipe := v.Info.Type
@@ -208,6 +210,7 @@ func EventHandler(evt interface{}) {
 	case *events.PairSuccess:
 		fmt.Println("pari succeess", v.ID.User)
 		initialClient()
+		
 	case *events.HistorySync:
 		fmt.Println("Received a history sync")
 		/*for _, conv := range v.Data.GetConversations() {
@@ -221,7 +224,9 @@ func EventHandler(evt interface{}) {
 			}
 		}*/
 	case *events.LoggedOut:
+		fmt.Println("------ Logout from mobile device ----")
 		//initialClient()
+
 	case *events.Receipt:
 		fmt.Println("terima")
 		if v.Type == events.ReceiptTypeRead || v.Type == events.ReceiptTypeReadSelf {
@@ -379,17 +384,30 @@ func GetSearchMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func AddClient(id string, client *whatsmeow.Client) {
+func AddClient(client *whatsmeow.Client) {
 	mutex.Lock()
 	defer mutex.Unlock()
 
 	if client == nil {
-		log.Printf("Failed to add client: client is nil for id %s\n", id)
+		log.Printf("Failed to add client: client is nil")
 		return
 	}
 
-	clients[id] = client
-	log.Printf("Client added successfully: %s\n", id)
+	client.AddEventHandler(EventHandler)
+
+	devId := GenerateRandomString("DEVICE", 5)
+	if _, ok := clients[devId]; !ok {
+		clients[devId] = client
+	}
+
+	err := clients[devId].Connect()
+	if err != nil {
+		log.Fatalf("Gagal menghubungkan klien: %v", err)
+	}
+
+	// clients[id] = client
+	log.Printf("Client added successfully: %s\n", devId)
+	fmt.Println(clients)
 }
 
 func CreateDevice(w http.ResponseWriter, r *http.Request) {
