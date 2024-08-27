@@ -147,6 +147,7 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Invalid URL and not a Base64 or url string", http.StatusBadRequest)
 			return
 		}
+		//fmt.Println("cek data image", imageBytes)
 
 		imageMsg, err := helpers.UploadImageAndCreateMessage(value_client, imageBytes, requestData.Caption, requestData.Type)
 		if err != nil {

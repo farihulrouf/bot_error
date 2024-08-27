@@ -109,10 +109,11 @@ func EventHandler(evt interface{}) {
 
 	switch v := evt.(type) {
 	case *events.Message:
-		for key := range clients {
-			//fmt.Println("whoami:", key)
-			fmt.Println("end client", clients[key])
-		}
+
+		// for key := range clients {
+		// 	//fmt.Println("whoami:", key)
+		// 	fmt.Println("end client", clients[key])
+		// }
 
 		if !v.Info.IsFromMe || v.Message.GetConversation() != "" ||
 			v.Message.GetImageMessage().GetCaption() != "" ||
@@ -394,6 +395,7 @@ func AddClient(client *whatsmeow.Client) {
 	}
 
 	client.AddEventHandler(EventHandler)
+	// client.SetDeviceName("Google Chrome (PEJATEN)")
 
 	devId := GenerateRandomString("DEVICE", 5)
 	if _, ok := clients[devId]; !ok {

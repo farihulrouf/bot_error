@@ -12,12 +12,15 @@ import (
 	"github.com/joho/godotenv"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"go.mau.fi/whatsmeow"
+	"go.mau.fi/whatsmeow/store"
 	"go.mau.fi/whatsmeow/store/sqlstore"
 	waLog "go.mau.fi/whatsmeow/util/log"
+	waProto "go.mau.fi/whatsmeow/binary/proto"
 	"wagobot.com/controllers"
 	"wagobot.com/db"
 	"wagobot.com/middleware"
 	"wagobot.com/router"
+	"google.golang.org/protobuf/proto"
 )
 
 func main() {
@@ -30,6 +33,14 @@ func main() {
 	// Mengambil nilai dari variabel lingkungan
 	port := os.Getenv("PORT")
 	dbPath := os.Getenv("DB_PATH")
+	botName := os.Getenv("BOT_NAME")
+
+	if botName == "" {
+		botName = "WINDOWS"
+	}
+
+	store.DeviceProps.PlatformType = waProto.DeviceProps_SAFARI.Enum()
+	store.DeviceProps.Os = proto.String(botName)	
 
 	// Mengatur logging untuk database
 	dbLog := waLog.Stdout("Database", "DEBUG", true)
@@ -38,7 +49,7 @@ func main() {
 	storeContainer, err := sqlstore.New("sqlite3", dbPath, dbLog)
 	if err != nil {
 		log.Fatalf("Gagal terhubung ke database: %v", err)
-	}
+	}	
 
 	// Menetapkan storeContainer ke variabel package controller
 	controllers.SetStoreContainer(storeContainer)

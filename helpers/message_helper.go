@@ -13,10 +13,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nyaruka/phonenumbers"
 	"github.com/rs/zerolog/log"
 	"go.mau.fi/whatsmeow"
 	waProto "go.mau.fi/whatsmeow/binary/proto"
+	"go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/types"
 	"google.golang.org/protobuf/proto"
 	"wagobot.com/model"
@@ -43,7 +43,6 @@ func SendMessageToPhoneNumber(client *whatsmeow.Client, recipient, message strin
 	fmt.Printf("Sending message '%s' to phone number: %s\n", message, recipient)
 	return nil
 }
-
 func UploadImageAndCreateMessage(client *whatsmeow.Client, imageBytes []byte, caption, mimeType string) (*waProto.ImageMessage, error) {
 	// Unggah gambar
 	resp, err := client.Upload(context.Background(), imageBytes, whatsmeow.MediaImage)
@@ -52,14 +51,9 @@ func UploadImageAndCreateMessage(client *whatsmeow.Client, imageBytes []byte, ca
 	}
 
 	// Buat pesan gambar
-	imageMsg := &waProto.ImageMessage{
-		Caption:             proto.String(caption),
-		Mimetype:            proto.String("image/jpeg"),
-		ThumbnailDirectPath: &resp.DirectPath,
-		ThumbnailSHA256:     resp.FileSHA256,
-		ThumbnailEncSHA256:  resp.FileEncSHA256,
-		//JpegThumbnail:       jpegBytes,
-
+	imageMsg := &waE2E.ImageMessage{
+		Caption:       proto.String(caption),
+		Mimetype:      proto.String("image/png"),
 		URL:           &resp.URL,
 		DirectPath:    &resp.DirectPath,
 		MediaKey:      resp.MediaKey,
@@ -103,23 +97,7 @@ func UploadDocAndCreateMessage(client *whatsmeow.Client, docBytes []byte, captio
 		DirectPath:    proto.String(resp.DirectPath),
 		Caption:       proto.String(caption),
 	}
-	// Buat pesan Doc
-	/*docMsg := &waProto.DocumentMessage{
-		Caption: proto.String(caption),
-		//Mimetype:            proto.String("image/jpeg"),
-		Mimetype:            proto.String(http.DetectContentType(docBytes)),
-		ThumbnailDirectPath: &resp.DirectPath,
-		ThumbnailSha256:     resp.FileSHA256,
-		ThumbnailEncSha256:  resp.FileEncSHA256,
-		//JpegThumbnail:       jpegBytes,
 
-		Url:           &resp.URL,
-		DirectPath:    &resp.DirectPath,
-		MediaKey:      resp.MediaKey,
-		FileEncSha256: resp.FileEncSHA256,
-		FileSha256:    resp.FileSHA256,
-		FileLength:    &resp.FileLength,
-	}*/
 	//UploadDocAndCreateMessage
 	return msg, nil
 }
@@ -142,6 +120,7 @@ func UploadVideoAndCreateMessage(client *whatsmeow.Client, videoBytes []byte, ca
 		DirectPath:    proto.String(resp.DirectPath),
 		Caption:       proto.String(caption),
 	}
+
 	return msg, nil
 }
 
@@ -286,17 +265,6 @@ func GetAllMessagesByPhoneNumberOrGroupID(client *whatsmeow.Client, identifier s
 	}
 
 	return messages, nil
-}
-
-func IsValidPhoneNumber(phoneNumber string) bool {
-	// Parse the phone number using "ZZ" as the default region (which allows parsing international numbers)
-	num, err := phonenumbers.Parse(phoneNumber, "ID")
-	if err != nil {
-		fmt.Println("Error parsing phone number:", err)
-		return false
-	}
-	// Check if the phone number is valid
-	return phonenumbers.IsValidNumber(num)
 }
 
 func UpdateUserInfo(values map[string]string, field string, value string) map[string]string {
