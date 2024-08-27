@@ -131,10 +131,11 @@ func EventHandler(evt interface{}) {
 			to := v.Info.PushName
 
 			//to : = v.Info.na
-			thumbnail := v.Message.ImageMessage.GetJpegThumbnail()
-			thumbnailvideo := v.Message.VideoMessage.GetJpegThumbnail()
-			thumbnaildoc := v.Message.DocumentMessage.GetJpegThumbnail()
-			url := v.Message.ImageMessage.GetUrl()
+			//thumbnail := v.Message.ImageMessage.GetJpegThumbnail()
+			thumbnail := v.Message.ImageMessage.GetJPEGThumbnail()
+			thumbnailvideo := v.Message.VideoMessage.GetJPEGThumbnail()
+			thumbnaildoc := v.Message.DocumentMessage.GetJPEGThumbnail()
+			url := v.Message.ImageMessage.GetURL()
 			mimeTipe := v.Message.ImageMessage.GetMimetype()
 
 			tipe := v.Info.Type
