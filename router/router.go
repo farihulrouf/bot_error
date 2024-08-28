@@ -32,6 +32,8 @@ func SetupRouter() *mux.Router {
 		})
 	})
 
+	r.HandleFunc("/", controllers.VersionHandler).Methods("GET")
+
 	r.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler) // not ok, file not found
 
 	r.HandleFunc("/api/login", controllers.LoginHandler).Methods("POST") // ok
