@@ -1,14 +1,11 @@
 package main
 
 import (
-	// "fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
-	// "strings"
-	// "reflect"
 
 	"github.com/joho/godotenv"
 	httpSwagger "github.com/swaggo/http-swagger"
