@@ -36,6 +36,7 @@ deploy:
     - ssh -i ~/.ssh/id_rsa $DEPLOY_USER@$DEPLOY_SERVER "systemctl start bot-whatsapp"
   environment: production
 
+# deploy di stin
 deploy_in_stin:
   stage: deploy
   tags:
