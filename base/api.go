@@ -1,4 +1,4 @@
-package auth
+package base
 
 import (
 	"context"
@@ -8,13 +8,17 @@ import (
 	"os"
 	"strings"
 	"time"
+	"encoding/json"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/joho/godotenv" // Import godotenv package
 	"golang.org/x/crypto/bcrypt"
+
+	"wagobot.com/model"
 )
 
 var signingKey []byte
+var CurrentUser model.User
 
 func init() {
 	// Load environment variables from .env file
@@ -55,7 +59,7 @@ func GenerateToken(username string, id int) (string, error) {
 
 // ParseToken parses the JWT token and returns the claims if valid.
 func ParseToken(tokenString string) (jwt.MapClaims, error) {
-	//fmt.Println("data token", tokenString)
+
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		// Validate the signing method
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -86,29 +90,38 @@ func JWTMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Extract token from the request header
 		authHeader := r.Header.Get("Authorization")
+
 		if authHeader == "" {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			SetResponse(w, http.StatusUnauthorized, "Unauthorized")
 			return
 		}
 
 		// Check if the token starts with "Bearer "
 		if !strings.HasPrefix(authHeader, "Bearer ") {
-			http.Error(w, "Unauthorized: Invalid token format", http.StatusUnauthorized)
+			SetResponse(w, http.StatusUnauthorized, "Unauthorized")
+			// http.Error(w, "Unauthorized: Invalid token format", http.StatusUnauthorized)
 			return
 		}
 
 		// Remove "Bearer " prefix from the token string
 		tokenString := authHeader[len("Bearer "):]
 
-		// Parse and validate the token
+		// // Parse and validate the token
 		claims, err := ParseToken(tokenString)
 		if err != nil {
-			http.Error(w, "Unauthorized: Invalid token", http.StatusUnauthorized)
+			SetResponse(w, http.StatusUnauthorized, "Unauthorized")
+			// http.Error(w, "Unauthorized: Invalid token", http.StatusUnauthorized)
 			return
+		}
+
+		CurrentUser = model.User {
+			ID: int(claims["id"].(float64)),
+			Username: claims["username"].(string),
 		}
 
 		// Pass the claims to the next handler
 		ctx := context.WithValue(r.Context(), "claims", claims)
+
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -165,4 +178,42 @@ func CreateNewToken() (string, error) {
 		return "", fmt.Errorf("could not create token: %w", err)
 	}
 	return token, nil
+}
+
+func SetResponse(w http.ResponseWriter, statusCode int, data interface{}) {
+
+	status := "success"
+
+	response := map[string]interface{}{
+		"status": status,
+		"data": data,
+	}
+
+	if statusCode == 0 {
+		statusCode = 200
+		response = map[string]interface{}{
+			"version": data,
+		}
+	} else if statusCode != 200 {
+		status = "error"
+		response = map[string]interface{}{
+			"status": status,
+			"message": data,
+		}
+	}
+
+    // Marshal the data into a pretty JSON format
+    jsonResponse, err := json.MarshalIndent(response, "", "")
+    if err != nil {
+        // If marshalling fails, respond with a 500 Internal Server Error
+        http.Error(w, "Failed.", http.StatusInternalServerError)
+        return
+    }
+
+    // Set the content type to application/json
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(statusCode)
+    
+    // Write the JSON response
+    w.Write(jsonResponse)
 }

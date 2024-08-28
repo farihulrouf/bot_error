@@ -6,20 +6,20 @@ import (
 	"fmt"
 	"net/http"
 
+	"wagobot.com/base"
 	"wagobot.com/model"
 )
 
 func PingHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Service is available")
+	// w.WriteHeader(http.StatusOK)
+	// fmt.Fprintf(w, "Service is available")
+	base.SetResponse(w, http.StatusOK, "Service is available")
 }
 
 func VersionHandler(w http.ResponseWriter, r *http.Request) {
 	version := "1.0.0" // Ganti dengan versi sistem yang sesuai
-	response := model.VersionResponse{Version: version}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	// response := model.VersionResponse{Version: version}	
+	base.SetResponse(w, 0, version)
 }
 
 // SetWebhookHandler sets the webhook URL
@@ -32,7 +32,8 @@ func SetWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	var reqBody model.WebhookRequest
 	err := json.NewDecoder(r.Body).Decode(&reqBody)
 	if err != nil {
-		http.Error(w, "Failed to parse request body", http.StatusBadRequest)
+		// http.Error(w, "Failed to parse request body", http.StatusBadRequest)
+		base.SetResponse(w, http.StatusBadRequest, "Failed to parse request body")
 		return
 	}
 
@@ -41,8 +42,10 @@ func SetWebhookHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Respond with success message
 	resp := model.WebhookResponse{Message: fmt.Sprintf("Webhook set to: %s", webhookURL)}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
+
+	// w.Header().Set("Content-Type", "application/json")
+	// json.NewEncoder(w).Encode(resp)
+	base.SetResponse(w, http.StatusOK, resp)
 }
 
 func sendPayloadToWebhook(payload interface{}, url string) error {

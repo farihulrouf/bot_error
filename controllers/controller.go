@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"time"
-	"reflect"
 
 	"encoding/base64"
 	"encoding/json"
@@ -26,6 +25,7 @@ import (
 	"wagobot.com/model"
 	"wagobot.com/response"
 	"wagobot.com/db"
+	"wagobot.com/base"
 )
 
 // maping client to map
@@ -35,7 +35,12 @@ const (
 
 type CustomClient struct {
     User   int
+	ExpiredTime int64
     Client *whatsmeow.Client
+}
+
+type GroupCollection struct {
+	Groups []types.GroupInfo
 }
 
 var (
@@ -65,6 +70,19 @@ type ClientInfo struct {
 	Status string `json:"status"`
 	Name   string `json:"name"`
 	Busy   bool   `json:"busy,omitempty"`
+}
+
+func CleanupClients() {
+	fmt.Println("Cleanup", clients)
+	currentTime := time.Now()
+	currentUnixTime := currentTime.Unix()
+	for key, client := range clients {
+		// fmt.Println("Expired time ", client.ExpiredTime, currentUnixTime)
+		if client.ExpiredTime > 0 && client.ExpiredTime < currentUnixTime {
+			// fmt.Println("ini expired ", key)
+			delete(clients, key)
+		}
+	}
 }
 
 func setClient_data(key string, client *whatsmeow.Client) {
@@ -102,6 +120,7 @@ func connectClient(client *whatsmeow.Client) (string, *types.JID) {
 	if err != nil {
 		log.Fatalf("Failed to connect: %v", err)
 	}
+
 	qrCode := <-qrChan
 	return qrCode, client.Store.ID
 }
@@ -120,26 +139,7 @@ func EventHandler(evt interface{}) {
 
 	switch v := evt.(type) {
 	case *events.Message:
-		// 6285233334691:32@s.whatsapp.net
-		// 6285233334691@s.whatsapp.net
-
-		// strkey := "6285233334691@s.whatsapp.net"
-		// for key, client := range clients {
-		// 	cid := client.Client.Store.ID.String()
-		// 	fmt.Println("compare ", cid, strkey, key)
-		// 	if cid == strkey {
-		// 		fmt.Println("------ Equallll")
-		// 		err := db.InsertUserDevice(model.UserDevice{
-		// 			UserId:    client.User,
-		// 			DeviceJid: strkey,
-		// 		})
-		// 		fmt.Println("insert ", err)
-		// 		clients[strkey] = client
-		// 		delete(clients, key)
-		// 		break;
-		// 	}
-		// }
-
+		
 		// db.CheckDatabase()
 
 		// for key := range clients {
@@ -242,30 +242,20 @@ func EventHandler(evt interface{}) {
 		*/
 	case *events.PairSuccess:
 		// fmt.Println("pari succeess", v.ID.User)
-		fmt.Println("-----------------------")
-		fmt.Println("paired success", reflect.TypeOf(evt))
-		fmt.Println(evt)
-		fmt.Println(v.ID.String())
-		// delete(clients, evt.jid)
-		fmt.Println(clients)
+		// fmt.Println(clients)
 		strkey :=  model.GetPhoneNumber(v.ID.String())
 		for key, client := range clients {
 			cid := model.GetPhoneNumber(client.Client.Store.ID.String())
-			// model.GetPhoneNumber(DevID)
-			// fmt.Println("compare ", cid, strkey, key)
 			if cid == strkey {
-				fmt.Println("Equallll")
-				err := db.InsertUserDevice(model.UserDevice{
+				db.InsertUserDevice(model.UserDevice{
 					UserId:    client.User,
 					DeviceJid: strkey,
 				})
-				fmt.Println("insert ", err)
 				clients[strkey] = client
 				delete(clients, key)
 				break;
 			}
 		}
-		
 		// initialClient()
 		
 	case *events.HistorySync:
@@ -283,24 +273,14 @@ func EventHandler(evt interface{}) {
 
 	case *events.LoggedOut:
 		fmt.Println("------ Logout from mobile device ----")
-		fmt.Println("logout type", reflect.TypeOf(evt))
-		fmt.Println(evt)
-
-		//initialClient()
-
-		fmt.Println(clients)
 		for _, client := range clients {
 			cid := model.GetPhoneNumber(client.Client.Store.ID.String())
-			usr := client.Client
-			fmt.Println("compare ", cid, usr)
 			if !client.Client.IsLoggedIn() {
-				fmt.Println("Empty deelte ", cid)
 				delete(clients, cid)
-				err := db.DeleteUserDevice(cid)
-				fmt.Println("delete err: ", err)
+				db.DeleteUserDevice(cid)
 			}
 		}
-		fmt.Println(clients)
+		//initialClient()
 
 	case *events.Receipt:
 		fmt.Println("terima")
@@ -329,10 +309,6 @@ func EventHandler(evt interface{}) {
 		*/
 
 	}
-}
-
-type GroupCollection struct {
-	Groups []types.GroupInfo
 }
 
 func GetSearchMessagesHandler(w http.ResponseWriter, r *http.Request) {
@@ -459,7 +435,7 @@ func GetSearchMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func AddClient(UserID int, DevID string, client *whatsmeow.Client) {
+func AddClient(UserID int, DevID string, client *whatsmeow.Client, expired int64) {
 	mutex.Lock()
 	defer mutex.Unlock()
 
@@ -476,6 +452,7 @@ func AddClient(UserID int, DevID string, client *whatsmeow.Client) {
 	// if _, ok := clients[devId]; !ok {
 		clients[DevID] = CustomClient{
 			User: UserID,
+			ExpiredTime: expired,
 			Client: client,
 		}
 	// }
@@ -745,14 +722,18 @@ func RemoveClient(w http.ResponseWriter, r *http.Request) {
 		delete(clients, phone)
 		delete(data_client, phone)
 
-		response := response.ResponseLogout{Status: "success", Message: "Data berhasil dihapus"}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		// response := response.ResponseLogout{Status: "success", Message: "Data berhasil dihapus"}
+		// w.Header().Set("Content-Type", "application/json")
+		// json.NewEncoder(w).Encode(response)
+
+		base.SetResponse(w, http.StatusOK, "Data berhasil dihapus")
 	} else {
-		response := response.ResponseLogout{Status: "fail", Message: "Kunci tidak ditemukan"}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(response)
+		// response := response.ResponseLogout{Status: "fail", Message: "Kunci tidak ditemukan"}
+		// w.Header().Set("Content-Type", "application/json")
+		// w.WriteHeader(http.StatusNotFound)
+		// json.NewEncoder(w).Encode(response)
+
+		base.SetResponse(w, http.StatusNotFound, "Kunci tidak ditemukan")
 	}
 
 }

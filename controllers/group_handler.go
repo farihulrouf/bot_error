@@ -3,14 +3,13 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	// "log"
 	"net/http"
 	"strings"
 
-	//"go.mau.fi/whatsmeow"
-
 	"wagobot.com/errors"
-	"wagobot.com/helpers"
+	// "wagobot.com/helpers"
+	"wagobot.com/base"
 	"wagobot.com/model"
 	"wagobot.com/response"
 )
@@ -19,7 +18,8 @@ func GetGroupsHandler(w http.ResponseWriter, r *http.Request) {
 
 	phone := r.URL.Query().Get("phone")
 	if phone == "" {
-		helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrPhoneNumberRequired)
+		// helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrPhoneNumberRequired)
+		base.SetResponse(w, http.StatusBadRequest, errors.ErrPhoneNumberRequired)
 		return
 	}
 
@@ -28,7 +28,8 @@ func GetGroupsHandler(w http.ResponseWriter, r *http.Request) {
 	for _, client := range clients {
 		groups, err := client.Client.GetJoinedGroups()
 		if err != nil {
-			helpers.SendErrorResponse(w, http.StatusInternalServerError, errors.ErrFailedToFetchGroups)
+			// helpers.SendErrorResponse(w, http.StatusInternalServerError, errors.ErrFailedToFetchGroups)
+			base.SetResponse(w, http.StatusInternalServerError, errors.ErrFailedToFetchGroups)
 			mutex.Unlock()
 			return
 		}
@@ -74,13 +75,16 @@ func GetGroupsHandler(w http.ResponseWriter, r *http.Request) {
 
 	jsonResponse, err := json.MarshalIndent(response, "", "  ")
 	if err != nil {
-		helpers.SendErrorResponse(w, http.StatusInternalServerError, errors.ErrFailedToMarshalResponse)
+		// helpers.SendErrorResponse(w, http.StatusInternalServerError, errors.ErrFailedToMarshalResponse)
+		base.SetResponse(w, http.StatusInternalServerError, errors.ErrFailedToMarshalResponse)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(jsonResponse)
+	base.SetResponse(w, http.StatusOK, jsonResponse)
+
+	// w.Header().Set("Content-Type", "application/json")
+	// w.WriteHeader(http.StatusOK)
+	// w.Write(jsonResponse)
 }
 
 func JoinGroupHandler(w http.ResponseWriter, r *http.Request) {
@@ -89,13 +93,15 @@ func JoinGroupHandler(w http.ResponseWriter, r *http.Request) {
 	var req model.JoinGroupRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		//log.Printf("Error decoding request: %v", err)
-		helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidRequestPayload)
+		// helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidRequestPayload)
+		base.SetResponse(w, http.StatusBadRequest, errors.ErrInvalidRequestPayload)
 		return
 	}
 
 	// Ensure all required fields are present
 	if req.Code == "" || req.Phone == "" {
-		helpers.SendErrorResponse(w, http.StatusBadRequest, "code and phone are required fields")
+		// helpers.SendErrorResponse(w, http.StatusBadRequest, "code and phone are required fields")
+		base.SetResponse(w, http.StatusBadRequest, "code and phone are required fields")
 		return
 	}
 	//check nunber is login in device
@@ -115,21 +121,27 @@ func JoinGroupHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if !matchFound {
-		helpers.SendErrorResponse(w, http.StatusBadRequest, "No matching number found")
-	}
-
-	// Attempt to join the group with the provided invite link (code)
-	groupJID, err := value_client.JoinGroupWithLink(req.Code)
-	if err != nil {
-		//log.Printf("Error joining group: %v", err)
-		helpers.SendErrorResponse(w, http.StatusInternalServerError, errors.ErrFailedToJoinGroup)
+		// helpers.SendErrorResponse(w, http.StatusBadRequest, "No matching number found")
+		base.SetResponse(w, http.StatusBadRequest, "No matching number found")
 		return
 	}
 
+	// Attempt to join the group with the provided invite link (code)
+	// groupJID, err := value_client.JoinGroupWithLink(req.Code)
+	_, err := value_client.JoinGroupWithLink(req.Code)
+	if err != nil {
+		//log.Printf("Error joining group: %v", err)
+		// helpers.SendErrorResponse(w, http.StatusInternalServerError, errors.ErrFailedToJoinGroup)
+		base.SetResponse(w, http.StatusInternalServerError, errors.ErrFailedToJoinGroup)
+		return
+	}
+
+	base.SetResponse(w, http.StatusOK, "Group joined successfully")
+
 	// Log success and respond with a success message
-	log.Printf("Group joined successfully: %v", groupJID)
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]string{"message": "Group joined successfully"})
+	// log.Printf("Group joined successfully: %v", groupJID)
+	// w.WriteHeader(http.StatusCreated)
+	// json.NewEncoder(w).Encode(map[string]string{"message": "Group joined successfully"})
 
 }
 

@@ -10,15 +10,13 @@ import (
 	// sesuaikan dengan path yang sesuai
 	//"go.mau.fi/whatsmeow"
 
-	"wagobot.com/auth"
+	"wagobot.com/base"
 	"wagobot.com/controllers"
 )
 
 func SetupRouter() *mux.Router {
+	
 	r := mux.NewRouter()
-	//controllers.SetClient(client)
-
-	//r.HandleFunc("/api/scanqr/{device}", controllers.ScanQRHandler).Methods("GET")
 
 	// Middleware JWT digunakan untuk semua rute kecuali /api/login dan /api/register /scanqr
 	r.Use(func(next http.Handler) http.Handler {
@@ -28,7 +26,7 @@ func SetupRouter() *mux.Router {
 				next.ServeHTTP(w, r)
 				return
 			}
-			auth.JWTMiddleware(next).ServeHTTP(w, r)
+			base.JWTMiddleware(next).ServeHTTP(w, r)
 		})
 	})
 
@@ -50,8 +48,11 @@ func SetupRouter() *mux.Router {
 
 	r.HandleFunc("/api/webhook/update", controllers.UpdateWbhookURLHandler).Methods("PUT")
 
-	r.HandleFunc("/api/user/detail", controllers.GetUserHandler).Methods("GET") // ok
-	r.HandleFunc("/api/user/update", controllers.UserUpdateHandler).Methods("PUT")
+	r.HandleFunc("/api/user", controllers.GetUserHandler).Methods("GET") // ok
+	r.HandleFunc("/api/user", controllers.UserUpdateHandler).Methods("PUT")
+	r.HandleFunc("/api/user/login", controllers.LoginHandler).Methods("POST") // ok
+	// r.HandleFunc("/api/user/detail", controllers.GetUserHandler).Methods("GET") // ok
+	// r.HandleFunc("/api/user/update", controllers.UserUpdateHandler).Methods("PUT")
 	
 	r.HandleFunc("/api/group/invite", controllers.GetGroupInviteLinkHandler).Methods("GET")
 

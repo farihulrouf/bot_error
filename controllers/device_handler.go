@@ -1,118 +1,119 @@
 package controllers
 
 import (
-	// "encoding/json"
 	"fmt"
-	// "reflect"
-	"strings"
+	"time"
+	"reflect"
 	"net/http"
-	"wagobot.com/auth"
 	"wagobot.com/db"
+	"wagobot.com/base"
 	"wagobot.com/model"
-	// "context"
-	// "log"
-	// "time"
 )
 
 func GetDevicesHandler(w http.ResponseWriter, r *http.Request) {
-	type ClientInfo struct {
-		ID      string `json:"id"`
-		Phone   string `json:"phone"`
-		Name    string `json:"name"`
-		Status  string `json:"status"`
-		Process string `json:"process"`
-		Busy    bool   `json:"busy"`
-		Qrcode  string `json:"qrcode"`
-	}
+	// type ClientInfo struct {
+	// 	ID      string `json:"id"`
+	// 	Phone   string `json:"phone"`
+	// 	Name    string `json:"name"`
+	// 	Status  string `json:"status"`
+	// 	Process string `json:"process"`
+	// 	Busy    bool   `json:"busy"`
+	// 	Qrcode  string `json:"qrcode"`
+	// }
 
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	tokenStr := r.Header.Get("Authorization")
-	tokenStr = strings.TrimPrefix(tokenStr, "Bearer ")
-	claims, _ := auth.ParseToken(tokenStr)
-	username, _ := claims["username"].(string)
+	// tokenStr := r.Header.Get("Authorization")
+	// tokenStr = strings.TrimPrefix(tokenStr, "Bearer ")
+	// claims, _ := base.ParseToken(tokenStr)
+	// username, _ := claims["username"].(string)
 
+	username := base.CurrentUser.Username
 	user, _ := db.GetUserByUsername(username)
 
-	fmt.Println("User ID ", user.ID)
+	// fmt.Println("User ID ", user.ID)
 
 	var connectedClients []ClientInfo = []ClientInfo{}
 	for _, client := range clients {
 
-		// fmt.Println("id user", client)
+		fmt.Println("id user", client)
+
+		if reflect.ValueOf(client.Client.Store.ID).IsNil() {
+			continue
+		}
 		
 		if client.User != user.ID {
 			continue
 		}
 
-		fmt.Println(client.Client)
-
 		whoami := client.Client.Store.ID.String()
 		phone := model.GetPhoneNumber(whoami)
+
 		status := "disconnected"
 		if client.Client.IsConnected() {
 			status = "connected"
 		}
+
 		clientInfo := ClientInfo{
 			ID:      whoami,
-			Phone:   phone,
+			// Phone:   phone,
+			Number: phone,
 			Name:    client.Client.Store.PushName,
 			Status:  status,
-			Process: "getMessage",
+			// Process: "getMessage",
 			Busy:    true,
-			Qrcode:  "",
+			QR:  "",
 		}
+
 		connectedClients = append(connectedClients, clientInfo)
 	}
 
-	setResponse(w, 200, connectedClients)
-
+	base.SetResponse(w, 200, connectedClients)
 }
 
 func ScanDeviceHandler(w http.ResponseWriter, r *http.Request) {
 
-	tokenStr := r.Header.Get("Authorization")
-	tokenStr = strings.TrimPrefix(tokenStr, "Bearer ")
-	claims, _ := auth.ParseToken(tokenStr)
-	username, _ := claims["username"].(string)
+	// tokenStr := r.Header.Get("Authorization")
+	// tokenStr = strings.TrimPrefix(tokenStr, "Bearer ")
+	// claims, _ := base.ParseToken(tokenStr)
+	// username, _ := claims["username"].(string)
 
+	username := base.CurrentUser.Username
 	user, _ := db.GetUserByUsername(username)
-
-	fmt.Println("User ID ", user.ID)
 
 	deviceStore := StoreContainer.NewDevice()
 	client := GetClient(deviceStore)
-	
 	deviceID := GenerateRandomString("DEVICE", 5)
 
-	AddClient(user.ID, deviceID, client)
+	currentTime := time.Now()
+	nextTime := currentTime.Add(3 * time.Minute)
+	nextUnixTime := nextTime.Unix()
 
-	fmt.Println(clients)
+	AddClient(user.ID, deviceID, client, nextUnixTime)
 
-	// deviceID := GenerateRandomString("DEV", 7)
-	// setClient_data(deviceID, client)
+	// fmt.Println(clients)
 
-	qrCode, jid := connectClient(client)
+	qrCode, _ := connectClient(client)
 
-	fmt.Println("data client")
-	fmt.Println(data_client)
+	// fmt.Println("data client")
+	// fmt.Println(data_client)
 
-	var response []ClientInfo
+	var response ClientInfo
 
-	fmt.Println("Data client setelah ditambahkan:", jid)
+	// fmt.Println("Data client setelah ditambahkan:", jid)
 
 	// Add the new client to the response
 	if qrCode != "" {
-		response = append(response, ClientInfo{
+		response = ClientInfo{
 			ID:     "",
 			Number: "",
 			Busy:   false,
 			QR:     qrCode,
 			Status: "pairing",
 			Name:   "",
-		})
+		}
 	}
 
-	setResponse(w, 200, response)
+	base.SetResponse(w, 200, response)
 }

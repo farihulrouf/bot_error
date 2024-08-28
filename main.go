@@ -1,25 +1,29 @@
 package main
 
 import (
-	"log"
-	"net/http"
 	"os"
-	"os/signal"
+	"log"
+	"time"
 	"syscall"
-
-	"github.com/joho/godotenv"
-	httpSwagger "github.com/swaggo/http-swagger"
+	"net/http"
+	"os/signal"
+	
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/store"
 	"go.mau.fi/whatsmeow/store/sqlstore"
-	waLog "go.mau.fi/whatsmeow/util/log"
-	waProto "go.mau.fi/whatsmeow/binary/proto"
-	"wagobot.com/controllers"
-	"wagobot.com/middleware"
-	"wagobot.com/router"
-	"google.golang.org/protobuf/proto"
+
 	"wagobot.com/db"
 	"wagobot.com/model"
+	"wagobot.com/router"
+	"wagobot.com/middleware"
+	"wagobot.com/controllers"
+	
+	"github.com/joho/godotenv"
+	"google.golang.org/protobuf/proto"
+	
+	waLog "go.mau.fi/whatsmeow/util/log"
+	waProto "go.mau.fi/whatsmeow/binary/proto"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 func main() {
@@ -74,8 +78,16 @@ func main() {
 		DevID := device.ID.String()
 		phoneNumber := model.GetPhoneNumber(DevID)
 		user, _ := db.GetUserByClientJID(phoneNumber)
-		controllers.AddClient(user.UserId, phoneNumber, client)
+		controllers.AddClient(user.UserId, phoneNumber, client, 0)
 	}
+
+	// timer check every 10s
+	ticker := time.Tick(10 * time.Second)
+	go func() {
+        for range ticker {
+            go controllers.CleanupClients()
+        }
+    }()
 
 	// Mengatur router
 	r := router.SetupRouter()
