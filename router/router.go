@@ -36,6 +36,7 @@ func SetupRouter() *mux.Router {
 
 	r.HandleFunc("/api/login", controllers.LoginHandler).Methods("POST") // ok
 	r.HandleFunc("/api/logout", controllers.LogoutHandler).Methods("POST") // not ok, response kosong tidak berfungsi
+	
 	r.HandleFunc("/api/ping", controllers.PingHandler).Methods("GET") // response ganti ke json {status: "online/offline"}
 	r.HandleFunc("/api/register", controllers.RegisterHandler).Methods("POST") // not ok, tidak ada validasi parameter user
 	r.HandleFunc("/api/token", controllers.CreateToken).Methods("POST") // not ok, token tidak bisa digunakan
@@ -57,9 +58,11 @@ func SetupRouter() *mux.Router {
 	r.HandleFunc("/api/group/invite", controllers.GetGroupInviteLinkHandler).Methods("GET")
 
 	r.HandleFunc("/api/groups", controllers.GetGroupsHandler).Methods("GET")
-	r.HandleFunc("/api/groups", controllers.JoinGroupHandler).Methods("POST")
+	r.HandleFunc("/api/group/join", controllers.JoinGroupHandler).Methods("POST")
+	r.HandleFunc("/api/group/leave", controllers.LeaveGroupHandler).Methods("POST")
+	// r.HandleFunc("/api/groups", controllers.JoinGroupHandler).Methods("POST")
 	r.HandleFunc("/api/groups/messages", controllers.SendMessageGroupHandler).Methods("POST")
-	r.HandleFunc("/api/groups/leave", controllers.LeaveGroupHandler).Methods("POST")
+	// r.HandleFunc("/api/groups/leave", controllers.LeaveGroupHandler).Methods("POST")
 
 	r.HandleFunc("/api/messages", controllers.GetSearchMessagesHandler).Methods("GET")
 	r.HandleFunc("/api/messages", controllers.SendMessageHandler).Methods("POST")

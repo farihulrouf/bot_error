@@ -1,9 +1,8 @@
 package controllers
 
 import (
-	"encoding/json"
+	// "encoding/json"
 	"fmt"
-	// "log"
 	"net/http"
 	"strings"
 
@@ -12,6 +11,7 @@ import (
 	"wagobot.com/base"
 	"wagobot.com/model"
 	"wagobot.com/response"
+	"go.mau.fi/whatsmeow/types"
 )
 
 func GetGroupsHandler(w http.ResponseWriter, r *http.Request) {
@@ -23,9 +23,13 @@ func GetGroupsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var filteredGroups []response.GroupResponse
+	var filteredGroups []response.GroupResponse = []response.GroupResponse{}
 	mutex.Lock()
-	for _, client := range clients {
+
+	if _, exists := clients[phone]; exists {
+
+		client := clients[phone]
+
 		groups, err := client.Client.GetJoinedGroups()
 		if err != nil {
 			// helpers.SendErrorResponse(w, http.StatusInternalServerError, errors.ErrFailedToFetchGroups)
@@ -69,114 +73,79 @@ func GetGroupsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	mutex.Unlock()
 
-	response := map[string]interface{}{
-		"data": filteredGroups,
-	}
-
-	jsonResponse, err := json.MarshalIndent(response, "", "  ")
-	if err != nil {
-		// helpers.SendErrorResponse(w, http.StatusInternalServerError, errors.ErrFailedToMarshalResponse)
-		base.SetResponse(w, http.StatusInternalServerError, errors.ErrFailedToMarshalResponse)
-		return
-	}
-
-	base.SetResponse(w, http.StatusOK, jsonResponse)
-
-	// w.Header().Set("Content-Type", "application/json")
-	// w.WriteHeader(http.StatusOK)
-	// w.Write(jsonResponse)
+	base.SetResponse(w, http.StatusOK, filteredGroups)
 }
 
 func JoinGroupHandler(w http.ResponseWriter, r *http.Request) {
-	var value_client = clients["device1"].Client
-	matchFound := false
-	var req model.JoinGroupRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		//log.Printf("Error decoding request: %v", err)
-		// helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidRequestPayload)
-		base.SetResponse(w, http.StatusBadRequest, errors.ErrInvalidRequestPayload)
+	var params model.JoinGroupRequest
+
+	base.ValidateRequest(r, &params)
+	fmt.Println(params)
+
+	if params.Code == "" || params.Phone == "" {
+		base.SetResponse(w, http.StatusBadRequest, "phone & code are required")
 		return
 	}
 
-	// Ensure all required fields are present
-	if req.Code == "" || req.Phone == "" {
-		// helpers.SendErrorResponse(w, http.StatusBadRequest, "code and phone are required fields")
-		base.SetResponse(w, http.StatusBadRequest, "code and phone are required fields")
-		return
-	}
-	//check nunber is login in device
+	phone := params.Phone
+	group := params.Code
 
-	for key := range clients {
-		fmt.Println("Checking key:", key)
-		whoami := clients[key].Client.Store.ID.String()
-		parts := strings.Split(whoami, ":")
-		//fmt.Println("whoami:", whoami)
+	if _, exists := clients[phone]; exists {
+		client := clients[phone].Client
 
-		if req.Phone == parts[0] {
-			fmt.Println("Match found, requestData.From:", req.Phone)
-			value_client = clients[key].Client
-			//fmt.Println("whoami:", value_client)
-			matchFound = true
-			break
+		_, err := client.JoinGroupWithLink(group)
+		if err != nil {
+			base.SetResponse(w, http.StatusInternalServerError, errors.ErrFailedToJoinGroup)
+			return
 		}
+
+		base.SetResponse(w, http.StatusOK, "Group joined successfully")
+	} else {
+		base.SetResponse(w, http.StatusBadRequest, "Invalid account")
 	}
-	if !matchFound {
-		// helpers.SendErrorResponse(w, http.StatusBadRequest, "No matching number found")
-		base.SetResponse(w, http.StatusBadRequest, "No matching number found")
-		return
-	}
-
-	// Attempt to join the group with the provided invite link (code)
-	// groupJID, err := value_client.JoinGroupWithLink(req.Code)
-	_, err := value_client.JoinGroupWithLink(req.Code)
-	if err != nil {
-		//log.Printf("Error joining group: %v", err)
-		// helpers.SendErrorResponse(w, http.StatusInternalServerError, errors.ErrFailedToJoinGroup)
-		base.SetResponse(w, http.StatusInternalServerError, errors.ErrFailedToJoinGroup)
-		return
-	}
-
-	base.SetResponse(w, http.StatusOK, "Group joined successfully")
-
-	// Log success and respond with a success message
-	// log.Printf("Group joined successfully: %v", groupJID)
-	// w.WriteHeader(http.StatusCreated)
-	// json.NewEncoder(w).Encode(map[string]string{"message": "Group joined successfully"})
-
 }
 
 func LeaveGroupHandler(w http.ResponseWriter, r *http.Request) {
-	/*var req model.LeaveGroupRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		//log.Printf("Error decoding request: %v", err)
-		helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidRequestPayload)
+	var params model.LeaveGroupRequest
+
+	base.ValidateRequest(r, &params)
+	fmt.Println(params)
+
+	if params.Phone == "" || params.GroupID == "" {
+		base.SetResponse(w, http.StatusBadRequest, "phone & groupid are required")
 		return
 	}
 
-	groupJID, err := types.ParseJID(req.GroupID + "@g.us")
-	if err != nil {
-		helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidGroupID)
-		return
-	}
+	phone := params.Phone
 
-	participantJID, err := types.ParseJID(req.Phone + "@s.whatsapp.net")
-	if err != nil {
-		log.Printf("Error parsing Participant JID: %v", err)
-		http.Error(w, "Invalid phone number", http.StatusBadRequest)
-		return
-	}
+	if _, exists := clients[phone]; exists {
+		client := clients[phone].Client
 
-	//  Dengan asumsi metode untuk memperbarui peserta grup adalah UpdateGroupParticipants
-	response, err := client.UpdateGroupParticipants(groupJID, []types.JID{participantJID}, "remove")
-	if err != nil {
-		helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidPhoneNumber)
-		return
-	}
+		groupJID, err := types.ParseJID(params.GroupID + "@g.us")
+		if err != nil {
+			base.SetResponse(w, http.StatusBadRequest, errors.ErrInvalidGroupID)
+			return
+		}
 
-	log.Printf("Participant %s left group %s successfully, response: %v", req.Phone, req.GroupID, response)
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"message": "Left group successfully"})
-	*/
+		groupMetadata, err := client.GetGroupInfo(groupJID)
+		if err != nil {
+			base.SetResponse(w, http.StatusBadRequest, "Invalid group")
+			return
+		}
+
+		fmt.Println("JID", groupJID)
+		fmt.Println("Group", groupMetadata)
+
+		err = client.LeaveGroup(groupJID)
+		if err != nil {
+			base.SetResponse(w, http.StatusBadRequest, "Leaving group failed")
+			return
+		}
+
+		base.SetResponse(w, http.StatusOK, "Group joined successfully")
+	} else {
+		base.SetResponse(w, http.StatusBadRequest, "Invalid account")
+	}
 }
 
 // CreateGroupHandler handles the creation of a new WhatsApp group

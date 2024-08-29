@@ -21,11 +21,13 @@ import (
 	"go.mau.fi/whatsmeow/store/sqlstore"
 	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
-	waLog "go.mau.fi/whatsmeow/util/log"
+	
 	"wagobot.com/model"
 	"wagobot.com/response"
 	"wagobot.com/db"
 	"wagobot.com/base"
+
+	waLog "go.mau.fi/whatsmeow/util/log"
 )
 
 // maping client to map
@@ -77,6 +79,9 @@ func CleanupClients() {
 	currentTime := time.Now()
 	currentUnixTime := currentTime.Unix()
 	for key, client := range clients {
+		if !strings.HasPrefix(key, "DEV") {
+			continue
+		}
 		// fmt.Println("Expired time ", client.ExpiredTime, currentUnixTime)
 		if client.ExpiredTime > 0 && client.ExpiredTime < currentUnixTime {
 			// fmt.Println("ini expired ", key)
@@ -242,20 +247,28 @@ func EventHandler(evt interface{}) {
 		*/
 	case *events.PairSuccess:
 		// fmt.Println("pari succeess", v.ID.User)
-		// fmt.Println(clients)
-		strkey :=  model.GetPhoneNumber(v.ID.String())
+		fmt.Println("--- pairing success", v.ID.User)
+		fmt.Println(clients)
+		phonekey :=  model.GetPhoneNumber(v.ID.String())
 		for key, client := range clients {
-			cid := model.GetPhoneNumber(client.Client.Store.ID.String())
-			if cid == strkey {
+			if !strings.HasPrefix(key, "DEV") {
+				continue
+			}
+
+			iphone := model.GetPhoneNumber(client.Client.Store.ID.String())
+			fmt.Println("comparing ", phonekey, iphone)
+			if iphone == phonekey {
 				db.InsertUserDevice(model.UserDevice{
 					UserId:    client.User,
-					DeviceJid: strkey,
+					DeviceJid: phonekey,
 				})
-				clients[strkey] = client
+				client.ExpiredTime = 0
+				clients[phonekey] = client
 				delete(clients, key)
 				break;
 			}
 		}
+		fmt.Println(clients)
 		// initialClient()
 		
 	case *events.HistorySync:

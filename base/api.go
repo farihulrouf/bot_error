@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	// "reflect"
 	"time"
 	"encoding/json"
 
@@ -179,6 +180,51 @@ func CreateNewToken() (string, error) {
 	}
 	return token, nil
 }
+
+func ValidateRequest(r *http.Request, datatype interface{}) (interface{}, error) {
+    contentType := r.Header.Get("Content-Type")
+
+	if contentType == "application/json" {
+        // Handle JSON body
+		fmt.Println("THe body", r)
+        err := json.NewDecoder(r.Body).Decode(&datatype)
+		if err != nil {
+			return datatype, nil
+		} else {
+			return datatype, err
+		}
+    }
+
+    // Handle form data
+    err := r.ParseForm()
+    if err != nil {
+        return datatype, err
+    }
+
+    // // Use reflection to map form values to struct fields
+    // val := reflect.ValueOf(datatype).Elem()
+    // for i := 0; i < val.NumField(); i++ {
+    //     field := val.Type().Field(i)
+    //     formTag := field.Tag.Get("form")
+    //     if formTag != "" {
+    //         formValue := r.FormValue(formTag)
+    //         fieldVal := val.Field(i)
+    //         if fieldVal.CanSet() {
+    //             switch fieldVal.Kind() {
+    //             case reflect.String:
+    //                 fieldVal.SetString(formValue)
+    //             case reflect.Int:
+    //                 if intValue, err := strconv.Atoi(formValue); err == nil {
+    //                     fieldVal.SetInt(int64(intValue))
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
+
+    return datatype, nil
+}
+
 
 func SetResponse(w http.ResponseWriter, statusCode int, data interface{}) {
 

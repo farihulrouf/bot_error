@@ -27,8 +27,8 @@ type JoinGroupRequest struct {
 }
 
 type LeaveGroupRequest struct {
-	GroupID string `json:"group_id"`
 	Phone   string `json:"phone"`
+	GroupID string `json:"group_id"`
 }
 
 type Message struct {
