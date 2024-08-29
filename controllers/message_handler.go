@@ -19,7 +19,7 @@ import (
 
 func SendMessageGroupHandler(w http.ResponseWriter, r *http.Request) {
 	var req model.SendMessageDataRequest
-	var value_client = clients["device1"].Client
+	var value_client = model.Clients["device1"].Client
 	matchFound := false
 	// Decode the JSON request
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -41,15 +41,15 @@ func SendMessageGroupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for key := range clients {
+	for key := range model.Clients {
 		//fmt.Println("Checking key:", key)
-		whoami := clients[key].Client.Store.ID.String()
+		whoami := model.Clients[key].Client.Store.ID.String()
 		parts := strings.Split(whoami, ":")
 		//fmt.Println("whoami:", parts[0])
 
 		if req.From == parts[0] {
 			//fmt.Println("Match found, requestData.From:", req.From)
-			value_client = clients[key].Client
+			value_client = model.Clients[key].Client
 			matchFound = true
 			break
 		}
@@ -78,7 +78,7 @@ func SendMessageGroupHandler(w http.ResponseWriter, r *http.Request) {
 func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 
 	var requestData model.SendMessageDataRequest
-	var value_client = clients["device1"].Client
+	var value_client = model.Clients["device1"].Client
 	matchFound := false
 	err := json.NewDecoder(r.Body).Decode(&requestData)
 	if err != nil {
@@ -90,15 +90,15 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for key := range clients {
+	for key := range model.Clients {
 		//fmt.Println("Checking key:", key)
-		whoami := clients[key].Client.Store.ID.String()
+		whoami := model.Clients[key].Client.Store.ID.String()
 		parts := strings.Split(whoami, ":")
 		//fmt.Println("whoami:", parts[0])
 
 		if requestData.From == parts[0] {
 			//fmt.Println("Match found, requestData.From:", requestData.From)
-			value_client = clients[key].Client
+			value_client = model.Clients[key].Client
 			matchFound = true
 			break
 		}
@@ -277,7 +277,7 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func SendMessageBulkHandler(w http.ResponseWriter, r *http.Request) {
-	var value_client = clients["device1"].Client
+	var value_client = model.Clients["device1"].Client
 	matchFound := false
 	var requestData []model.SendMessageDataRequest
 	allSucceeded := true
@@ -300,15 +300,15 @@ func SendMessageBulkHandler(w http.ResponseWriter, r *http.Request) {
 			"from":    message.From,
 		}
 
-		for key := range clients {
+		for key := range model.Clients {
 			//fmt.Println("Checking key:", key)
-			whoami := clients[key].Client.Store.ID.String()
+			whoami := model.Clients[key].Client.Store.ID.String()
 			parts := strings.Split(whoami, ":")
 			//fmt.Println("whoami:", whoami)
 
 			if message.From == parts[0] {
 				fmt.Println("Match found, requestData.From:", message.From)
-				value_client = clients[key].Client
+				value_client = model.Clients[key].Client
 				//fmt.Println("whoami:", value_client)
 				matchFound = true
 				break

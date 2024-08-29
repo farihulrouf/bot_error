@@ -23,12 +23,17 @@ func GetGroupsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !base.IsMyNumber(phone) {
+		base.SetResponse(w, http.StatusOK, "Missing number")
+		return
+	}
+
 	var filteredGroups []response.GroupResponse = []response.GroupResponse{}
 	mutex.Lock()
 
-	if _, exists := clients[phone]; exists {
+	if _, exists := model.Clients[phone]; exists {
 
-		client := clients[phone]
+		client := model.Clients[phone]
 
 		groups, err := client.Client.GetJoinedGroups()
 		if err != nil {
@@ -90,8 +95,13 @@ func JoinGroupHandler(w http.ResponseWriter, r *http.Request) {
 	phone := params.Phone
 	group := params.Code
 
-	if _, exists := clients[phone]; exists {
-		client := clients[phone].Client
+	if !base.IsMyNumber(phone) {
+		base.SetResponse(w, http.StatusOK, "Missing number")
+		return
+	}
+
+	if _, exists := model.Clients[phone]; exists {
+		client := model.Clients[phone].Client
 
 		_, err := client.JoinGroupWithLink(group)
 		if err != nil {
@@ -118,8 +128,13 @@ func LeaveGroupHandler(w http.ResponseWriter, r *http.Request) {
 
 	phone := params.Phone
 
-	if _, exists := clients[phone]; exists {
-		client := clients[phone].Client
+	if !base.IsMyNumber(phone) {
+		base.SetResponse(w, http.StatusOK, "Missing number")
+		return
+	}
+
+	if _, exists := model.Clients[phone]; exists {
+		client := model.Clients[phone].Client
 
 		groupJID, err := types.ParseJID(params.GroupID + "@g.us")
 		if err != nil {

@@ -185,8 +185,6 @@ func ValidateRequest(r *http.Request, datatype interface{}) (interface{}, error)
     contentType := r.Header.Get("Content-Type")
 
 	if contentType == "application/json" {
-        // Handle JSON body
-		fmt.Println("THe body", r)
         err := json.NewDecoder(r.Body).Decode(&datatype)
 		if err != nil {
 			return datatype, nil
@@ -262,4 +260,12 @@ func SetResponse(w http.ResponseWriter, statusCode int, data interface{}) {
     
     // Write the JSON response
     w.Write(jsonResponse)
+}
+
+func IsMyNumber(phone string) bool {
+	if _, exists := model.Clients[phone]; exists {
+		return model.Clients[phone].User == CurrentUser.ID
+	} else {
+		return false
+	}
 }

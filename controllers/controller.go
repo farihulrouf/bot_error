@@ -35,19 +35,13 @@ const (
 	charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 )
 
-type CustomClient struct {
-    User   int
-	ExpiredTime int64
-    Client *whatsmeow.Client
-}
-
 type GroupCollection struct {
 	Groups []types.GroupInfo
 }
 
 var (
 	// clients        = make(map[string]*whatsmeow.Client)
-	clients        = make(map[string]CustomClient)
+	// clients        = make(map[string]CustomClient)
 	data_client    = make(map[string]*whatsmeow.Client)
 	mutex          = &sync.Mutex{}
 	StoreContainer *sqlstore.Container
@@ -75,17 +69,17 @@ type ClientInfo struct {
 }
 
 func CleanupClients() {
-	fmt.Println("Cleanup", clients)
+	fmt.Println("Cleanup", model.Clients)
 	currentTime := time.Now()
 	currentUnixTime := currentTime.Unix()
-	for key, client := range clients {
+	for key, client := range model.Clients {
 		if !strings.HasPrefix(key, "DEV") {
 			continue
 		}
 		// fmt.Println("Expired time ", client.ExpiredTime, currentUnixTime)
 		if client.ExpiredTime > 0 && client.ExpiredTime < currentUnixTime {
 			// fmt.Println("ini expired ", key)
-			delete(clients, key)
+			delete(model.Clients, key)
 		}
 	}
 }
@@ -248,9 +242,9 @@ func EventHandler(evt interface{}) {
 	case *events.PairSuccess:
 		// fmt.Println("pari succeess", v.ID.User)
 		fmt.Println("--- pairing success", v.ID.User)
-		fmt.Println(clients)
+		// fmt.Println(model.Clients)
 		phonekey :=  model.GetPhoneNumber(v.ID.String())
-		for key, client := range clients {
+		for key, client := range model.Clients {
 			if !strings.HasPrefix(key, "DEV") {
 				continue
 			}
@@ -263,12 +257,12 @@ func EventHandler(evt interface{}) {
 					DeviceJid: phonekey,
 				})
 				client.ExpiredTime = 0
-				clients[phonekey] = client
-				delete(clients, key)
+				model.Clients[phonekey] = client
+				delete(model.Clients, key)
 				break;
 			}
 		}
-		fmt.Println(clients)
+		// fmt.Println(clients)
 		// initialClient()
 		
 	case *events.HistorySync:
@@ -286,10 +280,10 @@ func EventHandler(evt interface{}) {
 
 	case *events.LoggedOut:
 		fmt.Println("------ Logout from mobile device ----")
-		for _, client := range clients {
+		for _, client := range model.Clients {
 			cid := model.GetPhoneNumber(client.Client.Store.ID.String())
 			if !client.Client.IsLoggedIn() {
-				delete(clients, cid)
+				delete(model.Clients, cid)
 				db.DeleteUserDevice(cid)
 			}
 		}
@@ -463,21 +457,21 @@ func AddClient(UserID int, DevID string, client *whatsmeow.Client, expired int64
 
 	// devId := GenerateRandomString("DEVICE", 5)
 	// if _, ok := clients[devId]; !ok {
-		clients[DevID] = CustomClient{
+		model.Clients[DevID] = model.CustomClient{
 			User: UserID,
 			ExpiredTime: expired,
 			Client: client,
 		}
 	// }
 
-	err := clients[DevID].Client.Connect()
+	err := model.Clients[DevID].Client.Connect()
 	if err != nil {
 		log.Fatalf("Gagal menghubungkan klien: %v", err)
 	}
 
 	// clients[id] = client
 	log.Printf("Client added successfully: %s\n", DevID)
-	fmt.Println(clients)
+	fmt.Println(model.Clients)
 }
 
 func CreateDevice(w http.ResponseWriter, r *http.Request) {
@@ -493,7 +487,7 @@ func CreateDevice(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Data client setelah ditambahkan:", jid)
 
 	// Iterasi melalui peta `clients` untuk membuat respons
-	for key, client := range clients {
+	for key, client := range model.Clients {
 		//fmt.Printf(key)
 		response = append(response, ClientInfo{
 			ID:     key,
@@ -683,7 +677,7 @@ func GetMessagesByIdHandler(w http.ResponseWriter, r *http.Request) {
 
 func initialClient() {
 	for key, value := range data_client {
-		clients[key] = CustomClient {
+		model.Clients[key] = model.CustomClient {
 			User: 0,
 			Client: value,
 		}
@@ -729,10 +723,10 @@ func RemoveClient(w http.ResponseWriter, r *http.Request) {
 	defer mutex.Unlock()
 
 	// Cek apakah kunci ada di dalam map
-	if _, exists := clients[phone]; exists {
+	if _, exists := model.Clients[phone]; exists {
 		// Hapus kunci dari map
-		clients[phone].Client.Logout()
-		delete(clients, phone)
+		model.Clients[phone].Client.Logout()
+		delete(model.Clients, phone)
 		delete(data_client, phone)
 
 		// response := response.ResponseLogout{Status: "success", Message: "Data berhasil dihapus"}

@@ -35,7 +35,7 @@ func GetDevicesHandler(w http.ResponseWriter, r *http.Request) {
 	// fmt.Println("User ID ", user.ID)
 
 	var connectedClients []ClientInfo = []ClientInfo{}
-	for _, client := range clients {
+	for _, client := range model.Clients {
 
 		fmt.Println("id user", client)
 
