@@ -48,7 +48,7 @@ func SetWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	base.SetResponse(w, http.StatusOK, resp)
 }
 
-func sendPayloadToWebhook(payload interface{}, url string) error {
+func sendPayloadToWebhook(url string, payload interface{}) error {
 	// Convert the payload object to a JSON string
 	payloadBytes, err := json.Marshal(payload)
 

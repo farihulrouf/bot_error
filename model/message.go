@@ -132,6 +132,7 @@ type Media struct {
 	Poll			string `json:"poll"`
 	Latitude		float64 `json:"latitude"`
 	Longitude		float64 `json:"longitude"`
+	Url 			string `json:"url"`
 }
 
 type Event struct {

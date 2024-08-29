@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"log"
+	"fmt"
 	"time"
 	"syscall"
 	"net/http"
@@ -42,6 +43,16 @@ func main() {
 	if botName == "" {
 		botName = "WINDOWS"
 	}
+
+	model.SpaceConfig = model.DOConfig {
+		Endpoint: os.Getenv("SPACE_ENDPOINT"),
+		Bucket: os.Getenv("SPACE_BUCKET"),
+		Folder: os.Getenv("SPACE_FOLDER"),
+		AccessKey: os.Getenv("SPACE_ACCESS_KEY"),
+		SecretKey: os.Getenv("SPACE_SECRET_KEY"),
+	}
+
+	fmt.Println(model.SpaceConfig)
 
 	store.DeviceProps.PlatformType = waProto.DeviceProps_SAFARI.Enum()
 	store.DeviceProps.Os = proto.String(botName)	

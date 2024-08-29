@@ -1,22 +1,122 @@
 package controllers
 
 import (
+	// "io"
+	// "os"
 	"fmt"
+	"path"
+	"bytes"
+	"path/filepath"
 	"strings"
+	"context"
+	// "net/http"
+	"net/url"
 	"encoding/json"
 	"wagobot.com/db"
 	// "encoding/base64"
 	// "wagobot.com/base"
 	"wagobot.com/model"
 	// "wagobot.com/response"
-	// "go.mau.fi/whatsmeow"
+	"go.mau.fi/whatsmeow"
 	// "go.mau.fi/whatsmeow/store"
 	// "go.mau.fi/whatsmeow/store/sqlstore"
 	// "go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
-func EventHandler(evt interface{}) {
+func removeExtension(filename string) string {
+	// Get the file extension
+	ext := filepath.Ext(filename)
+	// Remove the extension from the filename
+	return strings.TrimSuffix(filename, ext)
+}
+
+func setLastMimetype(mimetype string) string {
+	tmp := strings.Split(mimetype, "/")
+	return tmp[1]
+}
+
+
+
+func uploadToSpace(pathToFile string, fileData []byte) (string, error) {
+
+	bucketName := "dragonfly"
+	region := "sgp1"
+	accessKey := model.SpaceConfig.AccessKey
+	secretKey := model.SpaceConfig.SecretKey
+	
+	cfg, err := config.LoadDefaultConfig(context.TODO(),
+		config.WithRegion(region), // Use the DigitalOcean region (e.g., nyc3)
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKey, secretKey, "")),
+		config.WithEndpointResolver(aws.EndpointResolverFunc(func(service, region string) (aws.Endpoint, error) {
+			return aws.Endpoint{
+				PartitionID: "aws",
+				URL: model.SpaceConfig.Endpoint,
+				SigningRegion: region,
+			}, nil
+		})),
+	)
+	if err != nil {
+		return "", fmt.Errorf("failed to load config: %v", err)
+	}
+
+	// Create an S3 client
+	client := s3.NewFromConfig(cfg)
+
+	// Upload the file
+	_, err = client.PutObject(context.TODO(), &s3.PutObjectInput{
+		Bucket: aws.String(bucketName),
+		Key:    aws.String(pathToFile),
+		Body:   bytes.NewReader(fileData),
+		ACL:    types.ObjectCannedACLPublicRead, // Set to public or private based on your requirement
+	})
+	if err != nil {
+		fmt.Println(err)
+		return "", fmt.Errorf("failed to upload file: %v", err)
+	}
+
+	strurl := model.SpaceConfig.Endpoint +"/"+ bucketName +"/"+ pathToFile
+
+	return strurl, nil
+}
+
+func saveMedia(
+	client *whatsmeow.Client, 
+	mediaMessage whatsmeow.DownloadableMessage, 
+	chatId string, strdate string, filename string, targeturl string, mimetype string) string {
+
+	if filename == "" {
+		parsedURL, err := url.Parse(targeturl)
+		if err != nil {
+			fmt.Printf("Error parsing URL: %v\n", err)
+			return ""
+		}
+		filename = path.Base(parsedURL.Path)
+	}
+	filename = removeExtension(filename) +"-"+ setLastMimetype(mimetype)
+
+	
+	byteData, err := client.Download(mediaMessage)
+	if err != nil {
+		fmt.Println("Error downloading encrypted image:", err)
+		return ""
+	}
+
+	path := "media/wa/p/"+ chatId +"/"+ strdate +"/"+ filename
+
+	myurl, _ := uploadToSpace(path, byteData)
+	fmt.Println("FILEEEEE", myurl)
+
+	return myurl
+}
+
+func EventHandler(evt interface{}, client *whatsmeow.Client) {
 
 	switch v := evt.(type) {
 	case *events.Message:
@@ -24,12 +124,12 @@ func EventHandler(evt interface{}) {
 		fmt.Println("------ new message ")
 		// fmt.Println(evt)
 
-		jsonResponse, err := json.MarshalIndent(v, "", "")
-		if err != nil {
-			fmt.Println(err)
-		} else {
-			fmt.Println(string(jsonResponse))
-		}
+		// jsonResponse, err := json.MarshalIndent(v, "", "")
+		// if err != nil {
+		// 	fmt.Println(err)
+		// } else {
+		// 	fmt.Println(string(jsonResponse))
+		// }
 
 		chatId := v.Info.Chat.String()
 		theType := "post"
@@ -37,10 +137,11 @@ func EventHandler(evt interface{}) {
 		replyToUser := ""
 		mediaType := v.Info.Type
 		media := [] model.Media{}
+		strdate := v.Info.Timestamp.Format("20060102")
 
-		if !v.Info.IsGroup {
+		// if !v.Info.IsGroup {
 			chatId = model.GetPhoneNumber(chatId)
-		}
+		// }
 		
 		txtMessage := ""
 		if v.Message.ExtendedTextMessage != nil {
@@ -60,13 +161,14 @@ func EventHandler(evt interface{}) {
 			img := v.Message.GetImageMessage()
 			imgCaption := img.GetCaption()
 
-			// url := img.GetURL()
+			mediaUrl := saveMedia(client, img, chatId, strdate, "", img.GetURL(), img.GetMimetype())
 
 			media = append(media, model.Media {
+				Url: mediaUrl,
 				Type: mediaType,
 				Caption: imgCaption,
 				MimeType: img.GetMimetype(),
-				Thumbnail: img.GetJPEGThumbnail(),
+				// Thumbnail: img.GetJPEGThumbnail(),
 				FileLength: img.GetFileLength(),
 			})
 			if txtMessage != "" {
@@ -79,9 +181,10 @@ func EventHandler(evt interface{}) {
 			doc := v.Message.GetDocumentMessage()
 			docCaption := doc.GetCaption()
 
-			// url := doc.GetURL()
+			mediaUrl := saveMedia(client, doc, chatId, strdate, doc.GetFileName(), doc.GetURL(), doc.GetMimetype())
 
 			media = append(media, model.Media {
+				Url: mediaUrl,
 				Type: mediaType,
 				Caption: docCaption,
 				FileName: doc.GetFileName(),
@@ -98,9 +201,10 @@ func EventHandler(evt interface{}) {
 			aud := v.Message.GetAudioMessage()
 			audCaption := "" //aud.GetCaption()
 
-			// url := aud.GetURL()
+			mediaUrl := saveMedia(client, aud, chatId, strdate, "", aud.GetURL(), aud.GetMimetype())
 
 			media = append(media, model.Media {
+				Url: mediaUrl,
 				Type: mediaType,
 				Caption: audCaption,
 				MimeType: aud.GetMimetype(),
@@ -117,9 +221,10 @@ func EventHandler(evt interface{}) {
 			vid := v.Message.GetVideoMessage()
 			vidCaption := vid.GetCaption()
 
-			// url := vid.GetURL()
+			mediaUrl := saveMedia(client, vid, chatId, strdate, "", vid.GetURL(), vid.GetMimetype())
 
 			media = append(media, model.Media {
+				Url: mediaUrl,
 				Type: mediaType,
 				Caption: vidCaption,
 				MimeType: vid.GetMimetype(),
@@ -192,8 +297,16 @@ func EventHandler(evt interface{}) {
 			Media: media,
 		}
 
-		jsonResponse2, err := json.MarshalIndent(message, "", "")
-		fmt.Println(string(jsonResponse2))
+		// payload, _ := json.MarshalIndent(message, "", "")
+		// fmt.Println("HASILLL -----------")
+		// fmt.Println(string(payload))
+
+		// webhookUrl := "https://webhook.site/aa9bbb63-611c-4d7a-97cd-f4eb6d4b775d"
+		webhookUrl := "https://webhook.site/24fd6cde-e4e8-4135-b526-aa8e55fdf44f"
+		err := sendPayloadToWebhook(webhookUrl, message)
+		if err != nil {
+			fmt.Printf("Failed to send payload to webhook: %v\n", err)
+		}
 
 		// untuk group
 		// if v.Info.IsGroup {

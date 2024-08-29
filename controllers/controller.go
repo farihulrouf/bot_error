@@ -130,7 +130,10 @@ func GetClient(deviceStore *store.Device) *whatsmeow.Client {
 	// handler := &CustomEventHandler{client: client}
 	// var _ whatsmeow.EventHandler = handler
 	// client.AddEventHandler(handler)
-	client.AddEventHandler(EventHandler)
+	// client.AddEventHandler(EventHandler)
+	client.AddEventHandler(func(evt interface{}) {
+		EventHandler(evt, client)
+	})
 	return client
 }
 
@@ -269,7 +272,10 @@ func AddClient(UserID int, DevID string, client *whatsmeow.Client, expired int64
 
 	// handler := &CustomEventHandler{client: client}
 	// client.AddEventHandler(handler)
-	client.AddEventHandler(EventHandler)
+	// client.AddEventHandler(EventHandler)
+	client.AddEventHandler(func(evt interface{}) {
+		EventHandler(evt, client)
+	})
 
 	// devId := GenerateRandomString("DEVICE", 5)
 	// if _, ok := clients[devId]; !ok {
