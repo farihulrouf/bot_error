@@ -6,7 +6,7 @@ import (
 	"math/rand"
 	"time"
 
-	"encoding/base64"
+	// "encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -20,11 +20,11 @@ import (
 	"go.mau.fi/whatsmeow/store"
 	"go.mau.fi/whatsmeow/store/sqlstore"
 	"go.mau.fi/whatsmeow/types"
-	"go.mau.fi/whatsmeow/types/events"
+	// "go.mau.fi/whatsmeow/types/events"
 	
 	"wagobot.com/model"
 	"wagobot.com/response"
-	"wagobot.com/db"
+	// "wagobot.com/db"
 	"wagobot.com/base"
 
 	waLog "go.mau.fi/whatsmeow/util/log"
@@ -132,190 +132,6 @@ func GetClient(deviceStore *store.Device) *whatsmeow.Client {
 	// client.AddEventHandler(handler)
 	client.AddEventHandler(EventHandler)
 	return client
-}
-
-func EventHandler(evt interface{}) {
-
-	switch v := evt.(type) {
-	case *events.Message:
-		
-		// db.CheckDatabase()
-
-		// for key := range clients {
-		// 	//fmt.Println("whoami:", key)
-		// 	fmt.Println("end client", clients[key])
-		// }
-
-		if !v.Info.IsFromMe || v.Message.GetConversation() != "" ||
-			v.Message.GetImageMessage().GetCaption() != "" ||
-			v.Message.GetVideoMessage().GetCaption() != "" ||
-			v.Message.GetDocumentMessage().GetCaption() != "" {
-			id := v.Info.ID
-			chat := v.Info.Sender.String()
-			timestamp := v.Info.Timestamp
-			text := v.Message.GetConversation()
-			group := v.Info.IsGroup
-			isfrome := v.Info.IsFromMe
-			//doc := v.Message.GetDocumentMessage()
-			captionMessage := v.Message.GetImageMessage().GetCaption()
-			videoMessage := v.Message.GetVideoMessage().GetCaption()
-			docMessage := v.Message.GetDocumentMessage().GetCaption()
-			//docCaption := v.Message.GetDocumentMessage().GetTitle()
-			name := v.Info.PushName
-			to := v.Info.PushName
-
-			//to : = v.Info.na
-			thumbnail := v.Message.ImageMessage.GetJPEGThumbnail()
-			thumbnailvideo := v.Message.VideoMessage.GetJPEGThumbnail()
-			thumbnaildoc := v.Message.DocumentMessage.GetJPEGThumbnail()
-			url := v.Message.ImageMessage.GetURL()
-			mimeTipe := v.Message.ImageMessage.GetMimetype()
-
-			tipe := v.Info.Type
-			isdocument := v.IsDocumentWithCaption
-			//chatText := v.Info.Chat
-			mediatype := v.Info.MediaType
-			//smtext := v.Message.Conversation()
-			//fmt.Println("ID: %s, Chat: %s, Time: %d, Text: %s\n", to, mediatype, isdocument, chat, timestamp, text, group, isfrome, tipe)
-			//fmt.Println("info repley", reply, coba)
-
-			// Assuming replies are stored within a field named Replies
-			//fmt.Println("tipe messages", tipe, docCaption, isdocument, doc, mediatype, captionMessage, videoMessage, docMessage)
-			mu.Lock()
-			defer mu.Unlock() // Ensure mutex is always unlocked when the function returns
-			messages = append(messages, response.Message{
-				ID:             id,
-				Chat:           chat,
-				Time:           timestamp.Unix(),
-				Text:           text,
-				Group:          group,
-				Mediatipe:      mediatype,
-				IsDocument:     isdocument,
-				Tipe:           tipe,
-				IsFromMe:       isfrome,
-				Caption:        captionMessage,
-				VideoMessage:   videoMessage,
-				DocMessage:     docMessage,
-				Name:           name,
-				From:           chat,
-				To:             to,
-				Url:            url,
-				Thumbnail:      base64.StdEncoding.EncodeToString(thumbnail),
-				MimeTipe:       mimeTipe,
-				Thumbnaildoc:   base64.StdEncoding.EncodeToString(thumbnaildoc),
-				Thumbnailvideo: base64.StdEncoding.EncodeToString(thumbnailvideo),
-				//MimeType:     *mimesType,
-				//CommentMessage: comment,
-				//Replies: reply,
-				// Add replies to the message if available
-				// Replies: v.Message.Replies,
-			})
-		}
-		/*
-			payload := response.Message{
-				ID:             v.Info.ID,
-				Chat:           v.Info.Sender.String(),
-				Time:           v.Info.Timestamp.Unix(),
-				Text:           v.Message.GetConversation(),
-				Group:          v.Info.IsGroup,
-				IsFromMe:       v.Info.IsFromMe,
-				Caption:        v.Message.GetImageMessage().GetCaption(),
-				VideoMessage:   v.Message.GetVideoMessage().GetCaption(),
-				DocMessage:     v.Message.GetDocumentMessage().GetCaption(),
-				MimeTipe:       v.Message.GetImageMessage().GetMimetype(),
-				Name:           v.Info.PushName,
-				To:             v.Info.PushName,
-				Url:            v.Message.GetImageMessage().GetUrl(),
-				Thumbnail:      base64.StdEncoding.EncodeToString(v.Message.GetImageMessage().GetJpegThumbnail()),
-				Thumbnailvideo: base64.StdEncoding.EncodeToString(v.Message.GetVideoMessage().GetJpegThumbnail()),
-				Thumbnaildoc:   base64.StdEncoding.EncodeToString(v.Message.GetDocumentMessage().GetJpegThumbnail()),
-				Tipe:           v.Info.Type,
-				IsDocument:     v.IsDocumentWithCaption,
-				Mediatipe:      v.Info.MediaType,
-			}
-			webhookURL := "https://webhook.site/aa9bbb63-611c-4d7a-97cd-f4eb6d4b775d"
-			err := sendPayloadToWebhook(payload, webhookURL)
-			if err != nil {
-				fmt.Printf("Failed to send payload to webhook: %v\n", err)
-			}
-		*/
-	case *events.PairSuccess:
-		// fmt.Println("pari succeess", v.ID.User)
-		fmt.Println("--- pairing success", v.ID.User)
-		// fmt.Println(model.Clients)
-		phonekey :=  model.GetPhoneNumber(v.ID.String())
-		for key, client := range model.Clients {
-			if !strings.HasPrefix(key, "DEV") {
-				continue
-			}
-
-			iphone := model.GetPhoneNumber(client.Client.Store.ID.String())
-			fmt.Println("comparing ", phonekey, iphone)
-			if iphone == phonekey {
-				db.InsertUserDevice(model.UserDevice{
-					UserId:    client.User,
-					DeviceJid: phonekey,
-				})
-				client.ExpiredTime = 0
-				model.Clients[phonekey] = client
-				delete(model.Clients, key)
-				break;
-			}
-		}
-		// fmt.Println(clients)
-		// initialClient()
-		
-	case *events.HistorySync:
-		fmt.Println("Received a history sync")
-		/*for _, conv := range v.Data.GetConversations() {
-			for _, historymsg := range conv.GetMessages() {
-				chatJID, _ := types.ParseJID(conv.GetId())
-				evt, err := client.ParseWebMessage(chatJID, historymsg.GetMessage())
-				if err != nil {
-					log.Println(err)
-				}
-				eventHandler(evt)
-			}
-		}*/
-
-	case *events.LoggedOut:
-		fmt.Println("------ Logout from mobile device ----")
-		for _, client := range model.Clients {
-			cid := model.GetPhoneNumber(client.Client.Store.ID.String())
-			if !client.Client.IsLoggedIn() {
-				delete(model.Clients, cid)
-				db.DeleteUserDevice(cid)
-			}
-		}
-		//initialClient()
-
-	case *events.Receipt:
-		fmt.Println("terima")
-		if v.Type == events.ReceiptTypeRead || v.Type == events.ReceiptTypeReadSelf {
-			fmt.Printf("%v was read by %s at %s\n", v.MessageIDs, v.SourceString(), v.Timestamp)
-			// Membuat payload untuk webhook
-			/*webhookPayload := model.ReadReceipt{
-				MessageID: v.MessageIDs[0],
-				ReadBy:    v.SourceString(),
-				Time:      v.Timestamp.UnixMilli(),
-			}*/
-			// Mengirimkan payload ke webhook
-			//webhookURL := "http://localhost:8080/webhook"
-			/*err := sendPayloadToWebhook(string(v.Type), webhookURL)
-			if err != nil {
-				fmt.Printf("Failed to send read receipt to webhook: %v\n", err)
-			}*/
-		}
-
-		/*case *events.Receipt:
-		if v.Type == types.ReceiptTypeRead || v.Type == types.ReceiptTypeReadSelf {
-			fmt.Println("%v was read by %s at %s", v.MessageIDs, v.SourceString(), v.Timestamp)
-		} else if v.Type == types.ReceiptTypeDelivered {
-			fmt.Println("%s was delivered to %s at %s", v.MessageIDs[0], v.SourceString(), v.Timestamp)
-		}
-		*/
-
-	}
 }
 
 func GetSearchMessagesHandler(w http.ResponseWriter, r *http.Request) {

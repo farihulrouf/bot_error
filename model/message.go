@@ -31,19 +31,19 @@ type LeaveGroupRequest struct {
 	GroupID string `json:"group_id"`
 }
 
-type Message struct {
-	ID   string `json:"id"`
-	Chat string `json:"chat"`
-	Time int64  `json:"time"`
-	Text string `json:"text"`
-	/*
-		Sender    string `json:"sender"`
-		Message   string `json:"message"`
-		Type      string `json:"type,omitempty"`       // Type of message (e.g., "text" or "media")
-		MediaType string `json:"media_type,omitempty"` // Type of media (e.g., "image", "video", etc.)
-		MediaURL  string `json:"media_url,omitempty"`  // URL of the media (if applicable)
-	*/
-}
+// type Message struct {
+// 	ID   string `json:"id"`
+// 	Chat string `json:"chat"`
+// 	Time int64  `json:"time"`
+// 	Text string `json:"text"`
+// 	/*
+// 		Sender    string `json:"sender"`
+// 		Message   string `json:"message"`
+// 		Type      string `json:"type,omitempty"`       // Type of message (e.g., "text" or "media")
+// 		MediaType string `json:"media_type,omitempty"` // Type of media (e.g., "image", "video", etc.)
+// 		MediaURL  string `json:"media_url,omitempty"`  // URL of the media (if applicable)
+// 	*/
+// }
 
 /*type CreateGroupRequest struct {
 	Phone string `json:"phone"`
@@ -115,4 +115,42 @@ type WebhookPayload struct {
 	To     string `json:"to"`
 	Time   int64  `json:"time"`
 	Status string `json:"status"`
+}
+
+type Media struct {
+	ID             	string `json:"id"`
+	Type           	string `json:"type"`
+	MimeType       	string `json:"mimeType"`
+	Caption			string `json:"caption"`
+	Thumbnail		[]byte `json:"thumbnail"`
+	FileName       	string `json:"fileName"`
+	FileContent	   	string `json:"fileContent"`
+	FileLength		uint64 `json:"fileLength"`
+	Seconds	   		uint32 `json:"seconds"`
+	Name            string `json:"name"`
+	Contact         string `json:"contact"`
+	Poll			string `json:"poll"`
+	Latitude		float64 `json:"latitude"`
+	Longitude		float64 `json:"longitude"`
+}
+
+type Event struct {
+	ID             string `json:"id"`
+	Chat           string `json:"chat"`
+	Time           int64  `json:"time"`
+	SenderId	   string `json:"senderId"`
+	SenderName     string `json:"senderName"`
+	IsGroup		   bool   `json:"isGroup"`
+	Text           string `json:"text"`
+	IsFromMe       bool   `json:"isFromMe"`
+	MediaType	   string `json:"mediaType"`
+	Type           string `json:"type"`
+	ReplyToPost    string `json:"replyToPost"`
+	ReplyToUser    string `json:"replyToUser"`
+	IsViewOnce     bool   `json:"isViewOnce"`
+	IsViewOnceV2   bool   `json:"isViewOnceV2"`
+	IsViewOnceV2Extension   bool   `json:"isViewOnceV2Extension"`
+	IsLottieSticker     	bool   `json:"isLottieSticker"`
+	IsDocumentWithCaption   bool   `json:"isDocumentWithCaption"`
+	Media 		[]Media `json:"media"`
 }
