@@ -448,6 +448,7 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 					DeviceJid: phonekey,
 				})
 				client.ExpiredTime = 0
+				client.Phone = phonekey
 				model.Clients[phonekey] = client
 				delete(model.Clients, key)
 				break;
@@ -455,7 +456,7 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 		}
 
 		payload := model.PayloadNotify {
-			Section: "avatar_bot_detail",
+			Section: "update_bot_status",
 			Data: model.PhoneParams {
 				Phone: phonekey,
 			},
@@ -485,6 +486,16 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 		for _, client := range model.Clients {
 			cid := model.GetPhoneNumber(client.Client.Store.ID.String())
 			if !client.Client.IsLoggedIn() {
+				payload := model.PayloadNotify {
+					Section: "update_bot_status",
+					Data: model.PhoneParams {
+						Phone: cid,
+					},
+				}
+				err := sendPayloadToWebhook(model.DefaultWebhook, payload)
+				if err != nil {
+					fmt.Printf("Failed to send payload to webhook: %v\n", err)
+				}
 				delete(model.Clients, cid)
 				db.DeleteUserDevice(cid)
 			}

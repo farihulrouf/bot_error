@@ -91,7 +91,7 @@ func main() {
 		phoneNumber := model.GetPhoneNumber(DevID)
 		userdev, _ := db.GetUserByClientJID(phoneNumber)
 		user, _ := db.GetUserByUserId(userdev.UserId)
-		controllers.AddClient(userdev.UserId, user.Url, phoneNumber, client, 0)
+		controllers.AddClient(userdev.UserId, phoneNumber, user.Url, phoneNumber, client, 0)
 		fmt.Println("init webhook", user)
 	}
 

@@ -14,6 +14,7 @@ type DOConfig struct {
 
 type CustomClient struct {
     User   int
+	Phone  string
 	ExpiredTime int64
 	Webhook string
     Client *whatsmeow.Client

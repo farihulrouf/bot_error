@@ -263,7 +263,7 @@ func GetSearchMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func AddClient(UserID int, webhook string, DevID string, client *whatsmeow.Client, expired int64) {
+func AddClient(UserID int, phone string, webhook string, DevID string, client *whatsmeow.Client, expired int64) {
 	mutex.Lock()
 	defer mutex.Unlock()
 
@@ -274,6 +274,7 @@ func AddClient(UserID int, webhook string, DevID string, client *whatsmeow.Clien
 
 	customClient := model.CustomClient{
 		User: UserID,
+		Phone: phone,
 		ExpiredTime: expired,
 		Webhook: webhook,
 		Client: client,
