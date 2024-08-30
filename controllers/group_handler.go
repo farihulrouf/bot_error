@@ -24,7 +24,7 @@ func GetGroupsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !base.IsMyNumber(phone) {
-		base.SetResponse(w, http.StatusOK, "Missing number")
+		base.SetResponse(w, http.StatusBadRequest, "Missing number")
 		return
 	}
 
@@ -96,7 +96,7 @@ func JoinGroupHandler(w http.ResponseWriter, r *http.Request) {
 	group := params.Code
 
 	if !base.IsMyNumber(phone) {
-		base.SetResponse(w, http.StatusOK, "Missing number")
+		base.SetResponse(w, http.StatusBadRequest, "Missing number")
 		return
 	}
 
@@ -129,7 +129,7 @@ func LeaveGroupHandler(w http.ResponseWriter, r *http.Request) {
 	phone := params.Phone
 
 	if !base.IsMyNumber(phone) {
-		base.SetResponse(w, http.StatusOK, "Missing number")
+		base.SetResponse(w, http.StatusBadRequest, "Missing number")
 		return
 	}
 

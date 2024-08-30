@@ -23,6 +23,10 @@ type ChangeWebhookRequest struct {
 	Url string `json:"url"`
 }
 
+type PhoneRequest struct {
+	Phone string `json:"phone"`
+}
+
 var Clients = make(map[string]CustomClient)
 var SpaceConfig DOConfig
 var DefaultWebhook string

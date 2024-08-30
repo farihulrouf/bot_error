@@ -69,7 +69,7 @@ func GetDevicesHandler(w http.ResponseWriter, r *http.Request) {
 		connectedClients = append(connectedClients, clientInfo)
 	}
 
-	base.SetResponse(w, 200, connectedClients)
+	base.SetResponse(w, http.StatusOK, connectedClients)
 }
 
 func ScanDeviceHandler(w http.ResponseWriter, r *http.Request) {
@@ -115,5 +115,32 @@ func ScanDeviceHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	base.SetResponse(w, 200, response)
+	base.SetResponse(w, http.StatusOK, response)
+}
+
+func StatusDeviceHandler(w http.ResponseWriter, r *http.Request) {
+	var params model.PhoneRequest
+
+	base.ValidateRequest(r, &params)
+	fmt.Println(params)
+
+	if params.Phone == "" {
+		base.SetResponse(w, http.StatusBadRequest, "phone are required")
+		return
+	}
+
+	phone := params.Phone
+
+	if !base.IsMyNumber(phone) {
+		base.SetResponse(w, http.StatusBadRequest, "Missing number")
+		return
+	}
+
+	if _, exists := model.Clients[phone]; exists {
+		client := model.Clients[phone].Client
+
+		base.SetResponse(w, http.StatusOK, client.IsConnected())
+	} else {
+		base.SetResponse(w, http.StatusBadRequest, "Invalid account")
+	}
 }
