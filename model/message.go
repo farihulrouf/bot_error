@@ -88,16 +88,6 @@ type VersionResponse struct {
 	Version string `json:"version"`
 }
 
-// WebhookRequest adalah struktur data untuk permintaan webhook
-type WebhookRequest struct {
-	URL string `json:"url"`
-}
-
-// WebhookResponse adalah struktur data untuk respons webhook
-type WebhookResponse struct {
-	Message string `json:"message"`
-}
-
 type GroupResponse struct {
 	JID  string `json:"jid"`
 	Name string `json:"name"`
@@ -107,14 +97,6 @@ type ReadReceipt struct {
 	MessageID string `json:"message_id"`
 	ReadBy    string `json:"read_by"`
 	Time      int64  `json:"time"`
-}
-
-type WebhookPayload struct {
-	ID     string `json:"id"`
-	From   string `json:"from"`
-	To     string `json:"to"`
-	Time   int64  `json:"time"`
-	Status string `json:"status"`
 }
 
 type Media struct {
@@ -153,5 +135,28 @@ type Event struct {
 	IsViewOnceV2Extension   bool   `json:"isViewOnceV2Extension"`
 	IsLottieSticker     	bool   `json:"isLottieSticker"`
 	IsDocumentWithCaption   bool   `json:"isDocumentWithCaption"`
-	Media 		[]Media `json:"media"`
+	Media 		Media `json:"media"`
+}
+
+// WebhookRequest adalah struktur data untuk permintaan webhook
+type WebhookRequest struct {
+	URL string `json:"url"`
+}
+
+// WebhookResponse adalah struktur data untuk respons webhook
+type WebhookResponse struct {
+	Message string `json:"message"`
+}
+
+type WebhookPayload struct {
+	ID     string `json:"id"`
+	From   string `json:"from"`
+	To     string `json:"to"`
+	Time   int64  `json:"time"`
+	Status string `json:"status"`
+}
+
+type PayloadSingleMessage struct {
+	Section string `json:"section"`
+	Data Event `json:"data"`
 }

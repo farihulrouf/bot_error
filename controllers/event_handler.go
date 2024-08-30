@@ -136,11 +136,11 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 		replyToPost := ""
 		replyToUser := ""
 		mediaType := v.Info.Type
-		media := [] model.Media{}
+		media := model.Media{}
 		strdate := v.Info.Timestamp.Format("20060102")
 
 		// if !v.Info.IsGroup {
-			chatId = model.GetPhoneNumber(chatId)
+		chatId = model.GetPhoneNumber(chatId)
 		// }
 		
 		txtMessage := ""
@@ -160,17 +160,17 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 		if v.Message.ImageMessage != nil {
 			img := v.Message.GetImageMessage()
 			imgCaption := img.GetCaption()
+			mediaType := "image"
 
 			mediaUrl := saveMedia(cclient.Client, img, chatId, strdate, "", img.GetURL(), img.GetMimetype())
 
-			media = append(media, model.Media {
+			media = model.Media {
 				Url: mediaUrl,
 				Type: mediaType,
 				Caption: imgCaption,
 				MimeType: img.GetMimetype(),
-				// Thumbnail: img.GetJPEGThumbnail(),
 				FileLength: img.GetFileLength(),
-			})
+			}
 			if txtMessage != "" {
 				txtMessage += ". "
 			}
@@ -180,17 +180,19 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 		if v.Message.DocumentMessage != nil {
 			doc := v.Message.GetDocumentMessage()
 			docCaption := doc.GetCaption()
+			mediaType := "file"
 
 			mediaUrl := saveMedia(cclient.Client, doc, chatId, strdate, doc.GetFileName(), doc.GetURL(), doc.GetMimetype())
 
-			media = append(media, model.Media {
+			media = model.Media {
 				Url: mediaUrl,
 				Type: mediaType,
 				Caption: docCaption,
 				FileName: doc.GetFileName(),
 				FileLength: doc.GetFileLength(),
 				MimeType: doc.GetMimetype(),
-			})
+			}
+
 			if txtMessage != "" {
 				txtMessage += ". "
 			}
@@ -199,18 +201,20 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 
 		if v.Message.AudioMessage != nil {
 			aud := v.Message.GetAudioMessage()
-			audCaption := "" //aud.GetCaption()
+			audCaption := ""
+			mediaType = "audio"
 
 			mediaUrl := saveMedia(cclient.Client, aud, chatId, strdate, "", aud.GetURL(), aud.GetMimetype())
 
-			media = append(media, model.Media {
+			media = model.Media {
 				Url: mediaUrl,
 				Type: mediaType,
 				Caption: audCaption,
 				MimeType: aud.GetMimetype(),
 				Seconds: aud.GetSeconds(),
 				FileLength: aud.GetFileLength(),
-			})
+			}
+
 			if txtMessage != "" {
 				txtMessage += ". "
 			}
@@ -220,17 +224,19 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 		if v.Message.VideoMessage != nil {
 			vid := v.Message.GetVideoMessage()
 			vidCaption := vid.GetCaption()
+			mediaType = "video"
 
 			mediaUrl := saveMedia(cclient.Client, vid, chatId, strdate, "", vid.GetURL(), vid.GetMimetype())
 
-			media = append(media, model.Media {
+			media = model.Media {
 				Url: mediaUrl,
 				Type: mediaType,
 				Caption: vidCaption,
 				MimeType: vid.GetMimetype(),
 				Thumbnail: vid.GetJPEGThumbnail(),
 				FileLength: vid.GetFileLength(),
-			})
+			}
+
 			if txtMessage != "" {
 				txtMessage += ". "
 			}
@@ -239,10 +245,12 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 
 		if v.Message.ContactMessage != nil {
 			ctc := v.Message.GetContactMessage()
-			media = append(media, model.Media {
+			mediaType = "contact"
+			media = model.Media {
 				Name: ctc.GetDisplayName(),
 				Contact: ctc.GetVcard(),
-			})
+			}
+
 			if txtMessage != "" {
 				txtMessage += ". "
 			}
@@ -252,10 +260,11 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 		if v.Message.PollCreationMessageV3 != nil {
 			pol := v.Message.GetPollCreationMessageV3()
 			polName := pol.GetName()
+			mediaType = "polling"
 			jsonData, _ := json.Marshal(pol)
-			media = append(media, model.Media {
+			media = model.Media {
 				Poll: string(jsonData),
-			})
+			}
 			if txtMessage != "" {
 				txtMessage += ". "
 			}
@@ -266,10 +275,11 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 			loc := v.Message.GetLocationMessage()
 			lat := loc.GetDegreesLatitude()
 			lng := loc.GetDegreesLongitude()
-			media = append(media, model.Media {
+			mediaType = "location"
+			media = model.Media {
 				Latitude: lat,
 				Longitude: lng,
-			})
+			}
 			if txtMessage != "" {
 				txtMessage += ". "
 			}
@@ -302,7 +312,12 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 		// fmt.Println(message)
 		// fmt.Println("---- Active Webhook url", model.DefaultWebhook)
 
-		err := sendPayloadToWebhook(model.DefaultWebhook, message)
+		payload := model.PayloadSingleMessage {
+			Section: "single_message",
+			Data: message,
+		}
+
+		err := sendPayloadToWebhook(model.DefaultWebhook, payload)
 		if err != nil {
 			fmt.Printf("Failed to send payload to webhook: %v\n", err)
 		}
