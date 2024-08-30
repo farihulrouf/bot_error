@@ -27,6 +27,15 @@ type PhoneRequest struct {
 	Phone string `json:"phone"`
 }
 
+type PhoneParams struct {
+	Phone string `json:"phone"`
+}
+
+type PayloadNotify struct {
+	Section string `json:"section"`
+	Data PhoneParams `json:"data"`
+}
+
 var Clients = make(map[string]CustomClient)
 var SpaceConfig DOConfig
 var DefaultWebhook string

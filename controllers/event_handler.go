@@ -453,6 +453,18 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 				break;
 			}
 		}
+
+		payload := model.PayloadNotify {
+			Section: "avatar_bot_detail",
+			Data: model.PhoneParams {
+				Phone: phonekey,
+			},
+		}
+
+		err := sendPayloadToWebhook(model.DefaultWebhook, payload)
+		if err != nil {
+			fmt.Printf("Failed to send payload to webhook: %v\n", err)
+		}
 		// initialClient()
 		
 	case *events.HistorySync:
