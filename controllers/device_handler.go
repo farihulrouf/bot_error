@@ -90,7 +90,7 @@ func ScanDeviceHandler(w http.ResponseWriter, r *http.Request) {
 	nextTime := currentTime.Add(3 * time.Minute)
 	nextUnixTime := nextTime.Unix()
 
-	AddClient(user.ID, deviceID, client, nextUnixTime)
+	AddClient(user.ID, user.Url, deviceID, client, nextUnixTime)
 
 	// fmt.Println(clients)
 

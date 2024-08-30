@@ -41,15 +41,15 @@ func SetupRouter() *mux.Router {
 	r.HandleFunc("/api/register", controllers.RegisterHandler).Methods("POST") // not ok, tidak ada validasi parameter user
 	r.HandleFunc("/api/token", controllers.CreateToken).Methods("POST") // not ok, token tidak bisa digunakan
 
+
+
 	r.HandleFunc("/api/system/logout/{phone}", controllers.RemoveClient).Methods("DELETE")
 	r.HandleFunc("/api/system/devices", controllers.CreateDevice).Methods("GET") // not ok, hang
 	r.HandleFunc("/api/system/ver", controllers.VersionHandler).Methods("GET") // ok
 	r.HandleFunc("/api/system/webhook", controllers.WebhookHandler).Methods("POST")
 	// router.POST("/api/system/webhook", SetWebhookHandler)
 
-	r.HandleFunc("/api/webhook/update", controllers.UpdateWbhookURLHandler).Methods("PUT")
-
-	r.HandleFunc("/api/user", controllers.GetUserHandler).Methods("GET") // ok
+	
 	r.HandleFunc("/api/user", controllers.UserUpdateHandler).Methods("PUT")
 	r.HandleFunc("/api/user/login", controllers.LoginHandler).Methods("POST") // ok
 	// r.HandleFunc("/api/user/detail", controllers.GetUserHandler).Methods("GET") // ok
@@ -57,9 +57,7 @@ func SetupRouter() *mux.Router {
 	
 	r.HandleFunc("/api/group/invite", controllers.GetGroupInviteLinkHandler).Methods("GET")
 
-	r.HandleFunc("/api/groups", controllers.GetGroupsHandler).Methods("GET")
-	r.HandleFunc("/api/group/join", controllers.JoinGroupHandler).Methods("POST")
-	r.HandleFunc("/api/group/leave", controllers.LeaveGroupHandler).Methods("POST")
+	
 	// r.HandleFunc("/api/groups", controllers.JoinGroupHandler).Methods("POST")
 	r.HandleFunc("/api/groups/messages", controllers.SendMessageGroupHandler).Methods("POST")
 	// r.HandleFunc("/api/groups/leave", controllers.LeaveGroupHandler).Methods("POST")
@@ -76,12 +74,19 @@ func SetupRouter() *mux.Router {
 	//r.HandleFunc("/api/token", controllers.CreateToken).Methods("POST")
 	//r.HandleFunc("/api/messages/images", controllers.SendImageHandler).Methods("POST")
 
+	// --- active --
+
+	r.HandleFunc("/api/user", controllers.GetUserHandler).Methods("GET") // ok
+
 	r.HandleFunc("/api/devices", controllers.GetDevicesHandler).Methods("GET")
 	r.HandleFunc("/api/device/scan", controllers.ScanDeviceHandler).Methods("GET")
-	// r.HandleFunc("/api/device/{id}", controllers.GetDevicesHandler).Methods("GET")
-	// r.HandleFunc("/api/device/{id}", controllers.GetDevicesHandler).Methods("PUT")
-	// r.HandleFunc("/api/device/{id}", controllers.GetDevicesHandler).Methods("DELETE")
 
+	r.HandleFunc("/api/groups", controllers.GetGroupsHandler).Methods("GET")
+	r.HandleFunc("/api/group/join", controllers.JoinGroupHandler).Methods("POST")
+	r.HandleFunc("/api/group/leave", controllers.LeaveGroupHandler).Methods("POST")
+
+	r.HandleFunc("/api/webhook", controllers.GetWebhookHandler).Methods("GET")
+	r.HandleFunc("/api/webhook", controllers.UpdateWebhookHandler).Methods("PUT")
 
 	return r
 }

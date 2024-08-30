@@ -70,5 +70,7 @@ func sendPayloadToWebhook(url string, payload interface{}) error {
 		return fmt.Errorf("received non-200 response from webhook: %s", resp.Status)
 	}
 
+	fmt.Println("Response", resp)
+
 	return nil
 }

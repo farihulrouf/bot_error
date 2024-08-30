@@ -39,11 +39,12 @@ func main() {
 	port := os.Getenv("PORT")
 	dbPath := os.Getenv("DB_PATH")
 	botName := os.Getenv("BOT_NAME")
-
+	
 	if botName == "" {
 		botName = "WINDOWS"
 	}
 
+	model.DefaultWebhook = os.Getenv("WEBHOOK_URL")
 	model.SpaceConfig = model.DOConfig {
 		Endpoint: os.Getenv("SPACE_ENDPOINT"),
 		Bucket: os.Getenv("SPACE_BUCKET"),
@@ -88,8 +89,10 @@ func main() {
 		client := whatsmeow.NewClient(device, clientLog)
 		DevID := device.ID.String()
 		phoneNumber := model.GetPhoneNumber(DevID)
-		user, _ := db.GetUserByClientJID(phoneNumber)
-		controllers.AddClient(user.UserId, phoneNumber, client, 0)
+		userdev, _ := db.GetUserByClientJID(phoneNumber)
+		user, _ := db.GetUserByUserId(userdev.UserId)
+		controllers.AddClient(userdev.UserId, user.Url, phoneNumber, client, 0)
+		fmt.Println("init webhook", user)
 	}
 
 	// timer check every 10s

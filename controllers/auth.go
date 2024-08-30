@@ -1,10 +1,10 @@
 package controllers
 
 import (
-	"errors"
-	"strings"
+	// "errors"
+	// "strings"
 	"net/http"
-	"database/sql"
+	// "database/sql"
 	"encoding/json"
 
 	"golang.org/x/crypto/bcrypt"
@@ -136,56 +136,5 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	*/
 }
 
-func UpdateWbhookURLHandler(w http.ResponseWriter, r *http.Request) {
-	tokenStr := r.Header.Get("Authorization")
-	if tokenStr == "" {
-		http.Error(w, "Authorization header missing", http.StatusUnauthorized)
-		return
-	}
 
-	tokenStr = strings.TrimPrefix(tokenStr, "Bearer ")
-	//ParseToken
-	claims, err := base.ParseToken(tokenStr)
-	if err != nil {
-		http.Error(w, "Invalid token", http.StatusUnauthorized)
-		return
-	}
-	//fmt.Println("Check token claims:", tokenStr)
-	//fmt.Println("Check token claims:", claims)
-
-	username, ok := claims["username"].(string)
-	//fmt.Println("data", username)
-	if !ok {
-		http.Error(w, "Invalid usernem in token", http.StatusUnauthorized)
-		return
-	}
-
-	var req struct {
-		Url string `json:"url"`
-	}
-	err = json.NewDecoder(r.Body).Decode(&req)
-	if err != nil {
-		http.Error(w, "Bad Request", http.StatusBadRequest)
-		return
-	}
-
-	if req.Url == "" {
-		http.Error(w, "URL cannot be empty", http.StatusBadRequest)
-		return
-	}
-
-	err = db.UpdateUserURLWebhook(username, req.Url)
-
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			http.Error(w, "User not found", http.StatusNotFound)
-		} else {
-			http.Error(w, "Failed to update URL", http.StatusInternalServerError)
-		}
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("User URL updated successfully"))
-}
 

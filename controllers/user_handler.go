@@ -48,7 +48,7 @@ func GetUserHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	base.SetResponse(w, 200, user)
+	base.SetResponse(w, http.StatusOK, user)
 }
 
 func UserUpdateHandler(w http.ResponseWriter, r *http.Request) {

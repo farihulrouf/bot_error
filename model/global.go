@@ -15,9 +15,15 @@ type DOConfig struct {
 type CustomClient struct {
     User   int
 	ExpiredTime int64
+	Webhook string
     Client *whatsmeow.Client
+}
+
+type ChangeWebhookRequest struct {
+	Url string `json:"url"`
 }
 
 var Clients = make(map[string]CustomClient)
 var SpaceConfig DOConfig
+var DefaultWebhook string
 

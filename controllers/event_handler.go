@@ -116,7 +116,7 @@ func saveMedia(
 	return myurl
 }
 
-func EventHandler(evt interface{}, client *whatsmeow.Client) {
+func EventHandler(evt interface{}, cclient model.CustomClient) {
 
 	switch v := evt.(type) {
 	case *events.Message:
@@ -161,7 +161,7 @@ func EventHandler(evt interface{}, client *whatsmeow.Client) {
 			img := v.Message.GetImageMessage()
 			imgCaption := img.GetCaption()
 
-			mediaUrl := saveMedia(client, img, chatId, strdate, "", img.GetURL(), img.GetMimetype())
+			mediaUrl := saveMedia(cclient.Client, img, chatId, strdate, "", img.GetURL(), img.GetMimetype())
 
 			media = append(media, model.Media {
 				Url: mediaUrl,
@@ -181,7 +181,7 @@ func EventHandler(evt interface{}, client *whatsmeow.Client) {
 			doc := v.Message.GetDocumentMessage()
 			docCaption := doc.GetCaption()
 
-			mediaUrl := saveMedia(client, doc, chatId, strdate, doc.GetFileName(), doc.GetURL(), doc.GetMimetype())
+			mediaUrl := saveMedia(cclient.Client, doc, chatId, strdate, doc.GetFileName(), doc.GetURL(), doc.GetMimetype())
 
 			media = append(media, model.Media {
 				Url: mediaUrl,
@@ -201,7 +201,7 @@ func EventHandler(evt interface{}, client *whatsmeow.Client) {
 			aud := v.Message.GetAudioMessage()
 			audCaption := "" //aud.GetCaption()
 
-			mediaUrl := saveMedia(client, aud, chatId, strdate, "", aud.GetURL(), aud.GetMimetype())
+			mediaUrl := saveMedia(cclient.Client, aud, chatId, strdate, "", aud.GetURL(), aud.GetMimetype())
 
 			media = append(media, model.Media {
 				Url: mediaUrl,
@@ -221,7 +221,7 @@ func EventHandler(evt interface{}, client *whatsmeow.Client) {
 			vid := v.Message.GetVideoMessage()
 			vidCaption := vid.GetCaption()
 
-			mediaUrl := saveMedia(client, vid, chatId, strdate, "", vid.GetURL(), vid.GetMimetype())
+			mediaUrl := saveMedia(cclient.Client, vid, chatId, strdate, "", vid.GetURL(), vid.GetMimetype())
 
 			media = append(media, model.Media {
 				Url: mediaUrl,
@@ -299,11 +299,10 @@ func EventHandler(evt interface{}, client *whatsmeow.Client) {
 
 		// payload, _ := json.MarshalIndent(message, "", "")
 		// fmt.Println("HASILLL -----------")
-		// fmt.Println(string(payload))
+		// fmt.Println(message)
+		// fmt.Println("---- Active Webhook url", model.DefaultWebhook)
 
-		// webhookUrl := "https://webhook.site/aa9bbb63-611c-4d7a-97cd-f4eb6d4b775d"
-		webhookUrl := "https://webhook.site/24fd6cde-e4e8-4135-b526-aa8e55fdf44f"
-		err := sendPayloadToWebhook(webhookUrl, message)
+		err := sendPayloadToWebhook(model.DefaultWebhook, message)
 		if err != nil {
 			fmt.Printf("Failed to send payload to webhook: %v\n", err)
 		}

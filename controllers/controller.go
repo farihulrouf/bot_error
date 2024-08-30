@@ -132,7 +132,9 @@ func GetClient(deviceStore *store.Device) *whatsmeow.Client {
 	// client.AddEventHandler(handler)
 	// client.AddEventHandler(EventHandler)
 	client.AddEventHandler(func(evt interface{}) {
-		EventHandler(evt, client)
+		EventHandler(evt, model.CustomClient {
+			Client: client,
+		})
 	})
 	return client
 }
@@ -261,7 +263,7 @@ func GetSearchMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func AddClient(UserID int, DevID string, client *whatsmeow.Client, expired int64) {
+func AddClient(UserID int, webhook string, DevID string, client *whatsmeow.Client, expired int64) {
 	mutex.Lock()
 	defer mutex.Unlock()
 
@@ -270,20 +272,30 @@ func AddClient(UserID int, DevID string, client *whatsmeow.Client, expired int64
 		return
 	}
 
+	customClient := model.CustomClient{
+		User: UserID,
+		ExpiredTime: expired,
+		Webhook: webhook,
+		Client: client,
+	}
+
 	// handler := &CustomEventHandler{client: client}
 	// client.AddEventHandler(handler)
 	// client.AddEventHandler(EventHandler)
 	client.AddEventHandler(func(evt interface{}) {
-		EventHandler(evt, client)
+		EventHandler(evt, customClient)
 	})
+
+	model.Clients[DevID] = customClient
 
 	// devId := GenerateRandomString("DEVICE", 5)
 	// if _, ok := clients[devId]; !ok {
-		model.Clients[DevID] = model.CustomClient{
-			User: UserID,
-			ExpiredTime: expired,
-			Client: client,
-		}
+		// model.Clients[DevID] = model.CustomClient{
+		// 	User: UserID,
+		// 	ExpiredTime: expired,
+		// 	Webhook: webhook,
+		// 	Client: client,
+		// }
 	// }
 
 	err := model.Clients[DevID].Client.Connect()

@@ -143,6 +143,30 @@ func CreateUser(username, password, email, firstName, lastName, url string) erro
 	return nil
 }
 
+func GetUserByUserId(userid int) (model.User, error) {
+	var user model.User
+
+	// Prepare the SQL statement.
+	stmt, err := db.Prepare("SELECT id, username, password, email, first_name, last_name, url FROM users WHERE id = ?")
+	if err != nil {
+		return user, err
+	}
+	defer stmt.Close()
+
+	// Execute the SQL statement and scan the result into the user struct.
+	row := stmt.QueryRow(userid)
+	err = row.Scan(&user.ID, &user.Username, &user.Password, &user.Email, &user.FirstName, &user.LastName, &user.Url)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			// Return a custom error when the user is not found
+			return user, errors.New("user not found")
+		}
+		return user, err
+	}
+
+	return user, nil
+}
+
 func GetUserByUsername(username string) (model.User, error) {
 	var user model.User
 
@@ -225,8 +249,6 @@ func DeleteUserDevice(phone string) error {
 }
 
 func CheckDatabase() error {
-
-	fmt.Println("------- testtetetettetet ------")
 
 	// err := LoadEnv()
 	// if err != nil {
