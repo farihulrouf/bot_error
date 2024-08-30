@@ -41,8 +41,6 @@ func SetupRouter() *mux.Router {
 	r.HandleFunc("/api/register", controllers.RegisterHandler).Methods("POST") // not ok, tidak ada validasi parameter user
 	r.HandleFunc("/api/token", controllers.CreateToken).Methods("POST") // not ok, token tidak bisa digunakan
 
-
-
 	r.HandleFunc("/api/system/logout/{phone}", controllers.RemoveClient).Methods("DELETE")
 	r.HandleFunc("/api/system/devices", controllers.CreateDevice).Methods("GET") // not ok, hang
 	r.HandleFunc("/api/system/ver", controllers.VersionHandler).Methods("GET") // ok
