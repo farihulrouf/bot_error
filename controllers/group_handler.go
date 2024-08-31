@@ -103,13 +103,19 @@ func JoinGroupHandler(w http.ResponseWriter, r *http.Request) {
 	if _, exists := model.Clients[phone]; exists {
 		client := model.Clients[phone].Client
 
-		_, err := client.JoinGroupWithLink(group)
+		groupInfo, err := client.GetGroupInfoFromLink(group)
 		if err != nil {
-			base.SetResponse(w, http.StatusInternalServerError, errors.ErrFailedToJoinGroup)
+			base.SetResponse(w, http.StatusBadRequest, errors.ErrFailedToJoinGroup)
 			return
 		}
 
-		base.SetResponse(w, http.StatusOK, "Group joined successfully")
+		_, err = client.JoinGroupWithLink(group)
+		if err != nil {
+			base.SetResponse(w, http.StatusBadRequest, errors.ErrFailedToJoinGroup)
+			return
+		}
+
+		base.SetResponse(w, http.StatusOK, groupInfo)
 	} else {
 		base.SetResponse(w, http.StatusBadRequest, "Invalid account")
 	}
