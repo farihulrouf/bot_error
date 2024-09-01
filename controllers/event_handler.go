@@ -159,25 +159,21 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 		fmt.Println("------ new message ")
 		// fmt.Println(evt)
 
-		// jsonResponse, err := json.MarshalIndent(v, "", "")
-		// if err != nil {
-		// 	fmt.Println(err)
-		// } else {
-		// 	fmt.Println(string(jsonResponse))
-		// }
-
+		var media model.Media
 		chatId := v.Info.Chat.String()
 		theType := "post"
 		replyToPost := ""
 		replyToUser := ""
 		mediaType := v.Info.Type
-		media := model.Media{}
 		strdate := v.Info.Timestamp.Format("20060102")
 
 		// if !v.Info.IsGroup {
 		chatId = model.GetPhoneNumber(chatId)
 		// }
 		
+		fmt.Println("---------- message  link ------")
+		fmt.Println(v.Message)
+
 		txtMessage := ""
 		if v.Message.ExtendedTextMessage != nil {
 			ext := v.Message.GetExtendedTextMessage()
@@ -187,6 +183,14 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 				theType = "reply"
 				replyToPost = ci.GetStanzaID()
 				replyToUser = model.GetPhoneNumber(ci.GetParticipant())
+			}
+			turl := ext.GetCanonicalURL()
+			if turl != "" {
+				mediaType = "url"
+				if txtMessage != "" {
+					txtMessage += ". "
+				}
+				txtMessage += ext.GetText()
 			}
 		} else {
 			txtMessage = v.Message.GetConversation()
