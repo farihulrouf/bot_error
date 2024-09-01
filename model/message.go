@@ -123,6 +123,7 @@ type Event struct {
 	Time           int64  `json:"time"`
 	SenderId	   string `json:"senderId"`
 	SenderName     string `json:"senderName"`
+	SenderAvatar   string `json:"senderAvatar"`
 	IsGroup		   bool   `json:"isGroup"`
 	Text           string `json:"text"`
 	IsFromMe       bool   `json:"isFromMe"`
@@ -135,7 +136,7 @@ type Event struct {
 	IsViewOnceV2Extension   bool   `json:"isViewOnceV2Extension"`
 	IsLottieSticker     	bool   `json:"isLottieSticker"`
 	IsDocumentWithCaption   bool   `json:"isDocumentWithCaption"`
-	Media 		Media `json:"media"`
+	Media 		   Media `json:"media"`
 }
 
 // WebhookRequest adalah struktur data untuk permintaan webhook
@@ -154,9 +155,4 @@ type WebhookPayload struct {
 	To     string `json:"to"`
 	Time   int64  `json:"time"`
 	Status string `json:"status"`
-}
-
-type PayloadSingleMessage struct {
-	Section string `json:"section"`
-	Data Event `json:"data"`
 }

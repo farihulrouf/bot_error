@@ -32,9 +32,9 @@ type PhoneParams struct {
 	Phone string `json:"phone"`
 }
 
-type PayloadNotify struct {
+type PayloadWebhook struct {
 	Section string `json:"section"`
-	Data PhoneParams `json:"data"`
+	Data interface{} `json:"data"`
 }
 
 var Clients = make(map[string]CustomClient)

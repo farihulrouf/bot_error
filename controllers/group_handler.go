@@ -115,6 +115,41 @@ func JoinGroupHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		groupid := model.GetPhoneNumber(groupInfo.JID.String())
+
+		members := []model.Member{}
+		for _, member := range groupInfo.Participants {
+			members = append(members, model.Member{
+				ID: model.GetPhoneNumber(member.JID.String()),
+				Name: member.DisplayName,
+				IsAdmin: member.IsAdmin,
+				IsSuperAdmin: member.IsSuperAdmin,
+				GroupID: groupid,
+			})
+		}
+
+		avatar := saveProfilePicture(client, groupInfo.JID)
+
+		payload := model.PayloadWebhook {
+			Section: "groups",
+			Data: model.Group {
+				ID: groupid,
+				Name: groupInfo.Name,
+				Url: group,
+				OwnerID: model.GetPhoneNumber(groupInfo.OwnerJID.String()),
+				IsIncognito: groupInfo.IsIncognito,
+				IsParent: groupInfo.IsParent,
+				Avatar: avatar,
+				CreatedTime: groupInfo.GroupCreated.Unix(),
+				Members: members,
+			},
+		}
+
+		err = sendPayloadToWebhook(model.DefaultWebhook, payload)
+		if err != nil {
+			fmt.Printf("Failed to send payload to webhook: %v\n", err)
+		}
+
 		base.SetResponse(w, http.StatusOK, groupInfo)
 	} else {
 		base.SetResponse(w, http.StatusBadRequest, "Invalid account")

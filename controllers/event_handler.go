@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"path"
 	"bytes"
+	"net/http"
+	"io/ioutil"
 	"path/filepath"
 	"strings"
 	"context"
@@ -20,7 +22,7 @@ import (
 	"go.mau.fi/whatsmeow"
 	// "go.mau.fi/whatsmeow/store"
 	// "go.mau.fi/whatsmeow/store/sqlstore"
-	// "go.mau.fi/whatsmeow/types"
+	wtypes "go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -101,7 +103,6 @@ func saveMedia(
 	}
 	filename = removeExtension(filename) +"-"+ setLastMimetype(mimetype)
 
-	
 	byteData, err := client.Download(mediaMessage)
 	if err != nil {
 		fmt.Println("Error downloading encrypted image:", err)
@@ -109,6 +110,40 @@ func saveMedia(
 	}
 
 	path := "media/wa/p/"+ chatId +"/"+ strdate +"/"+ filename
+
+	myurl, _ := uploadToSpace(path, byteData)
+	fmt.Println("FILEEEEE", myurl)
+
+	return myurl
+}
+
+func saveProfilePicture(client *whatsmeow.Client, theJID wtypes.JID) string {
+
+	params := &whatsmeow.GetProfilePictureParams{
+        // JID:     theJID,
+        // IsCommunity: false,
+    }
+
+	profilePictureURL, err := client.GetProfilePictureInfo(theJID, params)  // false for high-res, true for low-res
+    if err != nil {
+        fmt.Println("Error getting profile picture:", err)
+        return ""
+    }
+
+	response, err := http.Get(profilePictureURL.URL)
+    if err != nil {
+        return ""
+    }
+    defer response.Body.Close()
+
+	byteData, err := ioutil.ReadAll(response.Body)
+    if err != nil {
+        return ""
+    }
+
+	filename := model.GetPhoneNumber(theJID.String()) + "-jpg"
+
+	path := "media/wa/a/"+ filename
 
 	myurl, _ := uploadToSpace(path, byteData)
 	fmt.Println("FILEEEEE", myurl)
@@ -286,11 +321,14 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 			txtMessage += "Location: " + fmt.Sprintf("%f", lat) +", "+ fmt.Sprintf("%f", lng)
 		}
 
+		avatar := saveProfilePicture(cclient.Client, v.Info.Sender)
+
 		message := model.Event {
 			ID: v.Info.ID,
 			Chat: chatId, // group id or phone id
 			SenderId: model.GetPhoneNumber(v.Info.Sender.String()), // phone id
 			SenderName: v.Info.PushName,
+			SenderAvatar: avatar,
 			Time: v.Info.Timestamp.Unix(),
 			IsGroup: v.Info.IsGroup,
 			IsFromMe: v.Info.IsFromMe,
@@ -312,7 +350,7 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 		// fmt.Println(message)
 		// fmt.Println("---- Active Webhook url", model.DefaultWebhook)
 
-		payload := model.PayloadSingleMessage {
+		payload := model.PayloadWebhook {
 			Section: "single_message",
 			Data: message,
 		}
@@ -455,7 +493,7 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 			}
 		}
 
-		payload := model.PayloadNotify {
+		payload := model.PayloadWebhook {
 			Section: "update_bot_status",
 			Data: model.PhoneParams {
 				Phone: phonekey,
@@ -486,7 +524,7 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 		for _, client := range model.Clients {
 			cid := model.GetPhoneNumber(client.Client.Store.ID.String())
 			if !client.Client.IsLoggedIn() {
-				payload := model.PayloadNotify {
+				payload := model.PayloadWebhook {
 					Section: "update_bot_status",
 					Data: model.PhoneParams {
 						Phone: cid,
