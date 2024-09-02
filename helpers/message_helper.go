@@ -85,7 +85,7 @@ func UploadDocAndCreateMessage(client *whatsmeow.Client, docBytes []byte, captio
 	if err != nil {
 		return nil, fmt.Errorf("error uploading do: %v", err)
 	}
-	msg := &waProto.DocumentMessage{
+	/*msg := &waProto.DocumentMessage{
 		URL:      proto.String(resp.URL),
 		Mimetype: proto.String(http.DetectContentType(docBytes)),
 		//Title:         proto.String(resp.File.Filename),
@@ -96,6 +96,17 @@ func UploadDocAndCreateMessage(client *whatsmeow.Client, docBytes []byte, captio
 		FileEncSHA256: resp.FileEncSHA256,
 		DirectPath:    proto.String(resp.DirectPath),
 		Caption:       proto.String(caption),
+	}*/
+
+	msg := &waE2E.DocumentMessage{ // Nama file dari URL atau SHA-256 sebagai title		// Nama file atau SHA-256 sebagai title
+		Mimetype:      proto.String(http.DetectContentType(docBytes)), // MIME type dokumen, misalnya "application/pdf" untuk PDF
+		URL:           &resp.URL,                                      // URL tempat file diupload
+		DirectPath:    &resp.DirectPath,                               // Direct path untuk file
+		MediaKey:      resp.MediaKey,                                  // Kunci enkripsi untuk media
+		FileEncSHA256: resp.FileEncSHA256,                             // SHA-256 dari file yang dienkripsi
+		FileSHA256:    resp.FileSHA256,                                // SHA-256 dari file asli
+		FileLength:    &resp.FileLength,                               // Ukuran file dalam byte
+		Caption:       proto.String(caption),                          // Nama file yang akan didownload
 	}
 
 	//UploadDocAndCreateMessage
