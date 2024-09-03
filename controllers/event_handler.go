@@ -46,7 +46,7 @@ func setLastMimetype(mimetype string) string {
 
 
 
-func uploadToSpace(pathToFile string, fileData []byte) (string, error) {
+func uploadToSpace(pathToFile string, fileData []byte, mimetype string) (string, error) {
 
 	bucketName := "dragonfly"
 	region := "sgp1"
@@ -77,6 +77,7 @@ func uploadToSpace(pathToFile string, fileData []byte) (string, error) {
 		Key:    aws.String(pathToFile),
 		Body:   bytes.NewReader(fileData),
 		ACL:    types.ObjectCannedACLPublicRead, // Set to public or private based on your requirement
+		ContentType: aws.String(mimetype),
 	})
 	if err != nil {
 		fmt.Println(err)
@@ -111,7 +112,7 @@ func saveMedia(
 
 	path := "media/wa/p/"+ chatId +"/"+ strdate +"/"+ filename
 
-	myurl, _ := uploadToSpace(path, byteData)
+	myurl, _ := uploadToSpace(path, byteData, mimetype)
 	fmt.Println("FILEEEEE", myurl)
 
 	return myurl
@@ -145,7 +146,7 @@ func saveProfilePicture(client *whatsmeow.Client, theJID wtypes.JID) string {
 
 	path := "media/wa/a/"+ filename
 
-	myurl, _ := uploadToSpace(path, byteData)
+	myurl, _ := uploadToSpace(path, byteData, "image/jpg")
 	fmt.Println("FILEEEEE", myurl)
 
 	return myurl

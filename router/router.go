@@ -79,6 +79,7 @@ func SetupRouter() *mux.Router {
 	r.HandleFunc("/api/devices", controllers.GetDevicesHandler).Methods("GET")
 	r.HandleFunc("/api/device/scan", controllers.ScanDeviceHandler).Methods("GET")
 	r.HandleFunc("/api/device/status", controllers.StatusDeviceHandler).Methods("POST")
+	r.HandleFunc("/api/device/remove", controllers.RemoveDeviceHandler).Methods("DELETE")
 
 	r.HandleFunc("/api/groups", controllers.GetGroupsHandler).Methods("GET")
 	r.HandleFunc("/api/group/join", controllers.JoinGroupHandler).Methods("POST")

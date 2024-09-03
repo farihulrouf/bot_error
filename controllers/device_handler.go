@@ -144,3 +144,33 @@ func StatusDeviceHandler(w http.ResponseWriter, r *http.Request) {
 		base.SetResponse(w, http.StatusBadRequest, "Invalid account")
 	}
 }
+
+func RemoveDeviceHandler(w http.ResponseWriter, r *http.Request) {
+	var params model.PhoneRequest
+
+	base.ValidateRequest(r, &params)
+	fmt.Println(params)
+
+	if params.Phone == "" {
+		base.SetResponse(w, http.StatusBadRequest, "phone are required")
+		return
+	}
+
+	phone := params.Phone
+
+	if !base.IsMyNumber(phone) {
+		base.SetResponse(w, http.StatusBadRequest, "Missing number")
+		return
+	}
+
+	if _, exists := model.Clients[phone]; exists {
+		// client := model.Clients[phone].Client
+
+		model.Clients[phone].Client.Logout()
+		delete(model.Clients, phone)
+
+		base.SetResponse(w, http.StatusOK, true)
+	} else {
+		base.SetResponse(w, http.StatusBadRequest, "Invalid account")
+	}
+}
