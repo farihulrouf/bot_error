@@ -499,7 +499,7 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 		}
 
 		payload := model.PayloadWebhook {
-			Section: "update_bot_status",
+			Section: "device_added",
 			Data: model.PhoneParams {
 				Phone: phonekey,
 			},
@@ -530,7 +530,7 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 			cid := model.GetPhoneNumber(client.Client.Store.ID.String())
 			if !client.Client.IsLoggedIn() {
 				payload := model.PayloadWebhook {
-					Section: "update_bot_status",
+					Section: "device_removed",
 					Data: model.PhoneParams {
 						Phone: cid,
 					},
