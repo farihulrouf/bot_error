@@ -42,10 +42,10 @@ deploy_in_stin:
   tags:
     - STIN-Bot-Chats
   script:
-    # - go mod download
-    # - go build -o wabot .
+    - go mod download
+    - go build -o wabot .
     - sudo systemctl stop wa-service.service
     - rm -rf /app/whatsapp/wabot
-    - cp whatsapbot /app/whatsapp/wabot
+    - cp wabot /app/whatsapp/wabot
     - sudo systemctl start wa-service.service
   environment: production
