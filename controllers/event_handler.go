@@ -273,7 +273,7 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 				Type: mediaType,
 				Caption: vidCaption,
 				MimeType: vid.GetMimetype(),
-				Thumbnail: vid.GetJPEGThumbnail(),
+				// Thumbnail: vid.GetJPEGThumbnail(),
 				FileLength: vid.GetFileLength(),
 			}
 
