@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"database/sql"
 	// "encoding/json"
-
 	// "golang.org/x/crypto/bcrypt"
 	"wagobot.com/base"
 	"wagobot.com/db"
