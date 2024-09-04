@@ -81,6 +81,14 @@ func CleanupClients() {
 			// fmt.Println("ini expired ", key)
 			delete(model.Clients, key)
 		}
+		// untuk nomor dengan id user = 0
+		if (client.User == 0) {
+			// logout lalu hapus
+			if client.Client.IsLoggedIn() {
+				client.Client.Logout()
+			}
+			delete(model.Clients, key)
+		}
 	}
 }
 
