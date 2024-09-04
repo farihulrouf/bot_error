@@ -73,21 +73,21 @@ func CleanupClients() {
 	currentTime := time.Now()
 	currentUnixTime := currentTime.Unix()
 	for key, client := range model.Clients {
-		if !strings.HasPrefix(key, "DEV") {
-			continue
-		}
-		// fmt.Println("Expired time ", client.ExpiredTime, currentUnixTime)
-		if client.ExpiredTime > 0 && client.ExpiredTime < currentUnixTime {
-			// fmt.Println("ini expired ", key)
-			delete(model.Clients, key)
-		}
-		// untuk nomor dengan id user = 0
-		if (client.User < 1) {
-			// logout lalu hapus
-			if client.Client.IsLoggedIn() {
-				client.Client.Logout()
+		if strings.HasPrefix(key, "DEV") {
+			// fmt.Println("Expired time ", client.ExpiredTime, currentUnixTime)
+			if client.ExpiredTime > 0 && client.ExpiredTime < currentUnixTime {
+				// fmt.Println("ini expired ", key)
+				delete(model.Clients, key)
 			}
-			delete(model.Clients, key)
+		} else {
+			// untuk nomor dengan id user = 0
+			if (client.User == 0) {
+				// logout lalu hapus
+				if client.Client.IsLoggedIn() {
+					client.Client.Logout()
+				}
+				delete(model.Clients, key)
+			}
 		}
 	}
 }
