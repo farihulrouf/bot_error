@@ -334,11 +334,14 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 
 		avatar := saveProfilePicture(cclient.Client, v.Info.Sender)
 
+		senderPhone := model.GetPhoneNumber(v.Info.Sender.String())
+		senderName := v.Info.PushName
+
 		message := model.Event {
 			ID: v.Info.ID,
 			Chat: chatId, // group id or phone id
-			SenderId: model.GetPhoneNumber(v.Info.Sender.String()), // phone id
-			SenderName: v.Info.PushName,
+			SenderId: senderPhone, // phone id
+			SenderName: senderName,
 			SenderAvatar: avatar,
 			Time: v.Info.Timestamp.Unix(),
 			IsGroup: v.Info.IsGroup,
@@ -367,6 +370,34 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 		}
 
 		err := sendPayloadToWebhook(model.DefaultWebhook, payload)
+		if err != nil {
+			fmt.Printf("Failed to send payload to webhook: %v\n", err)
+		}
+
+		var groupid *string
+		groupid = nil
+		if v.Info.IsGroup {
+			groupid = &chatId
+		}
+
+		// untuk sender
+		members := []model.Member{}
+		members = append(members, model.Member{
+			ID: senderPhone,
+			Name: senderName,
+			Avatar: avatar,
+			Phone: senderPhone,
+			// IsAdmin: member.IsAdmin,
+			// IsSuperAdmin: member.IsSuperAdmin,
+			GroupID: *groupid,
+		})
+
+		payload = model.PayloadWebhook {
+			Section: "senders",
+			Data: members,
+		}
+
+		err = sendPayloadToWebhook(model.DefaultWebhook, payload)
 		if err != nil {
 			fmt.Printf("Failed to send payload to webhook: %v\n", err)
 		}
