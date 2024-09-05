@@ -153,7 +153,7 @@ func saveProfilePicture(client *whatsmeow.Client, theJID wtypes.JID) string {
 	path := "media/wa/a/"+ filename
 
 	myurl, _ := uploadToSpace(path, byteData, "image/jpg")
-	fmt.Println("FILEEEEE", myurl)
+	// fmt.Println("FILEEEEE", myurl)
 
 	return myurl
 }
@@ -549,17 +549,19 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 		// initialClient()
 		
 	case *events.HistorySync:
-		fmt.Println("Received a history sync")
-		/*for _, conv := range v.Data.GetConversations() {
+		fmt.Println("---- sync history -----")
+		for _, conv := range v.Data.GetConversations() {
 			for _, historymsg := range conv.GetMessages() {
-				chatJID, _ := types.ParseJID(conv.GetId())
-				evt, err := client.ParseWebMessage(chatJID, historymsg.GetMessage())
-				if err != nil {
-					log.Println(err)
-				}
-				eventHandler(evt)
+				// fmt.Println(historymsg)
+				chatJID, _ := wtypes.ParseJID(conv.GetId())
+				evt, _ := cclient.Client.ParseWebMessage(chatJID, historymsg.GetMessage())
+				// if err != nil {
+				// 	log.Println(err)
+				// }
+				EventHandler(evt, cclient)
 			}
-		}*/
+		}
+		fmt.Println("--- sync done -----")
 
 	case *events.LoggedOut:
 		fmt.Println("------ Logout from mobile device ----")

@@ -82,10 +82,10 @@ func GetGroupsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func JoinGroupHandler(w http.ResponseWriter, r *http.Request) {
-	var params model.JoinGroupRequest
+	var params model.PhoneCodeRequest
 
 	base.ValidateRequest(r, &params)
-	fmt.Println(params)
+	// fmt.Println(params)
 
 	if params.Code == "" || params.Phone == "" {
 		base.SetResponse(w, http.StatusBadRequest, "phone & code are required")
@@ -119,9 +119,25 @@ func JoinGroupHandler(w http.ResponseWriter, r *http.Request) {
 
 		members := []model.Member{}
 		for _, member := range groupInfo.Participants {
+
+			tavatar := saveProfilePicture(client, member.JID)
+			tphone  := model.GetPhoneNumber(member.JID.String())
+			name := member.DisplayName
+
+			if name == "" {
+				contact, err := client.Store.Contacts.GetContact(member.JID)
+				if err != nil {
+					fmt.Printf("Failed to fetch contact for JID: %s, error: %v\n", member.JID.String(), err)
+					continue
+				}
+				name = contact.PushName
+			}
+
 			members = append(members, model.Member{
-				ID: model.GetPhoneNumber(member.JID.String()),
-				Name: member.DisplayName,
+				ID: tphone,
+				Name: name,
+				Avatar: tavatar,
+				Phone: tphone,
 				IsAdmin: member.IsAdmin,
 				IsSuperAdmin: member.IsSuperAdmin,
 				GroupID: groupid,
@@ -157,7 +173,7 @@ func JoinGroupHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func LeaveGroupHandler(w http.ResponseWriter, r *http.Request) {
-	var params model.LeaveGroupRequest
+	var params model.PhoneGroupRequest
 
 	base.ValidateRequest(r, &params)
 	fmt.Println(params)
@@ -203,6 +219,201 @@ func LeaveGroupHandler(w http.ResponseWriter, r *http.Request) {
 		base.SetResponse(w, http.StatusBadRequest, "Invalid account")
 	}
 }
+
+func MemberGroupHandler(w http.ResponseWriter, r *http.Request) {
+	var params model.PhoneGroupRequest
+
+	base.ValidateRequest(r, &params)
+	fmt.Println(params)
+
+	if params.GroupID == "" || params.Phone == "" {
+		base.SetResponse(w, http.StatusBadRequest, "phone & code are required")
+		return
+	}
+
+	phone := params.Phone
+	groupid := params.GroupID
+
+	if !base.IsMyNumber(phone) {
+		base.SetResponse(w, http.StatusBadRequest, "Missing number")
+		return
+	}
+
+	if _, exists := model.Clients[phone]; exists {
+		client := model.Clients[phone].Client
+
+		groupJID, err := types.ParseJID(groupid + "@g.us")
+		if err != nil {
+			base.SetResponse(w, http.StatusBadRequest, errors.ErrInvalidGroupID)
+			return
+		}
+
+		groupInfo, err := client.GetGroupInfo(groupJID)
+		if err != nil {
+			base.SetResponse(w, http.StatusBadRequest, errors.ErrInvalidGroupID)
+			return
+		}
+
+		members := []model.Member{}
+		for _, member := range groupInfo.Participants {
+
+			tavatar := saveProfilePicture(client, member.JID)
+			tphone  := model.GetPhoneNumber(member.JID.String())
+			name := member.DisplayName
+
+			if name == "" {
+				contact, err := client.Store.Contacts.GetContact(member.JID)
+				if err != nil {
+					fmt.Printf("Failed to fetch contact for JID: %s, error: %v\n", member.JID.String(), err)
+					continue
+				}
+				name = contact.PushName
+			}
+
+			members = append(members, model.Member{
+				ID: tphone,
+				Name: name,
+				Avatar: tavatar,
+				Phone: tphone,
+				IsAdmin: member.IsAdmin,
+				IsSuperAdmin: member.IsSuperAdmin,
+				GroupID: groupid,
+			})
+		}
+
+		// fmt.Println(members)
+
+		payload := model.PayloadWebhook {
+			Section: "senders",
+			Data: members,
+		}
+
+		err = sendPayloadToWebhook(model.DefaultWebhook, payload)
+		if err != nil {
+			fmt.Printf("Failed to send payload to webhook: %v\n", err)
+		}
+
+		base.SetResponse(w, http.StatusOK, payload)
+	} else {
+		base.SetResponse(w, http.StatusBadRequest, "Invalid account")
+	}
+}
+
+// func ChatGroupHandler(w http.ResponseWriter, r *http.Request) {
+// 	var params model.PhoneGroupRequest
+
+// 	base.ValidateRequest(r, &params)
+// 	fmt.Println(params)
+
+// 	if params.GroupID == "" || params.Phone == "" {
+// 		base.SetResponse(w, http.StatusBadRequest, "phone & code are required")
+// 		return
+// 	}
+
+// 	phone := params.Phone
+// 	groupid := params.GroupID
+
+// 	if !base.IsMyNumber(phone) {
+// 		base.SetResponse(w, http.StatusBadRequest, "Missing number")
+// 		return
+// 	}
+
+// 	if _, exists := model.Clients[phone]; exists {
+// 		// client := model.Clients[phone].Client
+
+// 		groupJID, err := types.ParseJID(groupid + "@g.us")
+// 		if err != nil {
+// 			base.SetResponse(w, http.StatusBadRequest, errors.ErrInvalidGroupID)
+// 			return
+// 		}
+
+// 		// chat, err := client.Store.GetChat(groupJID)
+// 		// if err != nil {
+// 		// 	return fmt.Errorf("failed to get chat: %v", err)
+// 		// }
+
+// 		fmt.Println(groupJID)
+
+// 		// // Fetch chat history
+// 		// ctx := context.Background()
+// 		// messages, err := client.GetChatHistory(ctx, groupJID, 100) // Fetch 100 messages
+// 		// if err != nil {
+// 		// 	log.Fatalf("Failed to get chat history: %v", err)
+// 		// }
+
+// 		// // chatJID, err := types.ParseJID(conv.GetId())
+// 		// for _, historyMsg := range conv.GetMessages() {
+// 		// 	evt, _ := client.ParseWebMessage(groupJID, historyMsg.GetMessage())
+// 		// 	// yourNormalEventHandler(evt)
+// 		// 	fmt.Println(evt)
+// 		// }
+
+// 		// personMsg := map[string][]*events.Message
+// 		// evt, err := client.ParseWebMessage(groupJID, historyMsg.GetMessage())
+// 		// if err != nil {
+// 		// 	// handle
+// 		// }
+// 		// if !evt.Info.IsFromMe && !evt.Info.IsGroup {// not a group, not sent by me
+// 		// 	info, _ := cli.GetUserInfo([]types.JID{evt.Info.Sender})
+// 		// 	if contact, ok := contacts[info[evt.Info.Sender]; ok {
+// 		// 		msgs, ok := personMsg[contact.PushName]
+// 		// 		if !ok {
+// 		// 			msgs := []*events.Message{}
+// 		// 		}
+// 		// 		personMsg[contact.PushName] = append(msgs, evt)
+// 		// 	}
+// 		// }
+
+// 		// groupInfo, err := client.GetGroupInfo(groupJID)
+// 		// if err != nil {
+// 		// 	base.SetResponse(w, http.StatusBadRequest, errors.ErrInvalidGroupID)
+// 		// 	return
+// 		// }
+
+// 		// members := []model.Member{}
+// 		// for _, member := range groupInfo.Participants {
+
+// 		// 	tavatar := saveProfilePicture(client, member.JID)
+// 		// 	tphone  := model.GetPhoneNumber(member.JID.String())
+// 		// 	name := member.DisplayName
+
+// 		// 	if name == "" {
+// 		// 		contact, err := client.Store.Contacts.GetContact(member.JID)
+// 		// 		if err != nil {
+// 		// 			fmt.Printf("Failed to fetch contact for JID: %s, error: %v\n", member.JID.String(), err)
+// 		// 			continue
+// 		// 		}
+// 		// 		name = contact.PushName
+// 		// 	}
+
+// 		// 	members = append(members, model.Member{
+// 		// 		ID: tphone,
+// 		// 		Name: name,
+// 		// 		Avatar: tavatar,
+// 		// 		Phone: tphone,
+// 		// 		IsAdmin: member.IsAdmin,
+// 		// 		IsSuperAdmin: member.IsSuperAdmin,
+// 		// 		GroupID: groupid,
+// 		// 	})
+// 		// }
+
+// 		// // fmt.Println(members)
+
+// 		// payload := model.PayloadWebhook {
+// 		// 	Section: "senders",
+// 		// 	Data: members,
+// 		// }
+
+// 		// err = sendPayloadToWebhook(model.DefaultWebhook, payload)
+// 		// if err != nil {
+// 		// 	fmt.Printf("Failed to send payload to webhook: %v\n", err)
+// 		// }
+
+// 		base.SetResponse(w, http.StatusOK, messages)
+// 	} else {
+// 		base.SetResponse(w, http.StatusBadRequest, "Invalid account")
+// 	}
+// }
 
 // CreateGroupHandler handles the creation of a new WhatsApp group
 func CreateGroupHandler(w http.ResponseWriter, r *http.Request) {

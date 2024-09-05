@@ -21,12 +21,12 @@ type SendMessageResponse struct {
 	Status string `json:"status"`
 }
 
-type JoinGroupRequest struct {
+type PhoneCodeRequest struct {
 	Phone string `json:"phone"`
 	Code  string `json:"code"`
 }
 
-type LeaveGroupRequest struct {
+type PhoneGroupRequest struct {
 	Phone   string `json:"phone"`
 	GroupID string `json:"group_id"`
 }

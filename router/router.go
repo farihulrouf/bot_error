@@ -84,6 +84,8 @@ func SetupRouter() *mux.Router {
 	r.HandleFunc("/api/groups", controllers.GetGroupsHandler).Methods("GET")
 	r.HandleFunc("/api/group/join", controllers.JoinGroupHandler).Methods("POST")
 	r.HandleFunc("/api/group/leave", controllers.LeaveGroupHandler).Methods("POST")
+	r.HandleFunc("/api/group/members", controllers.MemberGroupHandler).Methods("POST")
+	// r.HandleFunc("/api/group/messages", controllers.MemberGroupHandler).Methods("POST")
 
 	r.HandleFunc("/api/webhook", controllers.GetWebhookHandler).Methods("GET")
 	r.HandleFunc("/api/webhook", controllers.UpdateWebhookHandler).Methods("PUT")
