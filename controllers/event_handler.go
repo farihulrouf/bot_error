@@ -32,6 +32,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
+func getExtension(filename string) string {
+	ext := filepath.Ext(filename)
+	return ext
+}
+
 func removeExtension(filename string) string {
 	// Get the file extension
 	ext := filepath.Ext(filename)
@@ -102,7 +107,8 @@ func saveMedia(
 		}
 		filename = path.Base(parsedURL.Path)
 	}
-	filename = removeExtension(filename) +"-"+ setLastMimetype(mimetype)
+	// filename = removeExtension(filename) +"-"+ setLastMimetype(mimetype)
+	filename = removeExtension(filename) +"-"+ getExtension(filename)
 
 	byteData, err := client.Download(mediaMessage)
 	if err != nil {
