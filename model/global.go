@@ -32,6 +32,17 @@ type PhoneParams struct {
 	Phone string `json:"phone"`
 }
 
+type PhoneVerifyParams struct {
+	Phone string `json:"phone"`
+	PhoneRef string `json:"phoneref"`
+	Ref string `json:"ref"`
+}
+
+type PhoneRefParams struct {
+	Phone string `json:"phone"`
+	Ref string `json:"ref"`
+}
+
 type PayloadWebhook struct {
 	Section string `json:"section"`
 	Data interface{} `json:"data"`

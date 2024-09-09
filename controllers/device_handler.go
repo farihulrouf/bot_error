@@ -73,18 +73,26 @@ func GetDevicesHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func ScanDeviceHandler(w http.ResponseWriter, r *http.Request) {
+	// var params model.PhoneRefParams
 
-	// tokenStr := r.Header.Get("Authorization")
-	// tokenStr = strings.TrimPrefix(tokenStr, "Bearer ")
-	// claims, _ := base.ParseToken(tokenStr)
-	// username, _ := claims["username"].(string)
+	params := r.URL.Query()
+    phone := params.Get("phone")
+    ref := params.Get("ref")
+
+	fmt.Println(params)
+
+	if phone == "" || ref == "" {
+		base.SetResponse(w, http.StatusBadRequest, "phone and ref required")
+		return
+	}
 
 	username := base.CurrentUser.Username
 	user, _ := db.GetUserByUsername(username)
 
 	deviceStore := StoreContainer.NewDevice()
 	client := GetClient(deviceStore)
-	deviceID := GenerateRandomString("DEVICE", 5)
+	// deviceID := GenerateRandomString("DEVICE", 5)
+	deviceID := "DEVICE" +"-"+ phone +"-"+ ref
 
 	currentTime := time.Now()
 	nextTime := currentTime.Add(3 * time.Minute)
@@ -119,7 +127,7 @@ func ScanDeviceHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func StatusDeviceHandler(w http.ResponseWriter, r *http.Request) {
-	var params model.PhoneRequest
+	var params model.PhoneParams
 
 	base.ValidateRequest(r, &params)
 	fmt.Println(params)

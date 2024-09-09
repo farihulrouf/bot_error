@@ -1,8 +1,10 @@
 package router
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
+	// "encoding/json"
 
 	"github.com/gorilla/mux"
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -21,6 +23,11 @@ func SetupRouter() *mux.Router {
 	// Middleware JWT digunakan untuk semua rute kecuali /api/login dan /api/register /scanqr
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			
+			fmt.Printf("%s %s\n", r.Method, r.URL.Path)
+    		fmt.Printf("Params: %v\n", r.URL.Query())
+			fmt.Printf("Forms: %v\n", r.Form)
+
 			if r.URL.Path == "/api/login" || r.URL.Path == "/api/register" ||
 				strings.HasPrefix(r.URL.Path, "/swagger/") {
 				next.ServeHTTP(w, r)

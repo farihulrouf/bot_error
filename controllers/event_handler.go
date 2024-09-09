@@ -4,6 +4,7 @@ import (
 	// "io"
 	// "os"
 	"fmt"
+	"time"
 	"path"
 	"bytes"
 	"net/http"
@@ -514,31 +515,48 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 	case *events.PairSuccess:
 		// fmt.Println("pari succeess", v.ID.User)
 		fmt.Println("--- pairing success", v.ID.User)
-		phonekey :=  model.GetPhoneNumber(v.ID.String())
+		phoneref := ""
+		ref := ""
+		phonekey := model.GetPhoneNumber(v.ID.String())
 		for key, client := range model.Clients {
 			if !strings.HasPrefix(key, "DEV") {
 				continue
 			}
 
+			params := strings.Split(key, "-")
+			phoneref = params[1]
+			ref = params[2]
+
 			iphone := model.GetPhoneNumber(client.Client.Store.ID.String())
-			fmt.Println("comparing ", phonekey, iphone)
-			if iphone == phonekey {
-				db.InsertUserDevice(model.UserDevice{
-					UserId:    client.User,
-					DeviceJid: phonekey,
-				})
-				client.ExpiredTime = 0
-				client.Phone = phonekey
-				model.Clients[phonekey] = client
-				delete(model.Clients, key)
+			fmt.Println("comparing ", phonekey, iphone, phoneref, ref)
+			if phonekey == iphone {
+				if phonekey == phoneref {
+					db.InsertUserDevice(model.UserDevice{
+						UserId:    client.User,
+						DeviceJid: phonekey,
+					})
+					client.ExpiredTime = 0
+					client.Phone = phonekey
+					model.Clients[phonekey] = client
+					delete(model.Clients, key)
+				} else {
+					time.Sleep(5 * time.Second)
+					if client.Client.IsLoggedIn() {
+						client.Client.Logout()
+					}
+					fmt.Printf("---> Mismatch number, deleting %s\n", key)
+					delete(model.Clients, key)
+				}
 				break;
 			}
 		}
 
 		payload := model.PayloadWebhook {
 			Section: "device_added",
-			Data: model.PhoneParams {
+			Data: model.PhoneVerifyParams {
 				Phone: phonekey,
+				PhoneRef: phoneref,
+				Ref: ref,
 			},
 		}
 

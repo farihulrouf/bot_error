@@ -14,3 +14,9 @@ func GetPhoneNumber(jid string) string {
     parts = strings.Split(parts[0], ":")
     return parts[0]
 }
+
+func GetPhoneFromDeviceScan(devid string) string {
+	// format DEVICE-{phone}-{ref}
+	parts := strings.Split(devid, "-")
+    return parts[1]
+}

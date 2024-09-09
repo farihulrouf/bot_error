@@ -184,14 +184,23 @@ func CreateNewToken() (string, error) {
 func ValidateRequest(r *http.Request, datatype interface{}) (interface{}, error) {
     contentType := r.Header.Get("Content-Type")
 
-	if contentType == "application/json" {
-        err := json.NewDecoder(r.Body).Decode(&datatype)
-		if err != nil {
-			return datatype, nil
-		} else {
-			return datatype, err
+	if r.Method == "GET" {
+		// err := json.NewDecoder(r.URL.Query()).Decode(&datatype)
+		// if err != nil {
+		// 	return datatype, nil
+		// } else {
+		// 	return datatype, err
+		// }
+	} else {
+		if contentType == "application/json" {
+			err := json.NewDecoder(r.Body).Decode(&datatype)
+			if err != nil {
+				return datatype, nil
+			} else {
+				return datatype, err
+			}
 		}
-    }
+	}
 
     // Handle form data
     err := r.ParseForm()
