@@ -3,19 +3,23 @@ package controllers
 import (
 	// "io"
 	// "os"
-	"fmt"
-	"time"
-	"path"
 	"bytes"
-	"net/http"
+	"context"
+	"fmt"
 	"io/ioutil"
+	"log"
+	"net/http"
+	"path"
 	"path/filepath"
 	"strings"
-	"context"
+	"time"
+
 	// "net/http"
-	"net/url"
 	"encoding/json"
+	"net/url"
+
 	"wagobot.com/db"
+
 	// "encoding/base64"
 	// "wagobot.com/base"
 	"wagobot.com/model"
@@ -28,8 +32,8 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
@@ -50,22 +54,20 @@ func setLastMimetype(mimetype string) string {
 	return tmp[1]
 }
 
-
-
 func uploadToSpace(pathToFile string, fileData []byte, mimetype string) (string, error) {
 
 	bucketName := "dragonfly"
 	region := "sgp1"
 	accessKey := model.SpaceConfig.AccessKey
 	secretKey := model.SpaceConfig.SecretKey
-	
+
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithRegion(region), // Use the DigitalOcean region (e.g., nyc3)
 		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKey, secretKey, "")),
 		config.WithEndpointResolver(aws.EndpointResolverFunc(func(service, region string) (aws.Endpoint, error) {
 			return aws.Endpoint{
-				PartitionID: "aws",
-				URL: model.SpaceConfig.Endpoint,
+				PartitionID:   "aws",
+				URL:           model.SpaceConfig.Endpoint,
 				SigningRegion: region,
 			}, nil
 		})),
@@ -79,10 +81,10 @@ func uploadToSpace(pathToFile string, fileData []byte, mimetype string) (string,
 
 	// Upload the file
 	_, err = client.PutObject(context.TODO(), &s3.PutObjectInput{
-		Bucket: aws.String(bucketName),
-		Key:    aws.String(pathToFile),
-		Body:   bytes.NewReader(fileData),
-		ACL:    types.ObjectCannedACLPublicRead, // Set to public or private based on your requirement
+		Bucket:      aws.String(bucketName),
+		Key:         aws.String(pathToFile),
+		Body:        bytes.NewReader(fileData),
+		ACL:         types.ObjectCannedACLPublicRead, // Set to public or private based on your requirement
 		ContentType: aws.String(mimetype),
 	})
 	if err != nil {
@@ -90,14 +92,14 @@ func uploadToSpace(pathToFile string, fileData []byte, mimetype string) (string,
 		return "", fmt.Errorf("failed to upload file: %v", err)
 	}
 
-	strurl := model.SpaceConfig.Endpoint +"/"+ bucketName +"/"+ pathToFile
+	strurl := model.SpaceConfig.Endpoint + "/" + bucketName + "/" + pathToFile
 
 	return strurl, nil
 }
 
 func saveMedia(
-	client *whatsmeow.Client, 
-	mediaMessage whatsmeow.DownloadableMessage, 
+	client *whatsmeow.Client,
+	mediaMessage whatsmeow.DownloadableMessage,
 	chatId string, strdate string, filename string, targeturl string, mimetype string) string {
 
 	if filename == "" {
@@ -109,7 +111,7 @@ func saveMedia(
 		filename = path.Base(parsedURL.Path)
 	}
 	// filename = removeExtension(filename) +"-"+ setLastMimetype(mimetype)
-	filename = removeExtension(filename) +"-"+ getExtension(filename)
+	filename = removeExtension(filename) + "-" + getExtension(filename)
 
 	byteData, err := client.Download(mediaMessage)
 	if err != nil {
@@ -117,7 +119,7 @@ func saveMedia(
 		return ""
 	}
 
-	path := "media/wa/p/"+ chatId +"/"+ strdate +"/"+ filename
+	path := "media/wa/p/" + chatId + "/" + strdate + "/" + filename
 
 	myurl, _ := uploadToSpace(path, byteData, mimetype)
 	fmt.Println("FILEEEEE", myurl)
@@ -128,30 +130,30 @@ func saveMedia(
 func saveProfilePicture(client *whatsmeow.Client, theJID wtypes.JID) string {
 
 	params := &whatsmeow.GetProfilePictureParams{
-        // JID:     theJID,
-        // IsCommunity: false,
-    }
+		// JID:     theJID,
+		// IsCommunity: false,
+	}
 
-	profilePictureURL, err := client.GetProfilePictureInfo(theJID, params)  // false for high-res, true for low-res
-    if err != nil {
-        fmt.Println("Error getting profile picture:", err)
-        return ""
-    }
+	profilePictureURL, err := client.GetProfilePictureInfo(theJID, params) // false for high-res, true for low-res
+	if err != nil {
+		fmt.Println("Error getting profile picture:", err)
+		return ""
+	}
 
 	response, err := http.Get(profilePictureURL.URL)
-    if err != nil {
-        return ""
-    }
-    defer response.Body.Close()
+	if err != nil {
+		return ""
+	}
+	defer response.Body.Close()
 
 	byteData, err := ioutil.ReadAll(response.Body)
-    if err != nil {
-        return ""
-    }
+	if err != nil {
+		return ""
+	}
 
 	filename := model.GetPhoneNumber(theJID.String()) + "-jpg"
 
-	path := "media/wa/a/"+ filename
+	path := "media/wa/a/" + filename
 
 	myurl, _ := uploadToSpace(path, byteData, "image/jpg")
 	// fmt.Println("FILEEEEE", myurl)
@@ -166,7 +168,11 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 
 		fmt.Println("------ new message ")
 		// fmt.Println(evt)
-
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("Recovered from panic: %v", r)
+			}
+		}()
 		var media model.Media
 		chatId := v.Info.Chat.String()
 		theType := "post"
@@ -178,7 +184,7 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 		// if !v.Info.IsGroup {
 		chatId = model.GetPhoneNumber(chatId)
 		// }
-		
+
 		fmt.Println("---------- message  link ------")
 		fmt.Println(v.Message)
 
@@ -211,11 +217,11 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 
 			mediaUrl := saveMedia(cclient.Client, img, chatId, strdate, "", img.GetURL(), img.GetMimetype())
 
-			media = model.Media {
-				Url: mediaUrl,
-				Type: mediaType,
-				Caption: imgCaption,
-				MimeType: img.GetMimetype(),
+			media = model.Media{
+				Url:        mediaUrl,
+				Type:       mediaType,
+				Caption:    imgCaption,
+				MimeType:   img.GetMimetype(),
 				FileLength: img.GetFileLength(),
 			}
 			if txtMessage != "" {
@@ -231,13 +237,13 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 
 			mediaUrl := saveMedia(cclient.Client, doc, chatId, strdate, doc.GetFileName(), doc.GetURL(), doc.GetMimetype())
 
-			media = model.Media {
-				Url: mediaUrl,
-				Type: mediaType,
-				Caption: docCaption,
-				FileName: doc.GetFileName(),
+			media = model.Media{
+				Url:        mediaUrl,
+				Type:       mediaType,
+				Caption:    docCaption,
+				FileName:   doc.GetFileName(),
 				FileLength: doc.GetFileLength(),
-				MimeType: doc.GetMimetype(),
+				MimeType:   doc.GetMimetype(),
 			}
 
 			if txtMessage != "" {
@@ -253,12 +259,12 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 
 			mediaUrl := saveMedia(cclient.Client, aud, chatId, strdate, "", aud.GetURL(), aud.GetMimetype())
 
-			media = model.Media {
-				Url: mediaUrl,
-				Type: mediaType,
-				Caption: audCaption,
-				MimeType: aud.GetMimetype(),
-				Seconds: aud.GetSeconds(),
+			media = model.Media{
+				Url:        mediaUrl,
+				Type:       mediaType,
+				Caption:    audCaption,
+				MimeType:   aud.GetMimetype(),
+				Seconds:    aud.GetSeconds(),
 				FileLength: aud.GetFileLength(),
 			}
 
@@ -275,10 +281,10 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 
 			mediaUrl := saveMedia(cclient.Client, vid, chatId, strdate, "", vid.GetURL(), vid.GetMimetype())
 
-			media = model.Media {
-				Url: mediaUrl,
-				Type: mediaType,
-				Caption: vidCaption,
+			media = model.Media{
+				Url:      mediaUrl,
+				Type:     mediaType,
+				Caption:  vidCaption,
 				MimeType: vid.GetMimetype(),
 				// Thumbnail: vid.GetJPEGThumbnail(),
 				FileLength: vid.GetFileLength(),
@@ -293,8 +299,8 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 		if v.Message.ContactMessage != nil {
 			ctc := v.Message.GetContactMessage()
 			mediaType = "contact"
-			media = model.Media {
-				Name: ctc.GetDisplayName(),
+			media = model.Media{
+				Name:    ctc.GetDisplayName(),
 				Contact: ctc.GetVcard(),
 			}
 
@@ -309,7 +315,7 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 			polName := pol.GetName()
 			mediaType = "polling"
 			jsonData, _ := json.Marshal(pol)
-			media = model.Media {
+			media = model.Media{
 				Poll: string(jsonData),
 			}
 			if txtMessage != "" {
@@ -323,14 +329,14 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 			lat := loc.GetDegreesLatitude()
 			lng := loc.GetDegreesLongitude()
 			mediaType = "location"
-			media = model.Media {
-				Latitude: lat,
+			media = model.Media{
+				Latitude:  lat,
 				Longitude: lng,
 			}
 			if txtMessage != "" {
 				txtMessage += ". "
 			}
-			txtMessage += "Location: " + fmt.Sprintf("%f", lat) +", "+ fmt.Sprintf("%f", lng)
+			txtMessage += "Location: " + fmt.Sprintf("%f", lat) + ", " + fmt.Sprintf("%f", lng)
 		}
 
 		avatar := saveProfilePicture(cclient.Client, v.Info.Sender)
@@ -338,26 +344,26 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 		senderPhone := model.GetPhoneNumber(v.Info.Sender.String())
 		senderName := v.Info.PushName
 
-		message := model.Event {
-			ID: v.Info.ID,
-			Chat: chatId, // group id or phone id
-			SenderId: senderPhone, // phone id
-			SenderName: senderName,
-			SenderAvatar: avatar,
-			Time: v.Info.Timestamp.Unix(),
-			IsGroup: v.Info.IsGroup,
-			IsFromMe: v.Info.IsFromMe,
-			Type: theType,
-			MediaType: mediaType,
-			Text: txtMessage,
-			IsViewOnce: v.IsViewOnce,
-			IsViewOnceV2: v.IsViewOnceV2,
+		message := model.Event{
+			ID:                    v.Info.ID,
+			Chat:                  chatId,      // group id or phone id
+			SenderId:              senderPhone, // phone id
+			SenderName:            senderName,
+			SenderAvatar:          avatar,
+			Time:                  v.Info.Timestamp.Unix(),
+			IsGroup:               v.Info.IsGroup,
+			IsFromMe:              v.Info.IsFromMe,
+			Type:                  theType,
+			MediaType:             mediaType,
+			Text:                  txtMessage,
+			IsViewOnce:            v.IsViewOnce,
+			IsViewOnceV2:          v.IsViewOnceV2,
 			IsViewOnceV2Extension: v.IsViewOnceV2Extension,
-			IsLottieSticker: v.IsLottieSticker,
+			IsLottieSticker:       v.IsLottieSticker,
 			IsDocumentWithCaption: v.IsDocumentWithCaption,
-			ReplyToPost: replyToPost,
-			ReplyToUser: replyToUser,
-			Media: media,
+			ReplyToPost:           replyToPost,
+			ReplyToUser:           replyToUser,
+			Media:                 media,
 		}
 
 		// payload, _ := json.MarshalIndent(message, "", "")
@@ -365,9 +371,9 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 		// fmt.Println(message)
 		// fmt.Println("---- Active Webhook url", model.DefaultWebhook)
 
-		payload := model.PayloadWebhook {
+		payload := model.PayloadWebhook{
 			Section: "single_message",
-			Data: message,
+			Data:    message,
 		}
 
 		err := sendPayloadToWebhook(model.DefaultWebhook, payload)
@@ -384,18 +390,18 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 		// untuk sender
 		members := []model.Member{}
 		members = append(members, model.Member{
-			ID: senderPhone,
-			Name: senderName,
+			ID:     senderPhone,
+			Name:   senderName,
 			Avatar: avatar,
-			Phone: senderPhone,
+			Phone:  senderPhone,
 			// IsAdmin: member.IsAdmin,
 			// IsSuperAdmin: member.IsSuperAdmin,
 			GroupID: *groupid,
 		})
 
-		payload = model.PayloadWebhook {
+		payload = model.PayloadWebhook{
 			Section: "senders",
-			Data: members,
+			Data:    members,
 		}
 
 		err = sendPayloadToWebhook(model.DefaultWebhook, payload)
@@ -547,16 +553,16 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 					fmt.Printf("---> Mismatch number, deleting %s\n", key)
 					delete(model.Clients, key)
 				}
-				break;
+				break
 			}
 		}
 
-		payload := model.PayloadWebhook {
+		payload := model.PayloadWebhook{
 			Section: "device_added",
-			Data: model.PhoneVerifyParams {
-				Phone: phonekey,
+			Data: model.PhoneVerifyParams{
+				Phone:    phonekey,
 				PhoneRef: phoneref,
-				Ref: ref,
+				Ref:      ref,
 			},
 		}
 
@@ -565,7 +571,7 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 			fmt.Printf("Failed to send payload to webhook: %v\n", err)
 		}
 		// initialClient()
-		
+
 	case *events.HistorySync:
 		fmt.Println("---- sync history -----")
 		for _, conv := range v.Data.GetConversations() {
@@ -586,9 +592,9 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 		for _, client := range model.Clients {
 			cid := model.GetPhoneNumber(client.Client.Store.ID.String())
 			if !client.Client.IsLoggedIn() {
-				payload := model.PayloadWebhook {
+				payload := model.PayloadWebhook{
 					Section: "device_removed",
-					Data: model.PhoneParams {
+					Data: model.PhoneParams{
 						Phone: cid,
 					},
 				}
@@ -603,7 +609,7 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 		//initialClient()
 
 	case *events.Receipt:
-		
+
 		// fmt.Println("----- terima")
 		if v.Type == events.ReceiptTypeRead || v.Type == events.ReceiptTypeReadSelf {
 			fmt.Printf("%v was read by %s at %s\n", v.MessageIDs, v.SourceString(), v.Timestamp)
