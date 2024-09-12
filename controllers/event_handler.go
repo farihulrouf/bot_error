@@ -181,7 +181,7 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 		replyToUser := ""
 		mediaType := v.Info.Type
 		strdate := v.Info.Timestamp.Format("20060102")
-		idChat := helpers.ConvertToLettersDetailed(cclient.Phone)
+		idChat := helpers.ConvertToLettersDetailed(cclient.Phone, v.Info.IsGroup)
 
 		// if !v.Info.IsGroup {
 		chatId = model.GetPhoneNumber(chatId)
