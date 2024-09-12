@@ -489,3 +489,30 @@ func Base64ToHash(base64Str string) ([]byte, []byte, error) {
 
 	return hashSHA256Bytes, hashMD5Bytes, nil
 }
+
+func ConvertToLettersDetailed(number string) string {
+	// Peta digit ke huruf sesuai dengan keypad telepon
+	digitToLetters := map[rune]string{
+		'2': "ABC",
+		'3': "DEF",
+		'4': "GHI",
+		'5': "JKL",
+		'6': "MNO",
+		'7': "PQRS",
+		'8': "TUV",
+		'9': "WXYZ",
+	}
+
+	var result strings.Builder
+	for _, digit := range number {
+		if letters, ok := digitToLetters[digit]; ok {
+			// Jika ada huruf yang sesuai dengan digit, tambahkan digit dan huruf-hurufnya
+			result.WriteRune(digit)     // Menulis digit
+			result.WriteString(letters) // Menulis huruf yang sesuai
+		} else {
+			// Jika digit tidak ada di peta (misal: 0 atau 1), tambahkan digit saja
+			result.WriteRune(digit)
+		}
+	}
+	return result.String()
+}

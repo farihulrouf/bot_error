@@ -19,6 +19,7 @@ import (
 	"net/url"
 
 	"wagobot.com/db"
+	"wagobot.com/helpers"
 
 	// "encoding/base64"
 	// "wagobot.com/base"
@@ -180,13 +181,14 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 		replyToUser := ""
 		mediaType := v.Info.Type
 		strdate := v.Info.Timestamp.Format("20060102")
+		idChat := helpers.ConvertToLettersDetailed(cclient.Phone)
 
 		// if !v.Info.IsGroup {
 		chatId = model.GetPhoneNumber(chatId)
 		// }
 
 		fmt.Println("---------- message  link ------")
-		fmt.Println(v.Message)
+		//fmt.Println(v.Message)
 
 		txtMessage := ""
 		if v.Message.ExtendedTextMessage != nil {
@@ -345,7 +347,7 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 		senderName := v.Info.PushName
 
 		message := model.Event{
-			ID:                    v.Info.ID,
+			ID:                    idChat,
 			Chat:                  chatId,      // group id or phone id
 			SenderId:              senderPhone, // phone id
 			SenderName:            senderName,
@@ -364,6 +366,7 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 			ReplyToPost:           replyToPost,
 			ReplyToUser:           replyToUser,
 			Media:                 media,
+			IDChat:                v.Info.ID,
 		}
 
 		// payload, _ := json.MarshalIndent(message, "", "")

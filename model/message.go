@@ -100,43 +100,44 @@ type ReadReceipt struct {
 }
 
 type Media struct {
-	ID             	string `json:"id"`
-	Type           	string `json:"type"`
-	MimeType       	string `json:"mimeType"`
-	Caption			string `json:"caption"`
-	Thumbnail		[]byte `json:"thumbnail"`
-	FileName       	string `json:"fileName"`
-	FileContent	   	string `json:"fileContent"`
-	FileLength		uint64 `json:"fileLength"`
-	Seconds	   		uint32 `json:"seconds"`
-	Name            string `json:"name"`
-	Contact         string `json:"contact"`
-	Poll			string `json:"poll"`
-	Latitude		float64 `json:"latitude"`
-	Longitude		float64 `json:"longitude"`
-	Url 			string `json:"url"`
+	ID          string  `json:"id"`
+	Type        string  `json:"type"`
+	MimeType    string  `json:"mimeType"`
+	Caption     string  `json:"caption"`
+	Thumbnail   []byte  `json:"thumbnail"`
+	FileName    string  `json:"fileName"`
+	FileContent string  `json:"fileContent"`
+	FileLength  uint64  `json:"fileLength"`
+	Seconds     uint32  `json:"seconds"`
+	Name        string  `json:"name"`
+	Contact     string  `json:"contact"`
+	Poll        string  `json:"poll"`
+	Latitude    float64 `json:"latitude"`
+	Longitude   float64 `json:"longitude"`
+	Url         string  `json:"url"`
 }
 
 type Event struct {
-	ID             string `json:"id"`
-	Chat           string `json:"chat"`
-	Time           int64  `json:"time"`
-	SenderId	   string `json:"senderId"`
-	SenderName     string `json:"senderName"`
-	SenderAvatar   string `json:"senderAvatar"`
-	IsGroup		   bool   `json:"isGroup"`
-	Text           string `json:"text"`
-	IsFromMe       bool   `json:"isFromMe"`
-	MediaType	   string `json:"mediaType"`
-	Type           string `json:"type"`
-	ReplyToPost    string `json:"replyToPost"`
-	ReplyToUser    string `json:"replyToUser"`
-	IsViewOnce     bool   `json:"isViewOnce"`
-	IsViewOnceV2   bool   `json:"isViewOnceV2"`
-	IsViewOnceV2Extension   bool   `json:"isViewOnceV2Extension"`
-	IsLottieSticker     	bool   `json:"isLottieSticker"`
-	IsDocumentWithCaption   bool   `json:"isDocumentWithCaption"`
-	Media 		   Media `json:"media"`
+	ID                    string `json:"id"`
+	Chat                  string `json:"chat"`
+	Time                  int64  `json:"time"`
+	SenderId              string `json:"senderId"`
+	SenderName            string `json:"senderName"`
+	SenderAvatar          string `json:"senderAvatar"`
+	IsGroup               bool   `json:"isGroup"`
+	Text                  string `json:"text"`
+	IsFromMe              bool   `json:"isFromMe"`
+	MediaType             string `json:"mediaType"`
+	Type                  string `json:"type"`
+	ReplyToPost           string `json:"replyToPost"`
+	ReplyToUser           string `json:"replyToUser"`
+	IsViewOnce            bool   `json:"isViewOnce"`
+	IsViewOnceV2          bool   `json:"isViewOnceV2"`
+	IsViewOnceV2Extension bool   `json:"isViewOnceV2Extension"`
+	IsLottieSticker       bool   `json:"isLottieSticker"`
+	IsDocumentWithCaption bool   `json:"isDocumentWithCaption"`
+	Media                 Media  `json:"media"`
+	IDChat                string `json:"idchat"`
 }
 
 // WebhookRequest adalah struktur data untuk permintaan webhook
