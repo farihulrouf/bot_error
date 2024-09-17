@@ -356,7 +356,20 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 			}
 			txtMessage += polName
 		}
-
+		if v.Message.GetLiveLocationMessage() != nil {
+			loc := v.Message.GetLiveLocationMessage()
+			lat := loc.GetDegreesLatitude()
+			lng := loc.GetDegreesLongitude()
+			mediaType = "location"
+			media = model.Media{
+				Latitude:  lat,
+				Longitude: lng,
+			}
+			if txtMessage != "" {
+				txtMessage += ". "
+			}
+			txtMessage += "Location: " + fmt.Sprintf("%f", lat) + ", " + fmt.Sprintf("%f", lng)
+		}
 		if v.Message.LocationMessage != nil {
 			loc := v.Message.GetLocationMessage()
 			lat := loc.GetDegreesLatitude()
