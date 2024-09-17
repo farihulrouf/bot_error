@@ -12,6 +12,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	// "net/http"
@@ -53,6 +54,27 @@ func removeExtension(filename string) string {
 func setLastMimetype(mimetype string) string {
 	tmp := strings.Split(mimetype, "/")
 	return tmp[1]
+}
+
+var processedMessages = struct {
+	sync.RWMutex
+	messages map[string]struct{}
+}{
+	messages: make(map[string]struct{}),
+}
+
+// Fungsi untuk memeriksa dan menyimpan ID pesan
+func isProcessed(id string) bool {
+	processedMessages.RLock()
+	defer processedMessages.RUnlock()
+	_, exists := processedMessages.messages[id]
+	return exists
+}
+
+func markAsProcessed(id string) {
+	processedMessages.Lock()
+	defer processedMessages.Unlock()
+	processedMessages.messages[id] = struct{}{}
 }
 
 func uploadToSpace(pathToFile string, fileData []byte, mimetype string) (string, error) {
@@ -181,6 +203,15 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 		replyToUser := ""
 		mediaType := v.Info.Type
 		strdate := v.Info.Timestamp.Format("20060102")
+		// Jika ID pesan sudah diproses, hentikan proses lebih lanjut
+		if isProcessed(v.Info.ID) {
+			fmt.Println("Message already processed, skipping...")
+			return
+		}
+
+		// Tandai ID pesan sebagai sudah diproses
+		markAsProcessed(v.Info.ID)
+
 		idChat := helpers.ConvertToLettersDetailed(cclient.Phone, v.Info.IsGroup)
 
 		// if !v.Info.IsGroup {
