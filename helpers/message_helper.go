@@ -119,7 +119,7 @@ func UploadVideoAndCreateMessage(client *whatsmeow.Client, videoBytes []byte, ca
 	if err != nil {
 		return nil, fmt.Errorf("error uploading do: %v", err)
 	}
-	msg := &waProto.VideoMessage{
+	msg := &waE2E.VideoMessage{
 		URL:      proto.String(resp.URL),
 		Mimetype: proto.String(http.DetectContentType(videoBytes)),
 		//Title:         proto.String(resp.File.Filename),
