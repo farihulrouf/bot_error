@@ -212,12 +212,10 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 		// Tandai ID pesan sebagai sudah diproses
 		markAsProcessed(v.Info.ID)
 
-		idChat := helpers.ConvertToLettersDetailed(cclient.Phone, v.Info.IsGroup)
-
 		// if !v.Info.IsGroup {
 		chatId = model.GetPhoneNumber(chatId)
 		// }
-
+		idChat := helpers.ConvertToLettersDetailed(cclient.Phone, chatId, v.Info.IsGroup)
 		fmt.Println("---------- message  link ------")
 		//fmt.Println(v.Message)
 

@@ -490,7 +490,7 @@ func Base64ToHash(base64Str string) ([]byte, []byte, error) {
 	return hashSHA256Bytes, hashMD5Bytes, nil
 }
 
-func ConvertToLettersDetailed(number string, isGroup bool) string {
+func ConvertToLettersDetailed(number string, chatId string, isGroup bool) string {
 	// Peta digit ke huruf sesuai dengan keypad telepon
 	digitToLetters := map[rune]string{
 		'2': "ABC",
@@ -509,16 +509,15 @@ func ConvertToLettersDetailed(number string, isGroup bool) string {
 			// Jika ada huruf yang sesuai dengan digit, tambahkan digit dan huruf-hurufnya
 			result.WriteRune(digit)     // Menulis digit
 			result.WriteString(letters) // Menulis huruf yang sesuai
-		} else {
-			// Jika digit tidak ada di peta, tambahkan digit dan 'U'
-			result.WriteRune(digit)
-			result.WriteString("U")
 		}
 	}
-
+	fmt.Println("di luar peta", chatId)
 	// Tambahkan huruf 'G' jika isGroup bernilai true
 	if isGroup {
-		result.WriteString("G")
+		result.WriteString("G" + chatId)
+	} else {
+		result.WriteString("U" + chatId)
+
 	}
 
 	return result.String()
