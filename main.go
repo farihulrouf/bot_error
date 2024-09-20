@@ -1,30 +1,30 @@
 package main
 
 import (
-	"os"
-	"log"
 	"fmt"
-	"time"
-	"syscall"
+	"log"
 	"net/http"
+	"os"
 	"os/signal"
-	
+	"syscall"
+	"time"
+
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/store"
 	"go.mau.fi/whatsmeow/store/sqlstore"
 
+	"wagobot.com/controllers"
 	"wagobot.com/db"
+	"wagobot.com/middleware"
 	"wagobot.com/model"
 	"wagobot.com/router"
-	"wagobot.com/middleware"
-	"wagobot.com/controllers"
-	
+
 	"github.com/joho/godotenv"
 	"google.golang.org/protobuf/proto"
-	
-	waLog "go.mau.fi/whatsmeow/util/log"
-	waProto "go.mau.fi/whatsmeow/binary/proto"
+
 	httpSwagger "github.com/swaggo/http-swagger"
+	waProto "go.mau.fi/whatsmeow/binary/proto"
+	waLog "go.mau.fi/whatsmeow/util/log"
 )
 
 func main() {
@@ -39,16 +39,16 @@ func main() {
 	port := os.Getenv("PORT")
 	dbPath := os.Getenv("DB_PATH")
 	botName := os.Getenv("BOT_NAME")
-	
+
 	if botName == "" {
 		botName = "WINDOWS"
 	}
 
 	model.DefaultWebhook = os.Getenv("WEBHOOK_URL")
-	model.SpaceConfig = model.DOConfig {
-		Endpoint: os.Getenv("SPACE_ENDPOINT"),
-		Bucket: os.Getenv("SPACE_BUCKET"),
-		Folder: os.Getenv("SPACE_FOLDER"),
+	model.SpaceConfig = model.DOConfig{
+		Endpoint:  os.Getenv("SPACE_ENDPOINT"),
+		Bucket:    os.Getenv("SPACE_BUCKET"),
+		Folder:    os.Getenv("SPACE_FOLDER"),
 		AccessKey: os.Getenv("SPACE_ACCESS_KEY"),
 		SecretKey: os.Getenv("SPACE_SECRET_KEY"),
 	}
@@ -56,7 +56,7 @@ func main() {
 	fmt.Println(model.SpaceConfig)
 
 	store.DeviceProps.PlatformType = waProto.DeviceProps_SAFARI.Enum()
-	store.DeviceProps.Os = proto.String(botName)	
+	store.DeviceProps.Os = proto.String(botName)
 
 	// Mengatur logging untuk database
 	dbLog := waLog.Stdout("Database", "DEBUG", true)
@@ -98,10 +98,10 @@ func main() {
 	// timer check every 10s
 	ticker := time.Tick(10 * time.Second)
 	go func() {
-        for range ticker {
-            go controllers.CleanupClients()
-        }
-    }()
+		for range ticker {
+			go controllers.CleanupClients()
+		}
+	}()
 
 	// Mengatur router
 	r := router.SetupRouter()

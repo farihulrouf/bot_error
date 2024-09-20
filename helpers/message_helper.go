@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -489,36 +490,19 @@ func Base64ToHash(base64Str string) ([]byte, []byte, error) {
 
 	return hashSHA256Bytes, hashMD5Bytes, nil
 }
+func encryptMD5(chatId string) string {
+	hash := md5.New()
+	hash.Write([]byte(chatId))
+	return hex.EncodeToString(hash.Sum(nil))
+}
 
 func ConvertToLettersDetailed(number string, chatId string, isGroup bool) string {
-	// Peta digit ke huruf sesuai dengan keypad telepon
-	/*digitToLetters := map[rune]string{
-		'2': "ABC",
-		'3': "DEF",
-		'4': "GHI",
-		'5': "JKL",
-		'6': "MNO",
-		'7': "PQRS",
-		'8': "TUV",
-		'9': "WXYZ",
-	}
-
-	var result strings.Builder
-	for _, digit := range number {
-		if letters, ok := digitToLetters[digit]; ok {
-			// Jika ada huruf yang sesuai dengan digit, tambahkan digit dan huruf-hurufnya
-			result.WriteRune(digit)     // Menulis digit
-			result.WriteString(letters) // Menulis huruf yang sesuai
-		}
-	}
-	fmt.Println("di luar peta", chatId)
-	// Tambahkan huruf 'G' jika isGroup bernilai true
-	*/
+	encryptedChatId := encryptMD5(chatId)
 	var result strings.Builder
 	if isGroup {
-		result.WriteString(chatId + "G")
+		result.WriteString(encryptedChatId + "G")
 	} else {
-		result.WriteString(chatId + "U")
+		result.WriteString(encryptedChatId + "U")
 
 	}
 
