@@ -220,6 +220,9 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 		//fmt.Println(v.Message)
 
 		txtMessage := ""
+		if v.Message.Conversation != nil {
+			txtMessage = v.Message.GetConversation()
+		}
 		if v.Message.ExtendedTextMessage != nil {
 			ext := v.Message.GetExtendedTextMessage()
 			ci := ext.GetContextInfo()
@@ -621,7 +624,7 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 		fmt.Println("---- sync history -----")
 		for _, conv := range v.Data.GetConversations() {
 			for _, historymsg := range conv.GetMessages() {
-				// fmt.Println(historymsg)
+				fmt.Println(historymsg)
 				chatJID, _ := wtypes.ParseJID(conv.GetId())
 				evt, _ := cclient.Client.ParseWebMessage(chatJID, historymsg.GetMessage())
 				// if err != nil {
