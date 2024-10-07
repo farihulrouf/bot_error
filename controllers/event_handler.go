@@ -220,9 +220,7 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 		//fmt.Println(v.Message)
 
 		txtMessage := ""
-		if v.Message.Conversation != nil {
-			txtMessage = v.Message.GetConversation()
-		}
+
 		if v.Message.ExtendedTextMessage != nil {
 			ext := v.Message.GetExtendedTextMessage()
 			ci := ext.GetContextInfo()
