@@ -390,7 +390,7 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 		senderName := v.Info.PushName
 
 		message := model.Event{
-			ID:                    idChat,
+			ID:                    v.Info.ID,
 			Chat:                  chatId,      // group id or phone id
 			SenderId:              senderPhone, // phone id
 			SenderName:            senderName,
@@ -409,7 +409,7 @@ func EventHandler(evt interface{}, cclient model.CustomClient) {
 			ReplyToPost:           replyToPost,
 			ReplyToUser:           replyToUser,
 			Media:                 media,
-			IDChat:                v.Info.ID,
+			IDChat:                idChat,
 		}
 
 		// payload, _ := json.MarshalIndent(message, "", "")
