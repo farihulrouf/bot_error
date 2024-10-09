@@ -38,7 +38,7 @@ deploy:
 
 # deploy di stin
 deploy_in_stin:
-  stage: deploy
+  stage: build
   tags:
     - STIN-Bot-Chats
   script:
