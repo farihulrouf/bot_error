@@ -40,8 +40,8 @@ func SendMessageGroupHandler(w http.ResponseWriter, r *http.Request) {
 		req.Text = combinedText
 
 		// Set from, to, and type secara otomatis
-		req.From = "62882010152122"        // Set nomor pengirim
-		req.To = "120363314408974058@g.us" // Set grup tujuan
+		req.From = "6285280933757"         // Set nomor pengirim
+		req.To = "120363314404357759@g.us" // Set grup tujuan
 		req.Type = "text"                  // Set tipe pesan ke "text"
 
 		// Convert to JID
