@@ -5,77 +5,100 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+
 	"wagobot.com/errors"
 	"wagobot.com/helpers"
 	"wagobot.com/model"
 )
 
-// Pastikan client diimpor dari file yang sesuai
-//var client *whatsmeow.Client
-
 func SendMessageGroupHandler(w http.ResponseWriter, r *http.Request) {
-    var req model.SendMessageDataRequest
-    var value_client = model.Clients["device1"].Client
-    matchFound := false
+	var req model.SendMessageDataRequest
 
-    // Decode the JSON request
-    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-        helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidRequestPayload)
-        return
-    }
+	// Decode the JSON request
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidRequestPayload)
+		return
+	}
 
-    // Validasi field Message
-    if req.Message == "" {
-        helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrMissingRequiredFields)
-        return
-    }
+	if req.Platform == "whatsapp" {
+		var value_client = model.Clients["device1"].Client
+		matchFound := false
 
-    // Membuat text gabungan
-    combinedText := fmt.Sprintf(
-        "Name: %s\nIP: %s\nTime: %d\nStatus: %s\nMessage: %s",
-        req.Name, req.IP, req.Time, req.Status, req.Message,
-    )
-    
-    // Set text pada request
-    req.Text = combinedText
+		// Validasi field Message
+		if req.Message == "" {
+			helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrMissingRequiredFields)
+			return
+		}
 
-    // Set from, to, and type secara otomatis
-    req.From = "62882010152122"                   // Set nomor pengirim
-    req.To = "120363314408974058@g.us"            // Set grup tujuan
-    req.Type = "text"                             // Set tipe pesan ke "text"
+		// Membuat text gabungan
+		combinedText := fmt.Sprintf(
+			"Name: %s\nIP: %s\nTime: %d\nStatus: %s\nMessage: %s",
+			req.Name, req.IP, req.Time, req.Status, req.Message,
+		)
 
-    // Convert to JID
-    jid, err := helpers.ConvertToJID(req.To)
-    if err != nil {
-        helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidRecipient)
-        return
-    }
+		// Set text pada request
+		req.Text = combinedText
 
-    // Cek klien yang cocok
-    for key := range model.Clients {
-        whoami := model.Clients[key].Client.Store.ID.String()
-        parts := strings.Split(whoami, ":")
-        if req.From == parts[0] {
-            value_client = model.Clients[key].Client
-            matchFound = true
-            break
-        }
-    }
+		// Set from, to, and type secara otomatis
+		req.From = "62882010152122"        // Set nomor pengirim
+		req.To = "120363314408974058@g.us" // Set grup tujuan
+		req.Type = "text"                  // Set tipe pesan ke "text"
 
-    if !matchFound {
-        helpers.SendErrorResponse(w, http.StatusBadRequest, "No matching number found for requestData.From")
-        return
-    }
+		// Convert to JID
+		jid, err := helpers.ConvertToJID(req.To)
+		if err != nil {
+			helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidRecipient)
+			return
+		}
 
-    // Kirim pesan menggunakan value_client dan jid
-    if err := helpers.SendMessage(value_client, jid, req); err != nil {
-        helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidMessageType)
-        return
-    }
+		// Cek klien yang cocok
+		for key := range model.Clients {
+			whoami := model.Clients[key].Client.Store.ID.String()
+			parts := strings.Split(whoami, ":")
+			if req.From == parts[0] {
+				value_client = model.Clients[key].Client
+				matchFound = true
+				break
+			}
+		}
 
-    // Respons dengan sukses
-    w.WriteHeader(http.StatusOK)
-    json.NewEncoder(w).Encode(map[string]string{"status": "success", "message": "Message sent successfully"})
+		if !matchFound {
+			helpers.SendErrorResponse(w, http.StatusBadRequest, "No matching number found for requestData.From")
+			return
+		}
+
+		// Kirim pesan menggunakan value_client dan jid
+		if err := helpers.SendMessage(value_client, jid, req); err != nil {
+			helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidMessageType)
+			return
+		}
+
+		// Respons dengan sukses
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]string{"status": "success", "message": "Message sent successfully"})
+	} else if req.Platform == "telegram" {
+		// Logic for handling Telegram messages
+		if req.Message == "" {
+			helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrMissingRequiredFields)
+			return
+		}
+
+		// Membuat text gabungan untuk Telegram
+		combinedText := fmt.Sprintf(
+			"Name: %s\nIP: %s\nTime: %d\nStatus: %s\nMessage: %s",
+			req.Name, req.IP, req.Time, req.Status, req.Message,
+		)
+
+		// Kirim pesan menggunakan helper yang sesuai untuk Telegram
+		if err := helpers.SendMessageToTelegram(combinedText); err != nil {
+			helpers.SendErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidMessageType)
+			return
+		}
+
+		// Respons dengan sukses
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]string{"status": "success", "message": "Message sent successfully"})
+	} else {
+		helpers.SendErrorResponse(w, http.StatusBadRequest, "Unsupported platform")
+	}
 }
-
-// SendMessageHandler handles sending messages.

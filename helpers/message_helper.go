@@ -1,16 +1,19 @@
 package helpers
 
 import (
+	"bytes"
 	"context"
 	"crypto/md5"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -22,6 +25,46 @@ import (
 	"google.golang.org/protobuf/proto"
 	"wagobot.com/model"
 )
+
+func SendMessageToTelegram(message string) error {
+	// Ambil chat ID dari variabel lingkungan
+	chatID := os.Getenv("TELEGRAM_CHAT_ID")
+	if chatID == "" {
+		return fmt.Errorf("TELEGRAM_CHAT_ID not set")
+	}
+
+	botToken := os.Getenv("TELEGRAM_BOT_TOKEN")
+	if botToken == "" {
+		return fmt.Errorf("TELEGRAM_BOT_TOKEN not set")
+	}
+
+	apiURL := os.Getenv("TELEGRAM_API_URL")
+	if apiURL == "" {
+		return fmt.Errorf("TELEGRAM_API_URL not set")
+	}
+
+	url := fmt.Sprintf("%s%s/sendMessage", apiURL, botToken)
+
+	body, err := json.Marshal(map[string]string{
+		"chat_id": chatID,
+		"text":    message,
+	})
+	if err != nil {
+		return err
+	}
+
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to send message: %s", resp.Status)
+	}
+
+	return nil
+}
 
 func SendMessageToPhoneNumber(client *whatsmeow.Client, recipient, message string) error {
 	// Convert recipient to JID
