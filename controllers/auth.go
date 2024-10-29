@@ -100,23 +100,6 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	base.SetResponse(w, http.StatusOK, response)
 }
 
-func CreateToken(w http.ResponseWriter, r *http.Request) {
-	// Generate a new JWT token
-	token, err := base.CreateNewToken()
-	if err != nil {
-		// http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		base.SetResponse(w, http.StatusInternalServerError, "Internal Server Error")
-		return
-	}
-
-	response := response.TokenResponse{Token: token}
-	base.SetResponse(w, http.StatusOK, response)
-
-	// w.Header().Set("Content-Type", "application/json")
-	// w.WriteHeader(http.StatusOK)
-	// w.Write([]byte(`{"token": "` + token + `"}`))
-}
-
 func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	/*var req model.LogoutRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -135,6 +118,3 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"status": "success"})
 	*/
 }
-
-
-

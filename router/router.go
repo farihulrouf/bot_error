@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+
 	// "encoding/json"
 
 	"github.com/gorilla/mux"
@@ -17,15 +18,15 @@ import (
 )
 
 func SetupRouter() *mux.Router {
-	
+
 	r := mux.NewRouter()
 
 	// Middleware JWT digunakan untuk semua rute kecuali /api/login dan /api/register /scanqr
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			
+
 			fmt.Printf("%s %s\n", r.Method, r.URL.Path)
-    		fmt.Printf("Params: %v\n", r.URL.Query())
+			fmt.Printf("Params: %v\n", r.URL.Query())
 			fmt.Printf("Forms: %v\n", r.Form)
 
 			if r.URL.Path == "/api/login" || r.URL.Path == "/api/register" ||
@@ -37,65 +38,25 @@ func SetupRouter() *mux.Router {
 		})
 	})
 
-	r.HandleFunc("/", controllers.VersionHandler).Methods("GET")
-
 	r.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler) // not ok, file not found
 
-	r.HandleFunc("/api/login", controllers.LoginHandler).Methods("POST") // ok
+	r.HandleFunc("/api/login", controllers.LoginHandler).Methods("POST")   // ok
 	r.HandleFunc("/api/logout", controllers.LogoutHandler).Methods("POST") // not ok, response kosong tidak berfungsi
-	
-	r.HandleFunc("/api/ping", controllers.PingHandler).Methods("GET") // response ganti ke json {status: "online/offline"}
+	// response ganti ke json {status: "online/offline"}
 	r.HandleFunc("/api/register", controllers.RegisterHandler).Methods("POST") // not ok, tidak ada validasi parameter user
-	r.HandleFunc("/api/token", controllers.CreateToken).Methods("POST") // not ok, token tidak bisa digunakan
 
 	r.HandleFunc("/api/system/logout/{phone}", controllers.RemoveClient).Methods("DELETE")
-	r.HandleFunc("/api/system/devices", controllers.CreateDevice).Methods("GET") // not ok, hang
-	r.HandleFunc("/api/system/ver", controllers.VersionHandler).Methods("GET") // ok
-	r.HandleFunc("/api/system/webhook", controllers.WebhookHandler).Methods("POST")
-	// router.POST("/api/system/webhook", SetWebhookHandler)
 
-	
-	r.HandleFunc("/api/user", controllers.UserUpdateHandler).Methods("PUT")
-	r.HandleFunc("/api/user/login", controllers.LoginHandler).Methods("POST") // ok
-	// r.HandleFunc("/api/user/detail", controllers.GetUserHandler).Methods("GET") // ok
-	// r.HandleFunc("/api/user/update", controllers.UserUpdateHandler).Methods("PUT")
-	
-	r.HandleFunc("/api/group/invite", controllers.GetGroupInviteLinkHandler).Methods("GET")
+	r.HandleFunc("/api/bot-report", controllers.SendMessageGroupHandler).Methods("POST")
+	r.HandleFunc("/api/groups", controllers.GetGroupsHandler).Methods("GET")
 
-	
-	// r.HandleFunc("/api/groups", controllers.JoinGroupHandler).Methods("POST")
-	r.HandleFunc("/api/groups/messages", controllers.SendMessageGroupHandler).Methods("POST")
 	// r.HandleFunc("/api/groups/leave", controllers.LeaveGroupHandler).Methods("POST")
 
-	r.HandleFunc("/api/messages", controllers.GetSearchMessagesHandler).Methods("GET")
-	r.HandleFunc("/api/messages", controllers.SendMessageHandler).Methods("POST")
-	r.HandleFunc("/api/messages/bulk", controllers.SendMessageBulkHandler).Methods("POST")
-	
-	r.HandleFunc("/api/result", controllers.GetMessagesHandler).Methods("GET")
-	r.HandleFunc("/api/result/{id}", controllers.GetMessagesByIdHandler).Methods("GET")
-	
-	//r.HandleFunc("/api/get/client", controllers.GetClientByDeviceNameHandler).Methods("GET")
-	//r.HandleFunc("/status/qr/list", controllers.GetConnectedClientsList).Methods("GET")
-	//r.HandleFunc("/api/token", controllers.CreateToken).Methods("POST")
-	//r.HandleFunc("/api/messages/images", controllers.SendImageHandler).Methods("POST")
-
-	// --- active --
-
-	r.HandleFunc("/api/user", controllers.GetUserHandler).Methods("GET") // ok
-
-	r.HandleFunc("/api/devices", controllers.GetDevicesHandler).Methods("GET")
 	r.HandleFunc("/api/device/scan", controllers.ScanDeviceHandler).Methods("GET")
-	r.HandleFunc("/api/device/status", controllers.StatusDeviceHandler).Methods("POST")
+
 	r.HandleFunc("/api/device/remove", controllers.RemoveDeviceHandler).Methods("DELETE")
 
-	r.HandleFunc("/api/groups", controllers.GetGroupsHandler).Methods("GET")
-	r.HandleFunc("/api/group/join", controllers.JoinGroupHandler).Methods("POST")
-	r.HandleFunc("/api/group/leave", controllers.LeaveGroupHandler).Methods("POST")
-	r.HandleFunc("/api/group/members", controllers.MemberGroupHandler).Methods("POST")
 	// r.HandleFunc("/api/group/messages", controllers.MemberGroupHandler).Methods("POST")
-
-	r.HandleFunc("/api/webhook", controllers.GetWebhookHandler).Methods("GET")
-	r.HandleFunc("/api/webhook", controllers.UpdateWebhookHandler).Methods("PUT")
 
 	return r
 }

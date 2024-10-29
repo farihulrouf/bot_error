@@ -4,15 +4,21 @@ package model
 
 // SendMessageGroupRequest defines the structure of the request to send a message to a group
 type SendMessageDataRequest struct {
-	To        string `json:"to"`
-	Type      string `json:"type"`
-	Text      string `json:"text"`
-	Caption   string `json:"caption"`
-	URL       string `json:"url"`
-	From      string `json:"from"`
-	ImagePath string `json:"image_path"`
-	MimeType  string `json:"mime_type"`
+    To        string `json:"to"`
+    Type      string `json:"type"`
+    Text      string `json:"text"`
+    Caption   string `json:"caption"`
+    URL       string `json:"url"`
+    From      string `json:"from"`
+    ImagePath string `json:"image_path"`
+    MimeType  string `json:"mime_type"`
+    Name      string `json:"name"`      // Tambahan field Name
+    IP        string `json:"ip"`        // Tambahan field IP
+    Time      int64  `json:"time"`      // Tambahan field Time
+    Status    string `json:"status"`    // Tambahan field Status
+    Message   string `json:"message"`   // Tambahan field Message
 }
+
 type SendMessageResponse struct {
 	ID     string `json:"id"`
 	From   string `json:"from"`

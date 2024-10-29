@@ -2,12 +2,11 @@ package controllers
 
 import (
 	"context"
-	"io/ioutil"
 	"math/rand"
 	"time"
 
 	// "encoding/base64"
-	"encoding/json"
+
 	"fmt"
 	"log"
 
@@ -20,10 +19,12 @@ import (
 	"go.mau.fi/whatsmeow/store"
 	"go.mau.fi/whatsmeow/store/sqlstore"
 	"go.mau.fi/whatsmeow/types"
+
 	// "go.mau.fi/whatsmeow/types/events"
-	
+
 	"wagobot.com/model"
 	"wagobot.com/response"
+
 	// "wagobot.com/db"
 	"wagobot.com/base"
 
@@ -81,7 +82,7 @@ func CleanupClients() {
 			}
 		} else {
 			// untuk nomor dengan id user = 0
-			if (client.User == 0) {
+			if client.User == 0 {
 				// logout lalu hapus
 				if client.Client.IsLoggedIn() {
 					client.Client.Logout()
@@ -140,135 +141,11 @@ func GetClient(deviceStore *store.Device) *whatsmeow.Client {
 	// client.AddEventHandler(handler)
 	// client.AddEventHandler(EventHandler)
 	client.AddEventHandler(func(evt interface{}) {
-		EventHandler(evt, model.CustomClient {
+		EventHandler(evt, model.CustomClient{
 			Client: client,
 		})
 	})
 	return client
-}
-
-func GetSearchMessagesHandler(w http.ResponseWriter, r *http.Request) {
-	// Parse request parameters
-	r.ParseForm()
-	textFilter := r.Form.Get("chat")
-
-	mu.Lock()
-	defer mu.Unlock()
-	//fmt.Println("check data message five", v.Info.IsGroup, v.Info.IsFromMe, v.Info.Category, v.Info.MessageSource, v.Info.Type, v.Info.Chat.Device, v.Info.Timestamp)
-
-	w.Header().Set("Content-Type", "application/json")
-	var data []map[string]interface{}
-	//data := make(map[string]map[string]interface{})
-	for _, msg := range messages {
-		if textFilter != "" && !strings.Contains(msg.Text, textFilter) &&
-			!strings.Contains(msg.Chat, textFilter) &&
-			!strings.Contains(msg.ID, textFilter) &&
-			!strings.Contains(msg.Name, textFilter) &&
-			!strings.Contains(msg.ID, textFilter) &&
-			!strings.Contains(msg.Caption, textFilter) {
-			continue // Skip messages that don't contain the text filter
-		}
-
-		//timeStr := fmt.Sprintf("%d", msg.Time)
-		// Remove @s.whatsapp.net suffix from msg.Chat
-		chat := strings.TrimSuffix(msg.Chat, "@s.whatsapp.net")
-		//tiipe chat group or user
-		chatType := "user"
-		thumb := msg.Thumbnail
-		if msg.Group {
-			chatType = "Group"
-		}
-		if msg.Tipe != "text" {
-			msg.Text = msg.Caption
-		}
-
-		if msg.Mediatipe == "image" {
-			msg.Text = msg.Caption
-			thumb = msg.Thumbnail
-
-		}
-		if msg.Mediatipe == "video" {
-			msg.Text = msg.VideoMessage
-			thumb = msg.Thumbnailvideo
-		}
-		if msg.Mediatipe == "document" {
-			msg.Text = msg.DocMessage
-			thumb = msg.Thumbnaildoc
-		}
-		if msg.Mediatipe == "" {
-			msg.Mediatipe = "text"
-		}
-
-		messageData := map[string]interface{}{
-			"id":        msg.ID,
-			"time":      msg.Time,
-			"fromMe":    true, //!v.Info.IsFromMe && v.Message.GetConversation() !=
-			"type":      msg.Mediatipe,
-			"status":    "delivered",
-			"chatType":  chatType,
-			"replyId":   "1609773514305",
-			"chat":      chat,
-			"to":        chat,
-			"name":      msg.Name,
-			"from":      chat,
-			"text":      msg.Text,
-			"caption":   msg.Caption,
-			"url":       msg.Url,
-			"mimetype":  msg.MimeTipe,
-			"thumbnail": thumb,
-		}
-
-		exists := false
-		for _, existingMessage := range data {
-			if existingMessage["id"] == msg.ID {
-				exists = true
-				break
-			}
-		}
-
-		// Jika msg.ID belum ada, tambahkan messageData ke data
-		if !exists {
-			data = append(data, messageData)
-		}
-
-		//data = append(data, messageData)
-		//fmt.Println("chek data", msg)
-		/* example respond in maxchat.id
-		{
-			"data": [
-				{
-				"id": "1609773514305",
-				"time": 1686380234054,
-				"fromMe": true,
-				"type": "text",
-				"status": "delivered",
-				"chatType": "user",
-				"replyId": "1609773514305",
-				"chat": "6281234567890",
-				"to": "6281234567890",
-				"name": "string",
-				"from": "6281234567890",
-				"text": "Test from MaxChat",
-				"caption": "Caption test",
-				"url": "https://www.fnordware.com/superpng/pnggrad16rgb.png",
-				"mimetype": "string",
-				"thumbnail": "string"
-				}
-			]
-			}
-		*/
-		//data[timeStr] = messageData
-	}
-
-	response := map[string]interface{}{
-		"data": data,
-	}
-
-	// Encode response to JSON and send it
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		http.Error(w, "Failed to encode messages", http.StatusInternalServerError)
-		return
-	}
 }
 
 func AddClient(UserID int, phone string, webhook string, DevID string, client *whatsmeow.Client, expired int64) {
@@ -281,11 +158,11 @@ func AddClient(UserID int, phone string, webhook string, DevID string, client *w
 	}
 
 	customClient := model.CustomClient{
-		User: UserID,
-		Phone: phone,
+		User:        UserID,
+		Phone:       phone,
 		ExpiredTime: expired,
-		Webhook: webhook,
-		Client: client,
+		Webhook:     webhook,
+		Client:      client,
 	}
 
 	// handler := &CustomEventHandler{client: client}
@@ -299,12 +176,12 @@ func AddClient(UserID int, phone string, webhook string, DevID string, client *w
 
 	// devId := GenerateRandomString("DEVICE", 5)
 	// if _, ok := clients[devId]; !ok {
-		// model.Clients[DevID] = model.CustomClient{
-		// 	User: UserID,
-		// 	ExpiredTime: expired,
-		// 	Webhook: webhook,
-		// 	Client: client,
-		// }
+	// model.Clients[DevID] = model.CustomClient{
+	// 	User: UserID,
+	// 	ExpiredTime: expired,
+	// 	Webhook: webhook,
+	// 	Client: client,
+	// }
 	// }
 
 	err := model.Clients[DevID].Client.Connect()
@@ -317,211 +194,10 @@ func AddClient(UserID int, phone string, webhook string, DevID string, client *w
 	fmt.Println(model.Clients)
 }
 
-func CreateDevice(w http.ResponseWriter, r *http.Request) {
-	deviceStore := StoreContainer.NewDevice()
-	client := GetClient(deviceStore)
-	deviceID := GenerateRandomString("Device", 3)
-	//data_client[deviceID] = client
-	setClient_data(deviceID, client)
-	qrCode, jid := connectClient(client)
-
-	var response []ClientInfo
-
-	fmt.Println("Data client setelah ditambahkan:", jid)
-
-	// Iterasi melalui peta `clients` untuk membuat respons
-	for key, client := range model.Clients {
-		//fmt.Printf(key)
-		response = append(response, ClientInfo{
-			ID:     key,
-			Number: client.Client.Store.ID.String(),
-			Busy:   true,
-			QR:     "",
-			Status: "connected",
-			Name:   client.Client.Store.PushName,
-		})
-	}
-
-	// Add the new client to the response
-	if qrCode != "" {
-		response = append(response, ClientInfo{
-			ID:     "",
-			Number: "",
-			Busy:   false,
-			QR:     qrCode,
-			Status: "pairing",
-			Name:   "",
-		})
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	if len(response) > 0 {
-		json.NewEncoder(w).Encode(response)
-	} else {
-		http.Error(w, "Failed to connect the client", http.StatusInternalServerError)
-	}
-}
-
-func GetMessagesHandler(w http.ResponseWriter, r *http.Request) {
-
-	mu.Lock()
-	defer mu.Unlock()
-
-	w.Header().Set("Content-Type", "application/json")
-
-	// Ubah dari map ke slice
-	var data []map[string]interface{}
-
-	for _, msg := range messages {
-		/*if msg.Mediatipe == "image" {
-			msg.Text = msg.Caption
-		}
-		if msg.Mediatipe == "video" {
-			msg.Text = msg.VideoMessage
-		}
-		if msg.Mediatipe == "document" {
-			msg.Text = msg.DocMessage
-		}
-		if msg.Mediatipe == "" {
-			msg.Mediatipe = "text"
-		}
-		*/
-		/*
-			if msg.DocMessage != "" {
-				msg.Text = msg.DocMessage
-			}
-		*/
-
-		//chat := strings.TrimSuffix(msg.Chat, "@s.whatsapp.net"Ev)
-
-		if msg.Tipe == "text" {
-			msg.Mediatipe = "text"
-		}
-		messageData := map[string]interface{}{
-			"id":     msg.ID,
-			"from":   strings.TrimSuffix(msg.From, "@s.whatsapp.net"),
-			"to":     strings.TrimSuffix(msg.From, "@s.whatsapp.net"),
-			"status": "delivered",
-			//"chat": chat,
-			"time": msg.Time,
-			"type": msg.Mediatipe,
-			//"text": msg.Text,
-		}
-		/*if msg.Tipe != "text" {
-			messageData["type"] = msg.Mediatipe
-		}
-		*/
-		if msg.Tipe == "text" {
-			messageData["text"] = msg.Text
-		}
-
-		// Tambahkan elemen ke slice
-		exists := false
-		for _, existingMessage := range data {
-			if existingMessage["id"] == msg.ID {
-				exists = true
-				break
-			}
-		}
-
-		// Jika msg.ID belum ada, tambahkan messageData ke data
-		if !exists {
-			data = append(data, messageData)
-		}
-	}
-
-	response := map[string]interface{}{
-		"data": data,
-	}
-
-	// Encode response ke JSON dan kirim
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		http.Error(w, "Failed to encode messages", http.StatusInternalServerError)
-		return
-	}
-}
-
-func GetMessagesByIdHandler(w http.ResponseWriter, r *http.Request) {
-	// Ambil id dari URL
-	vars := mux.Vars(r)
-	id := vars["id"]
-
-	mu.Lock()
-	defer mu.Unlock()
-
-	w.Header().Set("Content-Type", "application/json")
-
-	// Ubah dari map ke slice
-	var data []map[string]interface{}
-
-	for _, msg := range messages {
-		// Remove @s.whatsapp.net suffix from msg.Chat
-		chat := strings.TrimSuffix(msg.Chat, "@s.whatsapp.net")
-
-		// Filter pesan berdasarkan chat
-		if chat != id {
-			continue
-		}
-
-		/*if msg.Mediatipe == "image" {
-			msg.Text = msg.Caption
-		}
-		if msg.Mediatipe == "video" {
-			msg.Text = msg.VideoMessage
-		}
-		if msg.Mediatipe == "" {
-			msg.Mediatipe = "text"
-		}
-		if msg.Mediatipe == "document" {
-			msg.Text = msg.DocMessage
-		}
-		*/
-
-		messageData := map[string]interface{}{
-			"id":     msg.ID,
-			"chat":   chat,
-			"time":   msg.Time,
-			"status": "delivered",
-			//"text": msg.Text,
-			//"type": msg.Mediatipe,
-		}
-		if msg.Mediatipe != "text" {
-			messageData["type"] = msg.Mediatipe
-		}
-
-		if msg.Tipe == "text" {
-			messageData["text"] = msg.Text
-		}
-
-		exists := false
-		for _, existingMessage := range data {
-			if existingMessage["id"] == msg.ID {
-				exists = true
-				break
-			}
-		}
-
-		if !exists {
-			data = append(data, messageData)
-		}
-
-	}
-
-	response := map[string]interface{}{
-		"data": data,
-	}
-
-	// Encode response ke JSON dan kirim
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		http.Error(w, "Failed to encode messages", http.StatusInternalServerError)
-		return
-	}
-}
-
 func initialClient() {
 	for key, value := range data_client {
-		model.Clients[key] = model.CustomClient {
-			User: 0,
+		model.Clients[key] = model.CustomClient{
+			User:   0,
 			Client: value,
 		}
 	}
@@ -534,27 +210,6 @@ func GenerateRandomString(prefix string, length int) string {
 		b[i] = charset[rand.Intn(len(charset))]
 	}
 	return fmt.Sprintf("%s-%s", prefix, string(b))
-}
-
-func WebhookHandler(w http.ResponseWriter, r *http.Request) {
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, "Failed to read request body", http.StatusBadRequest)
-		return
-	}
-
-	fmt.Printf("Received raw payload: %s\n", string(body)) // Logging payload mentah
-
-	var payload model.WebhookPayload
-	err = json.Unmarshal(body, &payload)
-	if err != nil {
-		http.Error(w, "Failed to parse webhook payload", http.StatusBadRequest)
-		return
-	}
-
-	fmt.Printf("Parsed webhook payload: %+v\n", payload)
-
-	w.WriteHeader(http.StatusOK)
 }
 
 func RemoveClient(w http.ResponseWriter, r *http.Request) {
