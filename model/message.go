@@ -3,6 +3,7 @@
 package model
 
 // SendMessageGroupRequest defines the structure of the request to send a message to a group
+// SendMessageDataRequest defines the structure of the request to send a message to a group
 type SendMessageDataRequest struct {
 	To        string `json:"to"`
 	Type      string `json:"type"`
@@ -17,7 +18,9 @@ type SendMessageDataRequest struct {
 	Time      int64  `json:"time"`     // Tambahan field Time
 	Status    string `json:"status"`   // Tambahan field Status
 	Message   string `json:"message"`  // Tambahan field Message
-	Platform  string `json:"platform"` // Tambahan field Message
+	Platform  string `json:"platform"` // Tambahan field Platform
+	ThreadID  string `json:"treadid"`  // Menambahkan thread_id
+
 }
 
 type SendMessageResponse struct {

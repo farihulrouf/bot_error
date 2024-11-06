@@ -26,6 +26,51 @@ import (
 	"wagobot.com/model"
 )
 
+func SendMessageToTelegramThread(message, threadID string) error {
+	// Ambil chat ID dan token dari variabel lingkungan
+	chatID := "-1002327427296" // ID saluran optimasi_dev
+	if chatID == "" {
+		return fmt.Errorf("TELEGRAM_CHAT_ID not set")
+	}
+
+	botToken := os.Getenv("TELEGRAM_BOT_TOKEN")
+	if botToken == "" {
+		return fmt.Errorf("TELEGRAM_BOT_TOKEN not set")
+	}
+
+	/*threadIDInt, err := strconv.Atoi(threadID)
+	if err != nil {
+		return fmt.Errorf("invalid threadID: %s", err)
+	}*/
+
+	// URL untuk mengirim pesan
+	url := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", botToken)
+
+	// Membuat body request JSON untuk mengirim pesan ke thread yang ditentukan
+	body, err := json.Marshal(map[string]interface{}{
+		"chat_id":           chatID,
+		"text":              message,
+		"message_thread_id": 22, // Gunakan threadID yang diterima dari parameter
+	})
+	if err != nil {
+		return err
+	}
+
+	// Mengirim pesan menggunakan HTTP POST
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	// Memeriksa apakah request berhasil
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to send message: %s", resp.Status)
+	}
+
+	return nil
+}
+
 func SendMessageToTelegram(message string) error {
 	// Ambil chat ID dari variabel lingkungan
 	chatID := os.Getenv("TELEGRAM_CHAT_ID")

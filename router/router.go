@@ -1,19 +1,14 @@
 package router
 
 import (
-	"fmt"
-	"net/http"
-	"strings"
 
 	// "encoding/json"
 
 	"github.com/gorilla/mux"
-	httpSwagger "github.com/swaggo/http-swagger"
 
 	// sesuaikan dengan path yang sesuai
 	//"go.mau.fi/whatsmeow"
 
-	"wagobot.com/base"
 	"wagobot.com/controllers"
 )
 
@@ -22,7 +17,7 @@ func SetupRouter() *mux.Router {
 	r := mux.NewRouter()
 
 	// Middleware JWT digunakan untuk semua rute kecuali /api/login dan /api/register /scanqr
-	r.Use(func(next http.Handler) http.Handler {
+	/*r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 			fmt.Printf("%s %s\n", r.Method, r.URL.Path)
@@ -36,9 +31,9 @@ func SetupRouter() *mux.Router {
 			}
 			base.JWTMiddleware(next).ServeHTTP(w, r)
 		})
-	})
+	})*/
 
-	r.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler) // not ok, file not found
+	//r.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler) // not ok, file not found
 
 	r.HandleFunc("/api/login", controllers.LoginHandler).Methods("POST")   // ok
 	r.HandleFunc("/api/logout", controllers.LogoutHandler).Methods("POST") // not ok, response kosong tidak berfungsi
